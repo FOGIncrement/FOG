@@ -163,13 +163,18 @@ if (ritualBtn) {
 
 // Buttons
 const prayBtn = document.getElementById("prayBtn");
-if (prayBtn) prayBtn.addEventListener("click", pray);
-
+if (prayBtn) {
+	prayBtn.title = `Generate ${game.prayAmt} faith per click`;
+	prayBtn.addEventListener("click", pray);
+}
 const convertBtn = document.getElementById("convertBtn");
 if (convertBtn) convertBtn.addEventListener("click", convertFollower);
 
 const gatherWoodBtn = document.getElementById("gatherWoodBtn");
-if (gatherWoodBtn) gatherWoodBtn.addEventListener("click", gatherWood);
+if (gatherWoodBtn) {
+	gatherWoodBtn.title = `Cost ${game.gatherWoodFaithCost} faith`;
+	gatherWoodBtn.addEventListener("click", gatherWood);
+}
 
 const gatherStoneBtn = document.getElementById("gatherStoneBtn");
 if (gatherStoneBtn) gatherStoneBtn.addEventListener("click", gatherStone);
