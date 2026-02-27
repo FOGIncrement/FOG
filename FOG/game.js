@@ -34,7 +34,7 @@ export const gameState = {
     unlocks:{
 
     }
-}
+};
 
 let game = {
 
@@ -416,3 +416,4 @@ function preach() {
 // Tick
 setInterval(gameTick, 1000);
 updateUI();
+
