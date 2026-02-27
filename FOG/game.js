@@ -1,42 +1,54 @@
 /*
     TODO:
-    - [] Take all your damn variables for the game out of one object
+    - [] Take all your damn variables for the game out of one object -- Semi finished - still need to variable groups and a better unlocks manager
     - [] Put those damn variables in their own objects grouped by function (followers, resources, buildings, etc)
 
     Let the game object control the state of the game, and have functions that manipulate that state. This will make it easier to manage as the game grows in complexity, and will also make it easier to save/load the game state in the future if you want to add that feature.
 */
 
+export const gameState = {
+    progression:{
+        followers: 1,
+        faith: 0,
+        faithPerFollower: 0.01,
+        prophet: 0
+    },
+    resources:{
+        wood: 0,
+        stone: 0,
+        food: 0
+    },
+    gathering:{
+        gatherWoodAmt: 10,
+        gatherStoneAmt: 10,
+        gatherFoodMinMultiplier: 25,
+        gatherFoodMaxMultiplier: 55
+    },
+    costs:{
+        gatherFoodFaithCost: 10,
+        gatherWoodFaithCost: 20,
+        gatherStoneFaithCost: 20,
+        shelterWoodCost: 5,
+        shelterStoneCost: 5,
+    },
+    unlocks:{
+
+    }
+}
+
 let game = {
-    followers: 1,
-    faith: 0.00,
+
     prayAmt: 100,
-    faithPerFollower: 0.01,
     convertCost: 10,
-    prophet: 0,
     exploreCost: 5,
     ritualCircleBuilt: 0,
     ritualCircleLimit: 1,
     shrineBuilt: 0,
-    gatherWoodFaithCost: 20,
-    wood: 0,
-    gatherWoodAmt: 10,
-	gatherStoneAmt: 10,
-    stone: 0,
-	gatherStoneFaithCost: 20,
-    Shelter: 0,
-    shelterWoodCost: 5,
-    shelterStoneCost: 5,
+    shelter: 0,
     shelterBtnUnlocked: 0,
     hungerPercent: 100,
     hungerVisible: 0,
     followerHungerDrain: 0.1,
-    // food mechanics
-    food: 0,
-    gatherFoodFaithCost: 10,
-    // food gathering ranges per follower
-    gatherFoodMinMultiplier: 25,
-    gatherFoodMaxMultiplier: 65,
-    // hunger restored per unit food
     foodHungerGain: 0.5,
     // follower roles
     // (currently unused)
@@ -63,19 +75,19 @@ function updateUI() {
     const hungerRate = document.getElementById("hungerRate");
 
     if (followersEl) {
-        followersEl.innerText = `${game.followers}/${getMaxFollowers()}`;
+        followersEl.innerText = `${gameState.progression.followers}/${getMaxFollowers()}`;
     }
     if (faithEl) {
         faithEl.innerText =
-            `${game.faith.toFixed(2)} (+${(game.followers * game.faithPerFollower).toFixed(3)}/s)`;
+            `${gameState.progression.faith.toFixed(2)} (+${(gameState.progression.followers * gameState.progression.faithPerFollower).toFixed(3)}/s)`;
     }
 
     // Wood
     if (woodContainer && woodValue) {
-        woodValue.innerText = game.wood;
+        woodValue.innerText = gameState.resources.wood;
         if (game.ritualCircleBuilt >= 1) {
             woodContainer.style.display = "block";
-        } else if (game.wood > 0) {
+        } else if (gameState.resources.wood > 0) {
             woodContainer.style.display = "block";
         } else {
             woodContainer.style.display = "none";
@@ -84,10 +96,10 @@ function updateUI() {
 
     // Stone
     if (stoneContainer && stoneValue) {
-        stoneValue.innerText = game.stone;
+        stoneValue.innerText = gameState.resources.stone;
         if (game.ritualCircleBuilt >= 1) {
             stoneContainer.style.display = "block";
-        } else if (game.stone > 0) {
+        } else if (gameState.resources.stone > 0) {
             stoneContainer.style.display = "block";
         } else {
             stoneContainer.style.display = "none";
@@ -96,14 +108,14 @@ function updateUI() {
 
     // Food
     if (foodContainer && foodValue && foodRate) {
-        foodValue.innerText = game.food;
-        if (game.Shelter >= 1 || game.food > 0) {
+        foodValue.innerText = gameState.resources.food;
+        if (game.shelter >= 1 || gameState.resources.food > 0) {
             foodContainer.style.display = "block";
         } else {
             foodContainer.style.display = "none";
         }
-        const foodDrainRate = (game.followers * game.followerHungerDrain) / game.foodHungerGain;
-        if (game.hungerPercent < 100 && game.food > 0) {
+        const foodDrainRate = (gameState.progression.followers * game.followerHungerDrain) / game.foodHungerGain;
+        if (game.hungerPercent < 100 && gameState.resources.food > 0) {
             foodRate.innerText = `(-${foodDrainRate.toFixed(1)}/s)`;
         } else {
             foodRate.innerText = ``;
@@ -115,8 +127,8 @@ function updateUI() {
         hungerValue.innerText = `${game.hungerPercent.toFixed(2)}%`;
         if (game.hungerVisible) {
             hungerContainer.style.display = "block";
-            const hungerDrainRate = game.followers * game.followerHungerDrain;
-            if (game.food > 0 && game.hungerPercent < 100) {
+            const hungerDrainRate = gameState.progression.followers * game.followerHungerDrain;
+            if (gameState.resources.food > 0 && game.hungerPercent < 100) {
                 const netDrain = (hungerDrainRate - game.foodHungerGain).toFixed(2);
                 hungerRate.innerText = `(${netDrain > 0 ? '-' : '+'}${Math.abs(netDrain)}/s)`;
             } else {
@@ -133,14 +145,14 @@ function updateUI() {
 
 // Gather food
 function gatherFood() {
-    if (game.faith < game.gatherFoodFaithCost) return;
-    game.faith -= game.gatherFoodFaithCost;
-    const min = game.followers * game.gatherFoodMinMultiplier;
-    const max = game.followers * game.gatherFoodMaxMultiplier;
+    if (gameState.progression.faith < gameState.costs.gatherFoodFaithCost) return;
+    gameState.progression.faith -= gameState.costs.gatherFoodFaithCost;
+    const min = gameState.progression.followers * gameState.gathering.gatherFoodMinMultiplier;
+    const max = gameState.progression.followers * gameState.gathering.gatherFoodMaxMultiplier;
     const amount = Math.random() * (max - min) + min;
     // always give at least one unit of food
     const gained = Math.max(1, Math.floor(amount));
-    game.food += gained;
+    gameState.resources.food += gained;
     addLog(`A hunt yielded ${gained} food.`);
     updateUI();
 }
@@ -148,24 +160,24 @@ function gatherFood() {
 
 // Pray button
 function pray() {
-    game.faith += game.prayAmt;
+    gameState.progression.faith += game.prayAmt;
     updateUI();
 }
 
 // Passive faith gain per tick
 function gameTick() {
-    game.faith += game.followers * game.faithPerFollower;
+    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower;
     // hunger drains with each follower
     if (game.hungerPercent > 0 && game.hungerVisible) {
-        game.hungerPercent -= game.followers * game.followerHungerDrain;
+        game.hungerPercent -= gameState.progression.followers * game.followerHungerDrain;
     }
     // refill hunger using food stock
-    if (game.food > 0 && game.hungerPercent < 100) {
+    if (gameState.resources.food > 0 && game.hungerPercent < 100) {
         const gain = game.foodHungerGain;
         game.hungerPercent = Math.min(100, game.hungerPercent + gain);
         // consume one food unit per gain
-        game.food -= 1;
-        if (game.food < 0) game.food = 0;
+        gameState.resources.food -= 1;
+        if (gameState.resources.food < 0) gameState.resources.food = 0;
     }
 
     // log hunger warnings once per threshold crossing
@@ -184,9 +196,9 @@ function gameTick() {
 
 // Convert follower
 function convertFollower() {
-    if (game.faith >= game.convertCost) {
-        game.faith -= game.convertCost;
-        game.followers += 1;
+    if (gameState.progression.faith >= game.convertCost) {
+        gameState.progression.faith -= game.convertCost;
+        gameState.progression.followers += 1;
         game.convertCost = Math.floor(game.convertCost * 1.15);
         updateUI();
     }
@@ -202,7 +214,7 @@ function updateButtons() {
     const buildShelterBtn = document.getElementById("buildShelterBtn");
 
     if (buildRitualCircleBtn) {
-        if (game.faith >= 50 && game.ritualCircleBuilt < 1) {
+        if (gameState.progression.faith >= 50 && game.ritualCircleBuilt < 1) {
             buildRitualCircleBtn.style.display = "inline-block";
             buildRitualCircleBtn.innerText =
                 `Ritual Circle ${game.ritualCircleBuilt}/1`;
@@ -228,13 +240,13 @@ function updateButtons() {
             gatherStoneBtn.disabled = false;
 
             // food only after first shelter
-            if (game.Shelter >= 1) {
+            if (game.shelter >= 1) {
                 gatherFoodBtn.style.display = "inline-block";
                 // disable if not enough faith to pay cost
-                gatherFoodBtn.disabled = game.faith < game.gatherFoodFaithCost;
+                gatherFoodBtn.disabled = gameState.progression.faith < gameState.costs.gatherFoodFaithCost;
                 // update title with dynamic range
-                const min = (game.followers * game.gatherFoodMinMultiplier).toFixed(1);
-                const max = (game.followers * game.gatherFoodMaxMultiplier).toFixed(1);
+                const min = (gameState.progression.followers * gameState.gathering.gatherFoodMinMultiplier).toFixed(1);
+                const max = (gameState.progression.followers * game.gatherFoodMaxMultiplier).toFixed(1);
                 gatherFoodBtn.title = `Gather Food (${min}-${max})`;
             } else {
                 gatherFoodBtn.style.display = "none";
@@ -251,10 +263,10 @@ function updateButtons() {
     if (preachBtn) {
         // only show when there is at least one free follower slot and >=3 max
         const max = getMaxFollowers();
-        if (max >= 3 && game.followers < max) {
+        if (max >= 3 && gameState.progression.followers < max) {
             preachBtn.style.display = "inline-block";
             // disable if not enough resources
-            preachBtn.disabled = game.faith < 100 || game.hungerPercent < 10 || game.food < 10;
+            preachBtn.disabled = gameState.progression.faith < 100 || game.hungerPercent < 10 || gameState.resources.food < 10;
             preachBtn.title = `Preach (100 faith, 10% hunger, 10 food) - 25% success`;
         } else {
             preachBtn.style.display = "none";
@@ -266,17 +278,17 @@ function updateButtons() {
         // only show once circle built and resources reached; but once visible keep showing
         if (game.ritualCircleBuilt >= 1 &&
             (game.shelterBtnUnlocked ||
-             (game.wood >= game.shelterWoodCost && game.stone >= game.shelterStoneCost))) {
+             (gameState.resources.wood >= gameState.costs.shelterWoodCost && gameState.resources.stone >= gameState.costs.shelterStoneCost))) {
             buildShelterBtn.style.display = "inline-block";
             // mark unlocked once we see it for the first time
             if (!game.shelterBtnUnlocked) {
                 game.shelterBtnUnlocked = 1;
             }
-            buildShelterBtn.disabled = !(game.wood >= game.shelterWoodCost && game.stone >= game.shelterStoneCost);
+            buildShelterBtn.disabled = !(gameState.resources.wood >= gameState.costs.shelterWoodCost && gameState.resources.stone >= gameState.costs.shelterStoneCost);
 
             // Update title and label dynamically
-            buildShelterBtn.title = `Cost ${game.shelterWoodCost} wood, ${game.shelterStoneCost} stone`;
-            buildShelterBtn.innerText = `Build Shelter (${game.shelterWoodCost}/${game.shelterStoneCost})`;
+            buildShelterBtn.title = `Cost ${gameState.costs.shelterWoodCost} wood, ${gameState.costs.shelterStoneCost} stone`;
+            buildShelterBtn.innerText = `Build shelter (${gameState.costs.shelterWoodCost}/${gameState.costs.shelterStoneCost})`;
         } else {
             buildShelterBtn.style.display = "none";
         }
@@ -285,37 +297,37 @@ function updateButtons() {
 
 function getMaxFollowers() {
     const baseCapacity = 1; //starting capacity before shelters
-    const shelterCapacity = game.Shelter * 3; //each shelter adds 3 followers capacity
+    const shelterCapacity = game.shelter * 3; //each shelter adds 3 followers capacity
     return baseCapacity + shelterCapacity;
 }
 
 // Gather wood
 function gatherWood() {
-    if (game.faith >= game.gatherWoodFaithCost) {
-        game.faith -= game.gatherWoodFaithCost;
-        game.wood += game.gatherWoodAmt;
+    if (gameState.progression.faith >= gameState.costs.gatherWoodFaithCost) {
+        gameState.progression.faith -= gameState.costs.gatherWoodFaithCost;
+        gameState.resources.wood += gameState.gathering.gatherWoodAmt;
         updateUI();
     }
 }
 
 function gatherStone(){
-	if(game.faith >= game.gatherStoneFaithCost) {
-		game.faith -= game.gatherStoneFaithCost;
-		game.stone += game.gatherStoneAmt;
+	if(gameState.progression.faith >= gameState.costs.gatherStoneFaithCost) {
+		gameState.progression.faith -= gameState.costs.gatherStoneFaithCost;
+		gameState.resources.stone += gameState.gathering.gatherStoneAmt;
 		updateUI();
 	}
 }
 
 function buildShelter() {
-    if (game.wood >= game.shelterWoodCost && game.stone >= game.shelterStoneCost) {
-        game.wood -= game.shelterWoodCost;
-        game.stone -= game.shelterStoneCost;
-        game.Shelter += 1;
+    if (gameState.resources.wood >= gameState.costs.shelterWoodCost && gameState.resources.stone >= gameState.costs.shelterStoneCost) {
+        gameState.resources.wood -= gameState.costs.shelterWoodCost;
+        gameState.resources.stone -= gameState.costs.shelterStoneCost;
+        game.shelter += 1;
         // scale each cost by its own previous value so you can build multiple
-        game.shelterWoodCost = Math.floor(game.shelterWoodCost * 1.8);
-        game.shelterStoneCost = Math.floor(game.shelterStoneCost * 1.8);
+        gameState.costs.shelterWoodCost = Math.floor(gameState.costs.shelterWoodCost * 1.8);
+        gameState.costs.shelterStoneCost = Math.floor(gameState.costs.shelterStoneCost * 1.8);
         // reveal hunger meter when first shelter erected
-        if (game.Shelter === 1) {
+        if (game.shelter === 1) {
             game.hungerVisible = 1;
         }
         updateUI();
@@ -326,10 +338,10 @@ function buildShelter() {
 const ritualBtn = document.getElementById("buildRitualCircleBtn");
 if (ritualBtn) {
     ritualBtn.addEventListener("click", () => {
-        if (game.faith >= 50 && game.ritualCircleBuilt < 1) {
-            game.faith -= 50;
+        if (gameState.progression.faith >= 50 && game.ritualCircleBuilt < 1) {
+            gameState.progression.faith -= 50;
             game.ritualCircleBuilt = 1;
-            game.faithPerFollower += 0.005;
+            gameState.progression.faithPerFollower += 0.005;
             updateUI();
         }
     });
@@ -344,13 +356,13 @@ if (prayBtn) {
 
 const gatherWoodBtn = document.getElementById("gatherWoodBtn");
 if (gatherWoodBtn) {
-	gatherWoodBtn.title = `Cost ${game.gatherWoodFaithCost} faith`;
+	gatherWoodBtn.title = `Cost ${gameState.costs.gatherWoodFaithCost} faith`;
 	gatherWoodBtn.addEventListener("click", gatherWood);
 }
 
 const gatherStoneBtn = document.getElementById("gatherStoneBtn");
 if (gatherStoneBtn) {
-    gatherStoneBtn.title = `Cost ${game.gatherStoneFaithCost} faith`;
+    gatherStoneBtn.title = `Cost ${gameState.costs.gatherStoneFaithCost} faith`;
     gatherStoneBtn.addEventListener("click", gatherStone);
 }
 
@@ -362,7 +374,7 @@ if (gatherFoodBtn) {
 
 const buildShelterBtn = document.getElementById("buildShelterBtn");
 if (buildShelterBtn) {
-    buildShelterBtn.title = `Cost ${game.shelterWoodCost} wood and ${game.shelterStoneCost} stone`;
+    buildShelterBtn.title = `Cost ${gameState.costs.shelterWoodCost} wood and ${gameState.costs.shelterStoneCost} stone`;
     buildShelterBtn.addEventListener("click", buildShelter);
 }
 
@@ -385,15 +397,15 @@ function addLog(msg) {
 // Preach to gain a follower at cost with chance
 function preach() {
     const max = getMaxFollowers();
-    if (game.faith < 100 || game.hungerPercent < 10 || game.food < 10 || game.followers >= max) {
+    if (gameState.progression.faith < 100 || game.hungerPercent < 10 || gameState.resources.food < 10 || gameState.progression.followers >= max) {
         return;
     }
-    game.faith -= 100;
+    gameState.progression.faith -= 100;
     game.hungerPercent = Math.max(0, game.hungerPercent - 10);
-    game.food -= 10;
+    gameState.resources.food -= 10;
     const success = Math.random() < 0.25;
     if (success) {
-        game.followers += 1;
+        gameState.progression.followers += 1;
         addLog("Your sermon converted a follower.");
     } else {
         addLog("The sermon failed to sway anyone.");
