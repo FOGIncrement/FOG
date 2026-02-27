@@ -49,7 +49,7 @@ let game = {
     hungerPercent: 100,
     hungerVisible: 0,
     followerHungerDrain: 0.1,
-    foodHungerGain: 0.5
+    foodHungerGain: 0.5,
     // follower roles
     // (currently unused)
 };
@@ -246,7 +246,7 @@ function updateButtons() {
                 gatherFoodBtn.disabled = gameState.progression.faith < gameState.costs.gatherFoodFaithCost;
                 // update title with dynamic range
                 const min = (gameState.progression.followers * gameState.gathering.gatherFoodMinMultiplier).toFixed(1);
-                const max = (gameState.progression.followers * game.gatherFoodMaxMultiplier).toFixed(1);
+                const max = (gameState.progression.followers * gameState.gathering.gatherFoodMaxMultiplier).toFixed(1);
                 gatherFoodBtn.title = `Gather Food (${min}-${max})`;
             } else {
                 gatherFoodBtn.style.display = "none";
@@ -416,6 +416,7 @@ function preach() {
 // Tick
 setInterval(gameTick, 1000);
 updateUI();
+
 
 
 
