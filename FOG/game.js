@@ -49,7 +49,7 @@ let game = {
     hungerPercent: 100,
     hungerVisible: 0,
     followerHungerDrain: 0.1,
-    foodHungerGain: 0.5,
+    foodHungerGain: 0.5
     // follower roles
     // (currently unused)
 };
@@ -416,5 +416,6 @@ function preach() {
 // Tick
 setInterval(gameTick, 1000);
 updateUI();
+
 
 
