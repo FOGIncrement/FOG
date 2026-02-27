@@ -29,7 +29,7 @@ export const gameState = {
         gatherWoodFaithCost: 20,
         gatherStoneFaithCost: 20,
         shelterWoodCost: 5,
-        shelterStoneCost: 5,
+        shelterStoneCost: 5
     },
     unlocks:{
 
@@ -416,4 +416,5 @@ function preach() {
 // Tick
 setInterval(gameTick, 1000);
 updateUI();
+
 
