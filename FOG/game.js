@@ -1,3 +1,11 @@
+/*
+    TODO:
+    - [] Take all your damn variables for the game out of one object
+    - [] Put those damn variables in their own objects grouped by function (followers, resources, buildings, etc)
+
+    Let the game object control the state of the game, and have functions that manipulate that state. This will make it easier to manage as the game grows in complexity, and will also make it easier to save/load the game state in the future if you want to add that feature.
+*/
+
 let game = {
     followers: 1,
     faith: 0.00,
