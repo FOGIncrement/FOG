@@ -59,6 +59,41 @@ const game = {
 
 let lastHungerWarning = null;
 
+// ===== PERSISTENCE/SAVE STATE =====
+function saveGame() {
+    const saveData = {
+        gameState,
+        game
+    };
+    localStorage.setItem('fogGameSave', JSON.stringify(saveData));
+    console.log('Game saved to localStorage');
+}
+
+function loadGame() {
+    const saved = localStorage.getItem('fogGameSave');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            // Restore gameState
+            Object.assign(gameState, data.gameState);
+            // Restore game
+            Object.assign(game, data.game);
+            console.log('Game loaded from localStorage');
+            return true;
+        } catch (e) {
+            console.error('Failed to load save:', e);
+            return false;
+        }
+    }
+    return false;
+}
+
+function clearSave() {
+    localStorage.removeItem('fogGameSave');
+    console.log('Save cleared. Reloading...');
+    location.reload();
+}
+
 // ===== LOGGING =====
 function addLog(msg) {
     const logEl = document.getElementById("log");
@@ -171,6 +206,7 @@ function gatherWood() {
         gameState.progression.faith -= gameState.costs.gatherWoodFaithCost;
         gameState.resources.wood += gameState.gathering.gatherWoodAmt;
         updateUI();
+        saveGame();
     }
 }
 
@@ -179,6 +215,7 @@ function gatherStone() {
         gameState.progression.faith -= gameState.costs.gatherStoneFaithCost;
         gameState.resources.stone += gameState.gathering.gatherStoneAmt;
         updateUI();
+        saveGame();
     }
 }
 
@@ -195,11 +232,13 @@ function gatherFood() {
         markNew('food');
     }
     updateUI();
+    saveGame();
 }
 
 function pray() {
     gameState.progression.faith += game.prayAmt;
     updateUI();
+    saveGame();
 }
 
 function buildShelter() {
@@ -217,6 +256,7 @@ function buildShelter() {
 
         game.shelterBtnUnlocked = true;
         updateUI();
+        saveGame();
     }
 }
 
@@ -226,6 +266,7 @@ function convertFollower() {
         gameState.progression.followers += 1;
         game.convertCost = Math.floor(game.convertCost * 1.15);
         updateUI();
+        saveGame();
     }
 }
 
@@ -250,6 +291,7 @@ function preach() {
     addLog(success ? "Your sermon converted a follower." : "The sermon failed to sway anyone.");
 
     updateUI();
+    saveGame();
 }
 
 function training() {
@@ -259,6 +301,7 @@ function training() {
     game.trainingUnlocked = true;
     addLog('Training program purchased.');
     updateUI();
+    saveGame();
 }
 
 function feedFollowers() {
@@ -267,6 +310,7 @@ function feedFollowers() {
     game.hungerPercent = Math.min(100, game.hungerPercent + game.feedAmount);
     addLog('You feed the followers. Hunger restored.');
     updateUI();
+    saveGame();
 }
 
 function getHunterTrainingCost() {
@@ -294,6 +338,7 @@ function trainHunters() {
 
     addLog(`Trained ${toTrain} follower${toTrain > 1 ? 's' : ''} as hunters.`);
     updateUI();
+    saveGame();
 }
 
 // ======= GAME TICK ======
@@ -332,6 +377,7 @@ function gameTick() {
     }
 
     updateUI();
+    saveGame();
 }
 
 // ===== UI UPDATE =====
@@ -509,7 +555,7 @@ function updateButtons() {
             const min = (gameState.progression.followers * gameState.gathering.gatherFoodMinMultiplier).toFixed(1);
             const max = (gameState.progression.followers * gameState.gathering.gatherFoodMaxMultiplier).toFixed(1);
             gF.title = `Cost ${gameState.costs.gatherFoodFaithCost} faith`;
-            gF.dataset.unlocked = "true";
+            gF.data.unlocked = "true";
         } else {
             setVisible(gF, false);
         }
@@ -590,7 +636,11 @@ function updateButtons() {
 
 // ===== DOM LOADED =====
 document.addEventListener("DOMContentLoaded", () => {
+    // Try to load saved game first
+    loadGame();
+    
     initTabs();
+
     const buttons = [
         ["prayBtn", pray],
         ["gatherWoodBtn", gatherWood],
@@ -607,6 +657,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 game.ritualCircleBuilt = 1;
                 gameState.progression.faithPerFollower += 0.005;
                 updateUI();
+                saveGame();
             }
         }]
     ];
@@ -624,6 +675,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setInterval(gameTick, 1000);
     updateUI();
+    saveGame();
 });
 
 // ===== TABS =====
