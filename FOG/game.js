@@ -31,7 +31,7 @@ const gameState = {
 };
 
 const game = {
-    prayAmt: 1000,
+    prayAmt: 1,
     convertCost: 10,
     ritualCircleBuilt: 0,
     shelter: 0,
