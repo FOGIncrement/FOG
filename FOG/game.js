@@ -301,19 +301,14 @@ function gameTick() {
 
     // ===== HUNGER =====
 if (game.hungerVisible) {
+    // hunters produce food resources
+    gameState.resources.food += gameState.progression.hunters * gameState.rates.hunterFoodPerSecond;
+
+    // hunger drains from followers only
     const drain = gameState.progression.followers * game.followerHungerDrain;
-    const hunterGain = gameState.progression.hunters * gameState.rates.hunterFoodPerSecond * game.feedAmount;
+    game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent - drain));
 
-    // Net change per tick
-    const netHungerChange = hunterGain - drain;
-
-    // Apply net change
-    game.hungerPercent += netHungerChange;
-
-    // Clamp
-    game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent));
-
-    // Warnings
+    // warnings
     if (game.hungerPercent < 5 && lastHungerWarning !== 'critical') {
         addLog('The faithful are starving.');
         lastHungerWarning = 'critical';
@@ -352,14 +347,12 @@ function updateUI() {
         value.innerText = gameState.resources[type].toFixed(2);
         if (type === "food") {
     const rateEl = document.getElementById("foodRate");
-    if (rateEl) {
-        const drain = gameState.progression.followers * game.followerHungerDrain;
-        const hunterRate = gameState.progression.hunters * gameState.rates.hunterFoodPerSecond * game.feedAmount;
-        const netRate = hunterRate - drain; // matches actual tick
-        rateEl.innerText = netRate >= 0
-            ? `(+${netRate.toFixed(3)}/s)`
-            : `(${netRate.toFixed(3)}/s)`;
-    }
+if (rateEl) {
+    const hunterRate = gameState.progression.hunters * gameState.rates.hunterFoodPerSecond;
+    rateEl.innerText = hunterRate >= 0
+        ? `(+${hunterRate.toFixed(3)}/s)`
+        : `(${hunterRate.toFixed(3)}/s)`;
+}
 }
         if (type === "wood" || type === "stone") {
             container.style.display = (game.ritualCircleBuilt >= 1 || gameState.resources[type] > 0) ? "block" : "none";
@@ -375,21 +368,31 @@ const hungerRate = document.getElementById("hungerRate");
 
 if (hungerContainer && hungerValue && hungerRate) {
     // Make sure the container is visible
-    hungerContainer.style.display = "block";
+    hungerContainer.style.display = game.hungerVisible ? "block" : "none";
 
     // Set the actual hunger percent
     hungerValue.innerText = game.hungerPercent.toFixed(2) + "%";
 
     // Calculate rate exactly as per gameTick
     const drain = gameState.progression.followers * game.followerHungerDrain;
-    const hunterGain = gameState.progression.hunters * gameState.rates.hunterFoodPerSecond * game.feedAmount;
-    const netRate = hunterGain - drain;
+    const netRate = -drain; // hunger only drains now; feeding is manual
     hungerRate.innerText = netRate >= 0 ? `(+${netRate.toFixed(2)}/s)` : `(${netRate.toFixed(2)}/s)`;
-}
+
+    
+    }
+
+    const trainedSummaryContainer = document.getElementById("trainedSummaryContainer");
+    const trainedSummaryValue = document.getElementById("trainedSummaryValue");
+
+    if (trainedSummaryContainer && trainedSummaryValue) {
+    trainedSummaryContainer.style.display = game.trainingUnlocked ? "block" : "none";
+    trainedSummaryValue.innerText = `${gameState.progression.hunters}/${gameState.progression.followers} trained`;
+    }
+
+
 
     updateButtons();
 }
-
 // ===== BUTTONS =====
 function updateButtons() {
     const bRit = document.getElementById("buildRitualCircleBtn");
