@@ -16,3 +16,100 @@ button {
 button:hover {
     background-color: #333;
 }
+
+/* Tabs */
+.tabs { margin-top: 12px; }
+.tab-headers { display: flex; gap: 8px; margin-bottom: 8px; }
+.tab-btn { background: #1a1a1a; border: 1px solid #444; padding: 6px 10px; }
+.tab-btn.active { background: #333; border-color: #666; }
+.tab-content { padding: 8px 0; }
+
+/* Log message fade */
+#log p {
+    margin: 0 0 6px;
+    opacity: 1;
+    transition: opacity 500ms ease;
+}
+
+/* Center tabs at top with padding from top */
+#appContainer { display: flex; gap: 24px; align-items: flex-start; }
+#leftColumn { width: 220px; min-width: 160px; }
+#mainContent { flex: 1; }
+#mainActions { text-align: center; margin-top: 18px; }
+.tabs {
+    width: 720px;
+    max-width: 95%;
+    margin: 40px auto 0; /* centered in mainContent, 40px from top to make room */
+}
+.tab-headers { display: flex; gap: 0; }
+.tab-btn {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    padding: 8px 14px;
+    margin-right: -1px; /* collapse borders so they look like tabs */
+    border-bottom: 1px solid transparent;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+.tab-btn.active {
+    background: #272727;
+    border-color: #666;
+    border-bottom-color: #272727; /* blend with content area */
+}
+.tab-contents {
+    border: 1px solid #444;
+    padding: 12px;
+    background: #161616;
+}
+/* purchased/disabled appearance */
+button:disabled {
+    background-color: #444;
+    color: #888;
+    border-color: #666;
+    cursor: default;
+}
+
+button:disabled:hover {
+    background-color: #444 !important;
+    color: #888;
+    border-color: #666;
+}
+
+button.purchased,
+button:disabled.purchased {
+    background-color: #444;
+    color: #888;
+    border-color: #666;
+    cursor: default;
+}
+
+/* badges */
+/* tab header badge: show count as red number with transparent background */
+.tab-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: transparent;
+    color: red;
+    font-size: 10px;
+    line-height: 10px;
+    padding: 0 2px;
+    font-weight: bold;
+}
+
+.tab-badge[data-count]:after {
+    content: attr(data-count);
+}
+
+/* button dot positioning - red dots on newly unlocked/affordable buttons */
+button { position: relative; }
+.btn-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: red;
+    display: inline-block;
+}

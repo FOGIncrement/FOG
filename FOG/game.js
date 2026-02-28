@@ -2,6 +2,7 @@
 const gameState = {
     progression: {
         followers: 1,
+        hunters: 0,
         faith: 0,
         faithPerFollower: 0.01,
         prophet: 0
@@ -22,21 +23,33 @@ const gameState = {
         gatherWoodFaithCost: 20,
         gatherStoneFaithCost: 20,
         shelterWoodCost: 5,
-        shelterStoneCost: 5
+        shelterStoneCost: 5,
+        trainingTechCost: 80,
+        hunterBaseCost: 5
     },
     unlocks: {}
 };
 
 const game = {
-    prayAmt: 100,
+    prayAmt: 1000,
     convertCost: 10,
     ritualCircleBuilt: 0,
     shelter: 0,
     shelterBtnUnlocked: false,
     hungerPercent: 100,
     hungerVisible: false,
-    followerHungerDrain: 0.1,
-    foodHungerGain: 0.5
+    followerHungerDrain: 0.25,
+    foodHungerGain: 1,
+    // manual feed amount per click
+    feedAmount: 10,
+    // log message lifetime in seconds; messages fade after this
+    logMessageLifetime: 3,
+    // fade duration in milliseconds
+    logFadeDuration: 500,
+    trainingUnlocked: false,
+    unlocksTabUnlocked: false,
+    hasGatheredFood: false,
+    newItems: {actions:0,build:0,food:0,unlocks:0,followerManager:0}
 };
 
 let lastHungerWarning = null;
@@ -47,13 +60,104 @@ function addLog(msg) {
     if (!logEl) return;
     const p = document.createElement("p");
     p.innerText = "• " + msg;
+    p.style.opacity = '1';
+    p.style.transition = `opacity ${game.logFadeDuration}ms ease`;
     logEl.appendChild(p);
     logEl.scrollTop = logEl.scrollHeight;
+
+    // schedule fade and removal
+    const lifetimeMs = (game.logMessageLifetime || 3) * 1000;
+    setTimeout(() => {
+        p.style.opacity = '0';
+        setTimeout(() => { if (p.parentElement) p.remove(); }, game.logFadeDuration || 500);
+    }, lifetimeMs);
 }
 
 // ===== HELPERS =====
 function getMaxFollowers() {
     return 1 + game.shelter * 3;
+}
+
+// badge helpers
+function markNew(el) {
+    if (!el) return;
+    if (el.dataset.seen === "true") return;
+    el.dataset.new = "true";
+    // if button and no badge span, create one
+    if (el.tagName === 'BUTTON') {
+        let badge = el.querySelector('.btn-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'btn-badge';
+            badge.style.display = 'inline-block';
+            el.appendChild(badge);
+        }
+        badge.style.display = 'inline-block';
+    }
+    updateTabBadges();
+}
+
+function clearNew(el) {
+    if (!el) return;
+    el.dataset.seen = "true";
+    el.dataset.new = "false";
+    const badge = el.querySelector('.btn-badge');
+    if (badge) badge.style.display = 'none';
+    updateTabBadges();
+}
+
+function updateTabBadges() {
+    document.querySelectorAll('.tab-btn').forEach(tab => {
+        const name = tab.dataset.tab;
+        const content = document.getElementById('tab-' + name);
+        if (!content) return;
+        // count new items (buttons or other elements flagged)
+        const items = content.querySelectorAll('[data-new="true"]');
+        const count = items.length;
+        const tbadge = tab.querySelector('.tab-badge');
+        if (tbadge) {
+            if (count > 0) {
+                tbadge.dataset.count = count;
+                tbadge.style.display = 'inline-block';
+            } else {
+                delete tbadge.dataset.count;
+                tbadge.style.display = 'none';
+            }
+        }
+    });
+}
+
+// show/hide element and mark new when becoming visible
+function setVisible(el, visible) {
+    if (!el) return;
+    if (visible) {
+        if (el.style.display === 'none' || el.style.display === '') {
+            // newly shown
+            markNew(el);
+        }
+        el.style.display = 'inline-block';
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+// when a button (or element) is affordable/or usable, mark a new dot
+// when it transitions from unaffordable->affordable. Also disables the
+// element when not affordable.
+function setAffordability(el, canAfford) {
+    if (!el) return;
+    // Initialize affordable state if not set
+    if (el.dataset.affordable === undefined) {
+        el.dataset.affordable = "false";
+    }
+    const prev = el.dataset.affordable === "true";
+    // disabled state is inverse of affordability
+    el.disabled = !canAfford;
+    // if we're newly affordable, highlight it
+    if (canAfford && !prev) {
+        markNew(el);
+    }
+    el.dataset.affordable = canAfford ? "true" : "false";
 }
 
 // ===== CORE FUNCTIONS =====
@@ -81,6 +185,10 @@ function gatherFood() {
     const gained = Math.max(1, Math.floor(Math.random() * (max - min) + min));
     gameState.resources.food += gained;
     addLog(`A hunt yielded ${gained} food.`);
+    if (!game.hasGatheredFood && gameState.resources.food > 0) {
+        game.hasGatheredFood = true;
+        markNew('food');
+    }
     updateUI();
 }
 
@@ -126,9 +234,60 @@ function preach() {
     gameState.resources.food -= 10;
 
     const success = Math.random() < 0.25;
-    if (success) gameState.progression.followers += 1;
+    if (success) {
+        gameState.progression.followers += 1;
+        // unlock the unlocks tab when the first preach conversion succeeds
+        if (!game.unlocksTabUnlocked) {
+            game.unlocksTabUnlocked = true;
+            addLog('Unlocks tab is now available.');
+        }
+    }
     addLog(success ? "Your sermon converted a follower." : "The sermon failed to sway anyone.");
 
+    updateUI();
+}
+
+function training() {
+    if (game.trainingUnlocked) return; // already bought
+    if (gameState.progression.faith < gameState.costs.trainingTechCost) return;
+    gameState.progression.faith -= gameState.costs.trainingTechCost;
+    game.trainingUnlocked = true;
+    addLog('Training program purchased.');
+    updateUI();
+}
+
+function feedFollowers() {
+    if (gameState.resources.food <= 0 || game.hungerPercent >= 100) return;
+    gameState.resources.food -= 1;
+    game.hungerPercent = Math.min(100, game.hungerPercent + game.feedAmount);
+    addLog('You feed the followers. Hunger restored.');
+    updateUI();
+}
+
+function getHunterTrainingCost() {
+    const untrained = gameState.progression.followers - gameState.progression.hunters;
+    return untrained * gameState.costs.hunterBaseCost;
+}
+
+function trainHunters() {
+    if (!game.trainingUnlocked) return;
+
+    const untrained = gameState.progression.followers - gameState.progression.hunters;
+    if (untrained <= 0) return;
+
+    // get input from player
+    const inputEl = document.getElementById("trainCountInput");
+    let toTrain = inputEl ? parseInt(inputEl.value) : untrained;
+    if (isNaN(toTrain) || toTrain <= 0) toTrain = untrained; // fallback
+    toTrain = Math.min(toTrain, untrained); // can't train more than available
+
+    const cost = toTrain * gameState.costs.hunterBaseCost;
+    if (gameState.progression.faith < cost) return;
+
+    gameState.progression.faith -= cost;
+    gameState.progression.hunters += toTrain;
+
+    addLog(`Trained ${toTrain} follower${toTrain > 1 ? 's' : ''} as hunters.`);
     updateUI();
 }
 
@@ -164,12 +323,19 @@ function gameTick() {
 function updateUI() {
     const followersEl = document.getElementById("followers");
     const faithEl = document.getElementById("faith");
+    const hunterContainer = document.getElementById("hunterContainer");
+    const hunterValue = document.getElementById("hunterValue");
 
     if (followersEl) followersEl.innerText = `${gameState.progression.followers}/${getMaxFollowers()}`;
     if (faithEl) faithEl.innerText =
         `${gameState.progression.faith.toFixed(2)} (+${(gameState.progression.followers * gameState.progression.faithPerFollower).toFixed(3)}/s)`;
 
-    ["wood", "stone", "food"].forEach(type => {
+    if (hunterContainer && hunterValue) {
+        hunterValue.innerText = gameState.progression.hunters;
+        hunterContainer.style.display = gameState.progression.hunters > 0 ? "block" : "none";
+    }
+
+    ["wood", "stone", "food",].forEach(type => {
         const container = document.getElementById(type + "Container");
         const value = document.getElementById(type + "Value");
         if (!container || !value) return;
@@ -207,33 +373,103 @@ function updateButtons() {
     const gF = document.getElementById("gatherFoodBtn");
     const bS = document.getElementById("buildShelterBtn");
     const pBtn = document.getElementById("preachBtn");
+    const tBtn = document.getElementById("trainingTechBtn");
+    const feedBtn = document.getElementById("feedFollowersBtn");
+    const prayBtn = document.getElementById("prayBtn");
+    const convBtn = document.getElementById("convertBtn");
+    const expBtn = document.getElementById("exploreBtn");
+    const trainHuntersBtn = document.getElementById("trainHuntersBtn");
 
+    // cost tooltips
+    if (prayBtn) prayBtn.title = `Gain ${game.prayAmt} faith`;
+    if (convBtn) convBtn.title = `Cost ${game.convertCost} faith`;
+    if (expBtn) expBtn.title = `No cost`;
     // Ritual Circle
     if (bRit) {
-        bRit.style.display = "inline-block";
-        bRit.disabled = game.ritualCircleBuilt >= 1;
+        // Permanently unlock the button once the player has reached 50 faith
+        if (gameState.progression.faith >= 50 && bRit.dataset.unlocked !== "true") {
+            bRit.dataset.unlocked = "true";
+        }
+
+        const unlocked = game.ritualCircleBuilt >= 1 || bRit.dataset.unlocked === "true";
+        setVisible(bRit, unlocked);
+
+        // affordability depends solely on faith; built state keeps it disabled
+        const canAffordRit = gameState.progression.faith >= 50;
+        setAffordability(bRit, canAffordRit);
+        if (game.ritualCircleBuilt >= 1) bRit.disabled = true;
+
         bRit.innerText = `Ritual Circle ${game.ritualCircleBuilt}/1`;
+        bRit.title = `Cost 50 faith`;
+    }
+
+    // Tabs visibility: show tabs once player has reached 50 faith (ritual unlocked)
+    const tabsShouldBeVisible = bRit && (bRit.dataset.unlocked === "true" || game.ritualCircleBuilt >= 1);
+    if (tabsShouldBeVisible) showTabs(); else hideTabs();
+
+    // unlocks tab header only after first preach conversion
+    const unlocksHeader = document.querySelector('.tab-btn[data-tab="unlocks"]');
+    if (unlocksHeader) {
+        unlocksHeader.style.display = game.unlocksTabUnlocked ? 'inline-block' : 'none';
+    }
+
+    // food tab header only after first food gathered
+    const foodHeader = document.querySelector('.tab-btn[data-tab="food"]');
+    if (foodHeader) {
+        const shouldShow = (gameState.resources.food > 0);
+        foodHeader.style.display = shouldShow ? 'inline-block' : 'none';
+    }
+
+    const followerManagerHeader = document.querySelector('.tab-btn[data-tab="followerManager"]');
+    if (followerManagerHeader) {
+        const shouldShow = game.trainingUnlocked;
+        followerManagerHeader.style.display = shouldShow ? 'inline-block' : 'none';
+    }
+
+    // training button state
+    if (tBtn) {
+        if (game.unlocksTabUnlocked) {
+            setVisible(tBtn, true);
+            if (game.trainingUnlocked) {
+                tBtn.disabled = true;
+                tBtn.title = 'Already purchased';
+                tBtn.classList.add('purchased');
+            } else {
+                const canAffordTrain = gameState.progression.faith >= gameState.costs.trainingTechCost;
+                setAffordability(tBtn, canAffordTrain);
+                tBtn.title = `Cost ${gameState.costs.trainingTechCost} faith`;
+                tBtn.classList.remove('purchased');
+            }
+        } else {
+            setVisible(tBtn, false);
+        }
     }
 
     // Gather buttons unlock permanently after circle
     if (gW && gS) {
-        gW.style.display = gS.style.display = (game.ritualCircleBuilt >= 1) ? "inline-block" : "none";
-        gW.disabled = gS.disabled = false;
+        const unlocked = (game.ritualCircleBuilt >= 1);
+        setVisible(gW, unlocked);
+        setVisible(gS, unlocked);
+        const canAffordWood = gameState.progression.faith >= gameState.costs.gatherWoodFaithCost;
+        const canAffordStone = gameState.progression.faith >= gameState.costs.gatherStoneFaithCost;
+        setAffordability(gW, canAffordWood);
+        setAffordability(gS, canAffordStone);
         gW.title = `Cost ${gameState.costs.gatherWoodFaithCost} faith`;
         gS.title = `Cost ${gameState.costs.gatherStoneFaithCost} faith`;
     }
 
     // Gather Food unlocks permanently after first shelter
     if (gF) {
-        if (game.shelter >= 1 || gF.dataset.unlocked === "true") {
-            gF.style.display = "inline-block";
-            gF.disabled = gameState.progression.faith < gameState.costs.gatherFoodFaithCost;
+        if (game.ritualCircleBuilt >= 1 && (game.shelter >= 1 || gF.dataset.unlocked === "true")) {
+            setVisible(gF, true);
+            const canAffordFood = gameState.progression.faith >= gameState.costs.gatherFoodFaithCost;
+            setAffordability(gF, canAffordFood);
             const min = (gameState.progression.followers * gameState.gathering.gatherFoodMinMultiplier).toFixed(1);
             const max = (gameState.progression.followers * gameState.gathering.gatherFoodMaxMultiplier).toFixed(1);
-            gF.title = `Gather Food (${min}-${max})`;
+            gF.title = `Cost ${gameState.costs.gatherFoodFaithCost} faith`;
             gF.dataset.unlocked = "true";
         } else {
-            gF.style.display = "none";
+            setVisible(gF, false);
         }
     }
 
@@ -246,13 +482,14 @@ function updateButtons() {
         }
 
         if (game.shelterBtnUnlocked) {
-            bS.style.display = "inline-block";
-            bS.disabled = !(gameState.resources.wood >= gameState.costs.shelterWoodCost &&
-                            gameState.resources.stone >= gameState.costs.shelterStoneCost);
+            setVisible(bS, true);
+            const canAffordShelter = gameState.resources.wood >= gameState.costs.shelterWoodCost &&
+                                     gameState.resources.stone >= gameState.costs.shelterStoneCost;
+            setAffordability(bS, canAffordShelter);
             bS.innerText = `Build shelter (${gameState.costs.shelterWoodCost}/${gameState.costs.shelterStoneCost})`;
             bS.title = `Cost ${gameState.costs.shelterWoodCost} wood and ${gameState.costs.shelterStoneCost} stone`;
         } else {
-            bS.style.display = "none";
+            setVisible(bS, false);
         }
     }
 
@@ -260,15 +497,58 @@ function updateButtons() {
     if (pBtn) {
         const max = getMaxFollowers();
         if (max >= 3 && gameState.progression.followers < max) {
-            pBtn.style.display = "inline-block";
-            pBtn.disabled = gameState.progression.faith < 100 || game.hungerPercent < 10 || gameState.resources.food < 10;
-            pBtn.title = `Preach (100 faith, 10% hunger, 10 food) - 25% success`;
-        } else pBtn.style.display = "none";
+            setVisible(pBtn, true);
+            const canAffordPreach = gameState.progression.faith >= 100 && game.hungerPercent >= 10 && gameState.resources.food >= 10;
+            setAffordability(pBtn, canAffordPreach);
+            pBtn.title = `Cost 100 faith, 10% hunger, 10 food`;
+        } else setVisible(pBtn, false);
     }
+
+    // feed followers button state
+    if (feedBtn) {
+        if (game.ritualCircleBuilt >= 1) {
+            setVisible(feedBtn, true);
+            const canAffordFeed = gameState.resources.food > 0 && game.hungerPercent < 100;
+            setAffordability(feedBtn, canAffordFeed);
+            feedBtn.title = `Consume 1 food to gain ${game.feedAmount} hunger`;
+        } else {
+            setVisible(feedBtn, false);
+        }
+    }
+
+    if (trainHuntersBtn) {
+    if (game.trainingUnlocked) {
+
+        const untrained = gameState.progression.followers - gameState.progression.hunters;
+
+        // permanently visible once training is unlocked
+        setVisible(trainHuntersBtn, true);
+
+        if (untrained > 0) {
+            const cost = getHunterTrainingCost();
+            const canAfford = gameState.progression.faith >= cost;
+
+            setAffordability(trainHuntersBtn, canAfford);
+            trainHuntersBtn.innerText = `Train Hunters (${untrained})`;
+            trainHuntersBtn.title = `Cost ${cost} faith`;
+            trainHuntersBtn.classList.remove('purchased');
+        } else {
+            // all trained -> permanently greyed out
+            trainHuntersBtn.disabled = true;
+            trainHuntersBtn.innerText = `All Followers Trained`;
+            trainHuntersBtn.title = `All followers are hunters`;
+            trainHuntersBtn.classList.add('purchased');
+        }
+
+    } else {
+        setVisible(trainHuntersBtn, false);
+    }
+}
 }
 
 // ===== DOM LOADED =====
 document.addEventListener("DOMContentLoaded", () => {
+    initTabs();
     const buttons = [
         ["prayBtn", pray],
         ["gatherWoodBtn", gatherWood],
@@ -276,6 +556,9 @@ document.addEventListener("DOMContentLoaded", () => {
         ["gatherFoodBtn", gatherFood],
         ["buildShelterBtn", buildShelter],
         ["preachBtn", preach],
+        ["trainingTechBtn", training],
+        ["feedFollowersBtn", feedFollowers],
+        ["trainHuntersBtn", trainHunters],
         ["buildRitualCircleBtn", () => {
             if (gameState.progression.faith >= 50 && game.ritualCircleBuilt < 1) {
                 gameState.progression.faith -= 50;
@@ -288,9 +571,67 @@ document.addEventListener("DOMContentLoaded", () => {
 
     buttons.forEach(([id, fn]) => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener("click", fn);
+        if (el) {
+            el.addEventListener("click", fn);
+            // hover listener to clear new indicator
+            el.addEventListener('mouseenter', () => {
+                if (el.dataset.new === 'true') clearNew(el);
+            });
+        }
     });
 
     setInterval(gameTick, 1000);
     updateUI();
 });
+
+// ===== TABS =====
+function initTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    function activate(tabName) {
+        tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+        tabContents.forEach(c => c.style.display = (c.id === `tab-${tabName}`) ? 'block' : 'none');
+    }
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => activate(btn.dataset.tab));
+    });
+
+    // default active tab: actions
+    activate('actions');
+}
+
+function showTabs() {
+    const tabs = document.querySelector('.tabs');
+    if (!tabs) return;
+    if (tabs.style.display === 'block') return;
+    tabs.style.display = 'block';
+
+    // move pray button into actions tab if present
+    const pray = document.getElementById('prayBtn');
+    const actions = document.getElementById('tab-actions');
+    if (pray && actions && pray.parentElement !== actions) {
+        actions.insertBefore(pray, actions.firstChild);
+    }
+
+    // ensure Actions tab selected
+    const actionsBtn = document.querySelector('.tab-btn[data-tab="actions"]');
+    if (actionsBtn) actionsBtn.classList.add('active');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(c => c.style.display = (c.id === 'tab-actions') ? 'block' : 'none');
+}
+
+function hideTabs() {
+    const tabs = document.querySelector('.tabs');
+    if (!tabs) return;
+    if (tabs.style.display === 'none') return;
+    tabs.style.display = 'none';
+
+    // move pray button back to main actions container
+    const pray = document.getElementById('prayBtn');
+    const main = document.getElementById('mainActions');
+    if (pray && main && pray.parentElement !== main) {
+        main.appendChild(pray);
+    }
+}

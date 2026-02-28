@@ -9,25 +9,62 @@
 
     <h1>F.O.G Prototype</h1>
 
-    <div id="stats">
-        <p>Followers: <span id="followers">0</span></p>
-        <p>Faith: <span id="faith">0</span></p>
-        <p style="display: none">Prophet: <span id="prophet">0</span></p>
-        <p id="woodContainer" style="display: none;">Wood: <span id="woodValue">0</span></p>
-        <p id="stoneContainer" style="display: none;">Stone: <span id="stoneValue">0</span></p>
-        <p id="foodContainer" style="display: none;">Food: <span id="foodValue">0</span><span id="foodRate" style="color: #888; margin-left: 1em;"></span></p>
-        <p id="hungerContainer" style="display: none;">Hunger: <span id="hungerValue">100.00%</span><span id="hungerRate" style="color: #888; margin-left: 1em;"></span></p>
-    </div>
+    <div id="appContainer">
+        <div id="leftColumn">
+            <div id="stats">
+            <p>Followers: <span id="followers">0</span></p> <p id="hunterContainer" style="display: none;">Hunters: <span id="hunterValue">0</span></p>
+            <p>Faith: <span id="faith">0</span></p>
+            <p style="display: none">Prophet: <span id="prophet">0</span></p>
+            <p id="woodContainer" style="display: none;">Wood: <span id="woodValue">0</span></p>
+            <p id="stoneContainer" style="display: none;">Stone: <span id="stoneValue">0</span></p>
+            <p id="foodContainer" style="display: none;">Food: <span id="foodValue">0</span><span id="foodRate" style="color: #888; margin-left: 1em;"></span></p>
+            <p id="hungerContainer" style="display: none;">Hunger: <span id="hungerValue">100.00%</span><span id="hungerRate" style="color: #888; margin-left: 1em;"></span></p>
+        </div>
+        </div>
 
-    <button id="prayBtn">Pray</button>
-    <button id="convertBtn" style="display: none;">Convert Follower</button>
-    <button id="exploreBtn" style="display: none;">Explore</button>
-    <button id="buildRitualCircleBtn" style="display: none;">Ritual Circle</button>
-    <button id="gatherWoodBtn" style="display: none;">Gather Wood</button>
-    <button id="gatherStoneBtn" style="display: none;">Gather Stone</button>
-    <button id="gatherFoodBtn" style="display: none;">Gather Food</button>
-    <button id="preachBtn" style="display: none;">Preach</button>
-    <button id="buildShelterBtn" style="display: none;">Build Shelter</button>
+        <div id="mainContent">
+            <div id="mainActions">
+                <button id="prayBtn">Pray</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs" style="display: none;">
+        <div class="tab-headers">
+            <button class="tab-btn active" data-tab="actions">Actions<span class="tab-badge" style="display:none;"></span></button>
+            <button class="tab-btn" data-tab="build">Build<span class="tab-badge" style="display:none;"></span></button>
+            <button class="tab-btn" data-tab="food" style="display:none;">Food<span class="tab-badge" style="display:none;"></span></button>
+            <button class="tab-btn" data-tab="unlocks" style="display:none;">Unlocks<span class="tab-badge" style="display:none;"></span></button>
+            <button class="tab-btn" data-tab="followerManager" style="display:none;">Followers<span class="tab-badge" style="display:none;"></span></button>
+        </div>
+
+        <div class="tab-contents">
+            <div id="tab-actions" class="tab-content" style="display: block;">
+                <button id="convertBtn" style="display: none;">Convert Follower</button>
+                <button id="exploreBtn" style="display: none;">Explore</button>
+                <button id="gatherWoodBtn" style="display: none;">Gather Wood</button>
+                <button id="gatherStoneBtn" style="display: none;">Gather Stone</button>
+                <button id="gatherFoodBtn" style="display: none;">Gather Food</button>
+                <button id="preachBtn" style="display: none;">Preach</button>
+            </div>
+
+            <div id="tab-build" class="tab-content" style="display: none;">
+                <button id="buildRitualCircleBtn" style="display: none;">Ritual Circle</button>
+                <button id="buildShelterBtn" style="display: none;">Build Shelter</button>
+            </div>
+            <div id="tab-unlocks" class="tab-content" style="display: none;">
+                <button id="trainingTechBtn" data-tab="unlocks" style="display: none;">Training<span class="btn-badge" style="display:none;"></span></button>
+            </div>
+            <div id="tab-food" class="tab-content" style="display: none;">
+                <button id="feedFollowersBtn" data-tab="food" style="display: none;">Feed Followers<span class="btn-badge" style="display:none;"></span></button>
+            </div>
+            <div id="tab-followerManager" class="tab-content" style="display: none;">
+                <button id="trainHuntersBtn" data-tab="trainHunters" style="display: none;">Train Hunters<span class="btn-badge" style="display:none;"></span></button>
+                <input type="number" id="trainCountInput" min="1" placeholder="Number to train" style="width: 80px; margin-left: 8px;">
+            </div>
+        </div>
+            </div>
+        </div>
+    </div>
 
     <div id="bottomLog"><div id="log"></div></div>
     <script src="game.js"></script>
