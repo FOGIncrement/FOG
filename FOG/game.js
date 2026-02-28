@@ -4,7 +4,7 @@ const gameState = {
         followers: 1,
         hunters: 0,
         faith: 0,
-        faithPerFollower: 0.01,
+        faithPerFollower: 0.02,
         prophet: 0
     },
     resources: {
@@ -13,36 +13,38 @@ const gameState = {
         food: 0
     },
     gathering: {
-        gatherWoodAmt: 10,
-        gatherStoneAmt: 10,
-        gatherFoodMinMultiplier: 25,
-        gatherFoodMaxMultiplier: 55
+        gatherWoodAmt: 5,
+        gatherStoneAmt: 5,
+        gatherFoodMinMultiplier: 10,
+        gatherFoodMaxMultiplier: 25
     },
     costs: {
-        gatherFoodFaithCost: 10,
-        gatherWoodFaithCost: 20,
-        gatherStoneFaithCost: 20,
-        shelterWoodCost: 5,
-        shelterStoneCost: 5,
-        trainingTechCost: 80,
-        hunterBaseCost: 5
+        gatherFoodFaithCost: 5,
+        gatherWoodFaithCost: 8,
+        gatherStoneFaithCost: 8,
+        shelterWoodCost: 15,
+        shelterStoneCost: 15,
+        trainingTechCost: 50,
+        hunterBaseCost: 20,
+        ritualBtnCost: 50,
+        preachFaithCost: 60
     },
     rates: {
-        hunterFoodPerSecond: 0.5
+        hunterFoodPerSecond: 2
     },
     unlocks: {}
 };
 
 const game = {
-    prayAmt: 10000,
+    prayAmt: 1,
     convertCost: 10,
     ritualCircleBuilt: 0,
     shelter: 0,
     shelterBtnUnlocked: false,
     hungerPercent: 100,
     hungerVisible: false,
-    followerHungerDrain: 1,
-    foodHungerGain: 1.8,
+    followerHungerDrain: 0.06,
+    foodHungerGain: 0.15,
     // manual feed amount per click
     feedAmount: 10,
     // log message lifetime in seconds; messages fade after this
@@ -270,10 +272,10 @@ function convertFollower() {
 
 function preach() {
     const max = getMaxFollowers();
-    if (gameState.progression.faith < 100 || game.hungerPercent < 10 ||
+    if (gameState.progression.faith < gameState.costs.preachFaithCost || game.hungerPercent < 10 ||
         gameState.resources.food < 10 || gameState.progression.followers >= max) return;
 
-    gameState.progression.faith -= 100;
+    gameState.progression.faith -= gameState.costs.preachFaithCost;
     game.hungerPercent = Math.max(0, game.hungerPercent - 10);
     gameState.resources.food -= 10;
 
@@ -346,19 +348,23 @@ function gameTick() {
 
     // ===== HUNGER =====
     if (game.hungerVisible) {
+        // hunters produce food
+        gameState.resources.food += gameState.progression.hunters * gameState.rates.hunterFoodPerSecond;
+
         const drain = gameState.progression.followers * game.followerHungerDrain;
-        const hunterGain = gameState.progression.hunters * gameState.rates.hunterFoodPerSecond * game.feedAmount;
 
-        // Net change per tick
-        const netHungerChange = hunterGain - drain;
+        // auto-feed: always consume 1 food if available, and credit its gain against the drain
+        let netDrain = drain;
+            if (gameState.resources.food > 0 && game.hungerPercent < 100) {
+                gameState.resources.food -= 1;
+                const netEffect = game.foodHungerGain - drain; // can be positive or negative
+                game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent + netEffect));
+            } else {
+            // no food, just drain
+            game.hungerPercent = Math.max(0, game.hungerPercent - drain);
+            }
 
-        // Apply net change
-        game.hungerPercent += netHungerChange;
-
-        // Clamp
-        game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent));
-
-        // Warnings
+        // warnings
         if (game.hungerPercent < 5 && lastHungerWarning !== 'critical') {
             addLog('The faithful are starving.');
             lastHungerWarning = 'critical';
@@ -397,16 +403,16 @@ function updateUI() {
 
         value.innerText = gameState.resources[type].toFixed(2);
         if (type === "food") {
-    const rateEl = document.getElementById("foodRate");
-    if (rateEl) {
-        const drain = gameState.progression.followers * game.followerHungerDrain;
-        const hunterRate = gameState.progression.hunters * gameState.rates.hunterFoodPerSecond * game.feedAmount;
-        const netRate = hunterRate - drain; // matches actual tick
-        rateEl.innerText = netRate >= 0
-            ? `(+${netRate.toFixed(3)}/s)`
-            : `(${netRate.toFixed(3)}/s)`;
+            const rateEl = document.getElementById("foodRate");
+            if (rateEl) {
+                const hunterRate = gameState.progression.hunters * gameState.rates.hunterFoodPerSecond;
+                const autoFeedCost = (game.hungerVisible && game.hungerPercent < 100) ? 1 : 0;
+                const netFoodRate = hunterRate - autoFeedCost;
+                rateEl.innerText = netFoodRate >= 0
+                    ? `(+${netFoodRate.toFixed(3)}/s)`
+                    : `(${netFoodRate.toFixed(3)}/s)`;
+            }
     }
-}
         if (type === "wood" || type === "stone") {
             container.style.display = (game.ritualCircleBuilt >= 1 || gameState.resources[type] > 0) ? "block" : "none";
         } else if (type === "food") {
@@ -421,21 +427,32 @@ const hungerRate = document.getElementById("hungerRate");
 
 if (hungerContainer && hungerValue && hungerRate) {
     // Make sure the container is visible
-    hungerContainer.style.display = "block";
+    hungerContainer.style.display = game.hungerVisible ? "block" : "none";
 
     // Set the actual hunger percent
     hungerValue.innerText = game.hungerPercent.toFixed(2) + "%";
 
     // Calculate rate exactly as per gameTick
     const drain = gameState.progression.followers * game.followerHungerDrain;
-    const hunterGain = gameState.progression.hunters * gameState.rates.hunterFoodPerSecond * game.feedAmount;
-    const netRate = hunterGain - drain;
+    const autoFeeding = game.hungerVisible && gameState.resources.food > 0 && game.hungerPercent < 100;
+    const netRate = autoFeeding ? (game.foodHungerGain - drain) : -drain;
     hungerRate.innerText = netRate >= 0 ? `(+${netRate.toFixed(2)}/s)` : `(${netRate.toFixed(2)}/s)`;
-}
+
+    
+    }
+
+    const trainedSummaryContainer = document.getElementById("trainedSummaryContainer");
+    const trainedSummaryValue = document.getElementById("trainedSummaryValue");
+
+    if (trainedSummaryContainer && trainedSummaryValue) {
+    trainedSummaryContainer.style.display = game.trainingUnlocked ? "block" : "none";
+    trainedSummaryValue.innerText = `${gameState.progression.hunters}/${gameState.progression.followers} trained`;
+    }
+
+
 
     updateButtons();
 }
-
 // ===== BUTTONS =====
 function updateButtons() {
     const bRit = document.getElementById("buildRitualCircleBtn");
@@ -458,7 +475,7 @@ function updateButtons() {
     // Ritual Circle
     if (bRit) {
         // Permanently unlock the button once the player has reached 50 faith
-        if (gameState.progression.faith >= 50 && bRit.dataset.unlocked !== "true") {
+        if (gameState.progression.faith >= gameState.costs.ritualBtnCost && bRit.dataset.unlocked !== "true") {
             bRit.dataset.unlocked = "true";
         }
 
@@ -569,9 +586,9 @@ function updateButtons() {
         const max = getMaxFollowers();
         if (max >= 3 && gameState.progression.followers < max) {
             setVisible(pBtn, true);
-            const canAffordPreach = gameState.progression.faith >= 100 && game.hungerPercent >= 10 && gameState.resources.food >= 10;
+            const canAffordPreach = gameState.progression.faith >= gameState.costs.preachFaithCost && game.hungerPercent >= 10 && gameState.resources.food >= 10;
             setAffordability(pBtn, canAffordPreach);
-            pBtn.title = `Cost 100 faith, 10% hunger, 10 food`;
+            pBtn.title = `Cost ${gameState.costs.preachFaithCost} faith, 10% hunger, 10 food`;
         } else setVisible(pBtn, false);
     }
 
