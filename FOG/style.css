@@ -32,8 +32,7 @@ button:hover {
 }
 
 /* Center tabs at top with padding from top */
-#appContainer { display: flex; gap: 24px; align-items: flex-start; }
-#leftColumn { width: 220px; min-width: 160px; }
+
 #mainContent { flex: 1; }
 #mainActions { text-align: center; margin-top: 18px; }
 .tabs {
@@ -112,4 +111,61 @@ button { position: relative; }
     border-radius: 3px;
     background: red;
     display: inline-block;
+}
+
+/* Push stats to align with center system */
+#leftColumn {
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+/* Center stats block so it lines up with your tab system */
+#stats {
+    width: 400px; /* match your tab system width */
+    text-align: left;
+}
+
+/* ======== Layout Structure ======== */
+
+#appContainer {
+    display: grid;
+    grid-template-columns: 220px 260px 1fr;
+    gap: 40px;
+    align-items: start;
+}
+
+/* ===== LEFT SIDE PANELS ===== */
+
+#appContainer {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+}
+
+/* Hunters column */
+#trainedContainer {
+    width: 200px;
+}
+
+/* Resources column */
+#stats {
+    width: 260px;
+}
+
+/* ===== CENTER MAIN CONTENT ===== */
+
+#mainContent {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 140px; /* adjust if needed */
+    width: 720px;
+    max-width: 90%;
+}
+
+/* Tabs stay centered inside mainContent */
+.tabs {
+    width: 100%;
+    margin-top: 40px;
 }
