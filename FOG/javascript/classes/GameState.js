@@ -8,6 +8,8 @@ const gameState = {
         prophet: 0
     },
     resources: {
+        // Resource('Name', amount you have, cost to gather, amount gained per gather)
+        // wood: new Resource('wood', 0, 8, 5)  // example of how to use the Resource class for wood
         wood: 0,
         stone: 0,
         food: 0
