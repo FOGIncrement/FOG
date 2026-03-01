@@ -1,4 +1,3 @@
-// ===== PERSISTENCE/SAVE STATE =====
 function saveGame() {
     const saveData = {
         gameState,

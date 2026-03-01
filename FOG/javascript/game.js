@@ -1,88 +1,3 @@
-// ===== GAME STATE =====
-const gameState = {
-    progression: {
-        followers: 1,
-        hunters: 0,
-        faith: 0,
-        faithPerFollower: 0.02,
-        prophet: 0
-    },
-    resources: {
-        wood: 0,
-        stone: 0,
-        food: 0
-    },
-    gathering: {
-        gatherWoodAmt: 5,
-        gatherStoneAmt: 5,
-        gatherFoodMinMultiplier: 10,
-        gatherFoodMaxMultiplier: 25
-    },
-    costs: {
-        gatherFoodFaithCost: 5,
-        gatherWoodFaithCost: 8,
-        gatherStoneFaithCost: 8,
-        shelterWoodCost: 15,
-        shelterStoneCost: 15,
-        trainingTechCost: 50,
-        hunterBaseCost: 20,
-        ritualBtnCost: 50,
-        preachFaithCost: 60
-    },
-    rates: {
-        hunterFoodPerSecond: 2
-    },
-    unlocks: {}
-};
-
-const game = {
-    prayAmt: 1,
-    convertCost: 10,
-    ritualCircleBuilt: 0,
-    shelter: 0,
-    shelterBtnUnlocked: false,
-    hungerPercent: 100,
-    hungerVisible: false,
-    followerHungerDrain: 0.06,
-    foodHungerGain: 0.15,
-    // manual feed amount per click
-    feedAmount: 10,
-    // log message lifetime in seconds; messages fade after this
-    logMessageLifetime: 3,
-    // fade duration in milliseconds
-    logFadeDuration: 500,
-    trainingUnlocked: false,
-    unlocksTabUnlocked: false,
-    hasGatheredFood: false,
-    newItems: {actions:0,build:0,food:0,unlocks:0,followerManager:0}
-};
-
-let lastHungerWarning = null;
-
-// ===== LOGGING =====
-function addLog(msg) {
-    const logEl = document.getElementById("log");
-    if (!logEl) return;
-    const p = document.createElement("p");
-    p.innerText = "• " + msg;
-    p.style.opacity = '1';
-    p.style.transition = `opacity ${game.logFadeDuration}ms ease`;
-    logEl.appendChild(p);
-    logEl.scrollTop = logEl.scrollHeight;
-
-    // schedule fade and removal
-    const lifetimeMs = (game.logMessageLifetime || 3) * 1000;
-    setTimeout(() => {
-        p.style.opacity = '0';
-        setTimeout(() => { if (p.parentElement) p.remove(); }, game.logFadeDuration || 500);
-    }, lifetimeMs);
-}
-
-// ===== HELPERS =====
-function getMaxFollowers() {
-    return 1 + game.shelter * 3;
-}
-
 // ===== CORE FUNCTIONS =====
 function gatherWood() {
     if (gameState.progression.faith >= gameState.costs.gatherWoodFaithCost) {
@@ -194,11 +109,6 @@ function feedFollowers() {
     addLog('You feed the followers. Hunger restored.');
     updateUI();
     saveGame();
-}
-
-function getHunterTrainingCost() {
-    const untrained = gameState.progression.followers - gameState.progression.hunters;
-    return untrained * gameState.costs.hunterBaseCost;
 }
 
 function trainHunters() {
