@@ -1,5 +1,5 @@
 // ===== GAME STATE =====
-const gameState = {
+export const gameState = {
     progression: {
         followers: 1,
         hunters: 0,
@@ -37,7 +37,7 @@ const gameState = {
     unlocks: {}
 };
 
-const game = {
+export const game = {
     prayAmt: 1,
     convertCost: 10,
     ritualCircleBuilt: 0,
@@ -56,4 +56,4 @@ const game = {
     newItems: {actions:0,build:0,food:0,unlocks:0,followerManager:0}
 };
 
-let lastHungerWarning = null;
+export let lastHungerWarning = null;

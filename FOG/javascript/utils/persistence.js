@@ -1,4 +1,4 @@
-function saveGame() {
+export function saveGame() {
     const saveData = {
         gameState,
         game
@@ -7,7 +7,7 @@ function saveGame() {
     console.log('Game saved to localStorage');
 }
 
-function loadGame() {
+export function loadGame() {
     const saved = localStorage.getItem('fogGameSave');
     if (saved) {
         try {
@@ -26,7 +26,7 @@ function loadGame() {
     return false;
 }
 
-function clearSave() {
+export function clearSave() {
     localStorage.removeItem('fogGameSave');
     console.log('Save cleared. Reloading...');
     location.reload();

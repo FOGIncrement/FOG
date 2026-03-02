@@ -1,5 +1,5 @@
 // badge helpers
-function markNew(el) {
+export function markNew(el) {
     if (!el) return;
     if (el.dataset.seen === "true") return;
     el.dataset.new = "true";
@@ -17,7 +17,7 @@ function markNew(el) {
     updateTabBadges();
 }
 
-function clearNew(el) {
+export function clearNew(el) {
     if (!el) return;
     el.dataset.seen = "true";
     el.dataset.new = "false";
@@ -26,7 +26,7 @@ function clearNew(el) {
     updateTabBadges();
 }
 
-function updateTabBadges() {
+export function updateTabBadges() {
     document.querySelectorAll('.tab-btn').forEach(tab => {
         const name = tab.dataset.tab;
         const content = document.getElementById('tab-' + name);
@@ -48,7 +48,7 @@ function updateTabBadges() {
 }
 
 // show/hide element and mark new when becoming visible
-function setVisible(el, visible) {
+export function setVisible(el, visible) {
     if (!el) return;
     if (visible) {
         if (el.style.display === 'none' || el.style.display === '') {
@@ -64,7 +64,7 @@ function setVisible(el, visible) {
 // when a button (or element) is affordable/or usable, mark a new dot
 // when it transitions from unaffordable->affordable. Also disables the
 // element when not affordable.
-function setAffordability(el, canAfford) {
+export function setAffordability(el, canAfford) {
     if (!el) return;
     // Initialize affordable state if not set
     if (el.dataset.affordable === undefined) {
