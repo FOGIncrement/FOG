@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ===== TABS =====
-export function initTabs() {
+function initTabs() {
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -60,7 +60,7 @@ export function initTabs() {
     activate('actions');
 }
 
-export function showTabs() {
+function showTabs() {
     const tabs = document.querySelector('.tabs');
     if (!tabs) return;
     if (tabs.style.display === 'block') return;
@@ -80,7 +80,7 @@ export function showTabs() {
     tabContents.forEach(c => c.style.display = (c.id === 'tab-actions') ? 'block' : 'none');
 }
 
-export function hideTabs() {
+function hideTabs() {
     const tabs = document.querySelector('.tabs');
     if (!tabs) return;
     if (tabs.style.display === 'none') return;
@@ -92,4 +92,10 @@ export function hideTabs() {
     if (pray && main && pray.parentElement !== main) {
         main.appendChild(pray);
     }
+}
+
+export {
+    initTabs,
+    showTabs,
+    hideTabs
 }

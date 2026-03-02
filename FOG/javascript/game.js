@@ -1,5 +1,5 @@
 // ===== CORE FUNCTIONS =====
-export function gatherWood() {
+function gatherWood() {
     if (gameState.progression.faith >= gameState.costs.gatherWoodFaithCost) {
         gameState.progression.faith -= gameState.costs.gatherWoodFaithCost;
         gameState.resources.wood += gameState.gathering.gatherWoodAmt;
@@ -8,7 +8,7 @@ export function gatherWood() {
     }
 }
 
-export function gatherStone() {
+function gatherStone() {
     if (gameState.progression.faith >= gameState.costs.gatherStoneFaithCost) {
         gameState.progression.faith -= gameState.costs.gatherStoneFaithCost;
         gameState.resources.stone += gameState.gathering.gatherStoneAmt;
@@ -17,7 +17,7 @@ export function gatherStone() {
     }
 }
 
-export function gatherFood() {
+function gatherFood() {
     if (gameState.progression.faith < gameState.costs.gatherFoodFaithCost) return;
     gameState.progression.faith -= gameState.costs.gatherFoodFaithCost;
     const min = gameState.progression.followers * gameState.gathering.gatherFoodMinMultiplier;
@@ -33,13 +33,13 @@ export function gatherFood() {
     saveGame();
 }
 
-export function pray() {
+function pray() {
     gameState.progression.faith += game.prayAmt;
     updateUI();
     saveGame();
 }
 
-export function buildShelter() {
+function buildShelter() {
     if (gameState.resources.wood >= gameState.costs.shelterWoodCost &&
         gameState.resources.stone >= gameState.costs.shelterStoneCost) {
 
@@ -58,7 +58,7 @@ export function buildShelter() {
     }
 }
 
-export function convertFollower() {
+function convertFollower() {
     if (gameState.progression.faith >= game.convertCost) {
         gameState.progression.faith -= game.convertCost;
         gameState.progression.followers += 1;
@@ -68,7 +68,7 @@ export function convertFollower() {
     }
 }
 
-export function preach() {
+function preach() {
     const max = getMaxFollowers();
     if (gameState.progression.faith < gameState.costs.preachFaithCost || game.hungerPercent < 10 ||
         gameState.resources.food < 10 || gameState.progression.followers >= max) return;
@@ -92,7 +92,7 @@ export function preach() {
     saveGame();
 }
 
-export function training() {
+function training() {
     if (game.trainingUnlocked) return; // already bought
     if (gameState.progression.faith < gameState.costs.trainingTechCost) return;
     gameState.progression.faith -= gameState.costs.trainingTechCost;
@@ -102,7 +102,7 @@ export function training() {
     saveGame();
 }
 
-export function feedFollowers() {
+function feedFollowers() {
     if (gameState.resources.food <= 0 || game.hungerPercent >= 100) return;
     gameState.resources.food -= 1;
     game.hungerPercent = Math.min(100, game.hungerPercent + game.feedAmount);
@@ -111,7 +111,7 @@ export function feedFollowers() {
     saveGame();
 }
 
-export function trainHunters() {
+function trainHunters() {
     if (!game.trainingUnlocked) return;
 
     const untrained = gameState.progression.followers - gameState.progression.hunters;
@@ -135,7 +135,7 @@ export function trainHunters() {
 }
 
 // ======= GAME TICK ======
-export function gameTick() {
+function gameTick() {
     // Gain faith per follower
     gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower;
 
@@ -174,7 +174,7 @@ export function gameTick() {
 }
 
 // ===== UI UPDATE =====
-export function updateUI() {
+function updateUI() {
     const followersEl = document.getElementById("followers");
     const faithEl = document.getElementById("faith");
     const hunterContainer = document.getElementById("hunterContainer");
@@ -247,7 +247,7 @@ export function updateUI() {
         updateButtons();
     }
     // ===== BUTTONS =====
-    export function updateButtons() {
+    function updateButtons() {
         const bRit = document.getElementById("buildRitualCircleBtn");
         const gW = document.getElementById("gatherWoodBtn");
         const gS = document.getElementById("gatherStoneBtn");
@@ -425,4 +425,20 @@ export function updateUI() {
             setVisible(trainHuntersBtn, false);
         }
     }
+}
+
+export {
+    gatherWood,
+    gatherStone,
+    gatherFood,
+    pray,
+    buildShelter,
+    convertFollower,
+    preach,
+    training,
+    feedFollowers,
+    trainHunters,
+    gameTick,
+    updateUI,
+    updateButtons
 }

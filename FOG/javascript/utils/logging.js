@@ -1,5 +1,5 @@
 // ===== LOGGING =====
-export function addLog(msg) {
+function addLog(msg) {
     const logEl = document.getElementById("log");
     if (!logEl) return;
     const p = document.createElement("p");
@@ -15,4 +15,8 @@ export function addLog(msg) {
         p.style.opacity = '0';
         setTimeout(() => { if (p.parentElement) p.remove(); }, game.logFadeDuration || 500);
     }, lifetimeMs);
+}
+
+export {
+    addLog
 }
