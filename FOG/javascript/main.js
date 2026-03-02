@@ -20,8 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 gameState.progression.faith -= 50;
                 game.ritualCircleBuilt = 1;
                 gameState.progression.faithPerFollower += 0.005;
-                updateUI();
-                saveGame();
+                game.updateUI();
+                game.saveGame();
             }
         }]
     ];
@@ -38,8 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     setInterval(gameTick, 1000);
-    updateUI();
-    saveGame();
+    game.updateUI();
+    game.saveGame();
 });
 
 // ===== TABS =====
