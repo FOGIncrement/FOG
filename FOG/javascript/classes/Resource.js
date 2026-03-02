@@ -2,8 +2,9 @@
 // and have this as a more generic class that can be used for all 3 resources. 
 // It has the same methods, but they work based on the instance's properties instead of hardcoded values. 
 // So we can just create 3 instances of this class for wood, stone, and food, and call their gather() methods when needed. This should make the code cleaner and more maintainable.
+import { gameState } from './GameState.js';
 
-class Resource {
+export class Resource {
     constructor(name, amount, gatherCost, gatherAmount) {
         this.name = name;
         this.amount = amount;
@@ -18,8 +19,9 @@ class Resource {
     gather() {
         if (!this.canGather()) return false;
         gameState.progression.faith -= this.gatherCost;
-        this.amount += this.gatherAmount;
-        return true;
+        const amountToAdd = typeof this.gatherAmount === 'function' ? this.gatherAmount() : this.gatherAmount;
+        this.amount += amountToAdd;
+        return amountToAdd;
     }
 
     spend(amount) {
