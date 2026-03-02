@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <title>F.O.G Prototype</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        // ES modules are blocked in many browsers over file://
+        if (location.protocol === 'file:') {
+            document.addEventListener('DOMContentLoaded', () => {
+                const launchUrl = 'http://localhost:5500/index.html';
+                document.body.innerHTML = `
+                    <div style="font-family: monospace; padding: 24px; color: #ddd; background: #111; min-height: 100vh;">
+                        <h2 style="margin-top: 0;">Run F.O.G via local server</h2>
+                        <p>This build uses JavaScript modules, which do not run reliably from file:// URLs.</p>
+                        <p>Use <strong>start_game.bat</strong> in this folder, then open:</p>
+                        <p><a href="${launchUrl}" style="color: #7fb3ff;">${launchUrl}</a></p>
+                        <button onclick="location.href='${launchUrl}'" style="padding:6px 10px; cursor:pointer;">Open Localhost</button>
+                    </div>
+                `;
+            });
+        }
+    </script>
 </head>
 <body>
 
@@ -13,16 +30,24 @@
 
         <!-- LEFT COLUMN (Trained Units) -->
         <div id="trainedContainer">
-            <div id="trainedContainer">
-                <p id="trainedSummaryContainer" style="display: none; color: #888; font-size: 0.9em;">
-                    <span id="trainedSummaryValue">0/0 trained</span>
-                </p>
-                <p id="hunterContainer" style="display: none;">
-                    Hunters: <span id="hunterValue">0</span>
-                </p>
-        </div>
+            <p id="trainedSummaryContainer" style="display: none; color: #888; font-size: 0.9em;">
+                <span id="trainedSummaryValue">0/0 trained</span>
+            </p>
             <p id="hunterContainer" style="display: none;">
                 Hunters: <span id="hunterValue">0</span>
+                <span id="hunterBonus" style="color: #888; margin-left: 1em;"></span>
+            </p>
+            <p id="ritualistContainer" style="display: none;">
+                Ritualists: <span id="ritualistValue">0</span>
+                <span id="ritualistBonus" style="color: #888; margin-left: 1em;"></span>
+            </p>
+            <p id="gathererContainer" style="display: none;">
+                Gatherers: <span id="gathererValue">0</span>
+                <span id="gathererBonus" style="color: #888; margin-left: 1em;"></span>
+            </p>
+            <p id="cookContainer" style="display: none;">
+                Cooks: <span id="cookValue">0</span>
+                <span id="cookBonus" style="color: #888; margin-left: 1em;"></span>
             </p>
         </div>
 
@@ -34,8 +59,8 @@
                 <p>Followers: <span id="followers">0</span></p> 
                 <p>Faith: <span id="faith">0</span></p>
                 <p style="display: none">Prophet: <span id="prophet">0</span></p>
-                <p id="woodContainer" style="display: none;">Wood: <span id="woodValue">0</span></p>
-                <p id="stoneContainer" style="display: none;">Stone: <span id="stoneValue">0</span></p>
+                <p id="woodContainer" style="display: none;">Wood: <span id="woodValue">0</span><span id="woodRate" style="color: #888; margin-left: 1em;"></span></p>
+                <p id="stoneContainer" style="display: none;">Stone: <span id="stoneValue">0</span><span id="stoneRate" style="color: #888; margin-left: 1em;"></span></p>
                 <p id="foodContainer" style="display: none;">
                     Food: <span id="foodValue">0</span>
                     <span id="foodRate" style="color: #888; margin-left: 1em;"></span>
@@ -72,6 +97,13 @@
                             <button id="gatherStoneBtn" style="display: none;">Gather Stone</button>
                             <button id="gatherFoodBtn" style="display: none;">Gather Food</button>
                             <button id="preachBtn" style="display: none;">Preach</button>
+
+                            <div id="preachDicePanel" class="dice-panel" style="display: none;">
+                                <p id="preachDiceText">Roll 1d4 for conversion:</p>
+                                <div id="preachDieFace" class="die-face">?</div>
+                                <button id="preachRollBtn">Roll d4</button>
+                                <button id="preachCancelBtn">Cancel</button>
+                            </div>
                         </div>
 
                         <div id="tab-build" class="tab-content" style="display: none;">
@@ -81,7 +113,19 @@
 
                         <div id="tab-unlocks" class="tab-content" style="display: none;">
                             <button id="trainingTechBtn" data-tab="unlocks" style="display: none;">
-                                Training<span class="btn-badge" style="display:none;"></span>
+                                Unlock Training<span class="btn-badge" style="display:none;"></span>
+                            </button>
+                            <button id="unlockHuntersBtn" data-tab="unlocks" style="display: none;">
+                                Unlock Hunters<span class="btn-badge" style="display:none;"></span>
+                            </button>
+                            <button id="unlockRitualistsBtn" data-tab="unlocks" style="display: none;">
+                                Unlock Ritualists<span class="btn-badge" style="display:none;"></span>
+                            </button>
+                            <button id="unlockGatherersBtn" data-tab="unlocks" style="display: none;">
+                                Unlock Gatherers<span class="btn-badge" style="display:none;"></span>
+                            </button>
+                            <button id="unlockCooksBtn" data-tab="unlocks" style="display: none;">
+                                Unlock Cooks<span class="btn-badge" style="display:none;"></span>
                             </button>
                         </div>
 
@@ -92,14 +136,32 @@
                         </div>
 
                         <div id="tab-followerManager" class="tab-content" style="display: none;">
-                            <button id="trainHuntersBtn" data-tab="trainHunters" style="display: none;">
-                                Train Hunters<span class="btn-badge" style="display:none;"></span>
-                            </button>
-                            <input type="number"
-                                   id="trainCountInput"
-                                   min="1"
-                                   placeholder="Number to train"
-                                   style="width: 80px; margin-left: 8px;">
+                            <p>Unassigned: <span id="unassignedFollowersValue">0</span></p>
+                            <p>
+                                Training batch amount:
+                                <input type="number" id="trainCountInput" min="1" value="1" style="width: 90px; margin-left: 8px; display: none;">
+                            </p>
+
+                            <div>
+                                <strong>Hunters:</strong> <span id="huntersRoleValue">0</span>
+                                <button id="trainHuntersBtn" style="display: none;">Train Hunters</button>
+                            </div>
+
+                            <div>
+                                <strong>Ritualists:</strong> <span id="ritualistsRoleValue">0</span>
+                                <button id="trainRitualistsBtn" style="display: none;">Train Ritualists</button>
+                            </div>
+
+                            <div>
+                                <strong>Gatherers:</strong> <span id="gatherersRoleValue">0</span>
+                                <span id="gatherersRoleBonus" style="color: #888; margin-left: 1em;"></span>
+                                <button id="trainGatherersBtn" style="display: none;">Train Gatherers</button>
+                            </div>
+
+                            <div>
+                                <strong>Cooks:</strong> <span id="cooksRoleValue">0</span>
+                                <button id="trainCooksBtn" style="display: none;">Train Cooks</button>
+                            </div>
                         </div>
 
                     </div>
@@ -115,6 +177,12 @@
         <div id="log"></div>
     </div>
 
-    <script src="game.js"></script>
+    <button
+        id="resetSaveBtn"
+        title="Clear saved progress and reload"
+        onclick="localStorage.removeItem('fogGameSave'); localStorage.removeItem('fogSave'); localStorage.removeItem('fog-save'); location.reload();"
+    >Reset Save</button>
+
+    <script type="module" src="javascript/main.js"></script>
 </body>
 </html>
