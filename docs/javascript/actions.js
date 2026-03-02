@@ -3,6 +3,7 @@ import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { getMaxFollowers } from './utils/helpers.js';
+import { buildingRegistry } from './registries/index.js';
 
 let preachRollReady = false;
 let preachRollInProgress = false;
@@ -18,6 +19,22 @@ function canPreachNow() {
 function setPreachDiceVisible(visible) {
     const panel = document.getElementById('preachDicePanel');
     if (panel) panel.style.display = visible ? 'block' : 'none';
+}
+
+function applyGlobalCostReduction(multiplier) {
+    Object.keys(gameState.costs).forEach((costKey) => {
+        const value = gameState.costs[costKey];
+        if (!Number.isFinite(value)) return;
+        gameState.costs[costKey] = Math.max(1, Math.floor(value * multiplier));
+    });
+
+    game.convertCost = Math.max(1, Math.floor(game.convertCost * multiplier));
+
+    ['wood', 'stone', 'food'].forEach((resourceKey) => {
+        const resource = gameState.resources[resourceKey];
+        if (!resource || !Number.isFinite(resource.gatherCost)) return;
+        resource.gatherCost = Math.max(1, Math.floor(resource.gatherCost * multiplier));
+    });
 }
 
 export function gatherWood() {
@@ -53,16 +70,22 @@ export function pray() {
 }
 
 export function buildShelter() {
-    if (
-        gameState.resources.wood.amount >= gameState.costs.shelterWoodCost &&
-        gameState.resources.stone.amount >= gameState.costs.shelterStoneCost
-    ) {
-        gameState.resources.wood.spend(gameState.costs.shelterWoodCost);
-        gameState.resources.stone.spend(gameState.costs.shelterStoneCost);
-        game.shelter += 1;
+    const shelterDefinition = buildingRegistry.get('shelter');
+    if (!shelterDefinition) return;
 
-        gameState.costs.shelterWoodCost = Math.floor(gameState.costs.shelterWoodCost * 1.8);
-        gameState.costs.shelterStoneCost = Math.floor(gameState.costs.shelterStoneCost * 1.8);
+    const woodCostKey = shelterDefinition.resourceCostKeys.wood;
+    const stoneCostKey = shelterDefinition.resourceCostKeys.stone;
+
+    if (
+        gameState.resources.wood.amount >= gameState.costs[woodCostKey] &&
+        gameState.resources.stone.amount >= gameState.costs[stoneCostKey]
+    ) {
+        gameState.resources.wood.spend(gameState.costs[woodCostKey]);
+        gameState.resources.stone.spend(gameState.costs[stoneCostKey]);
+        game[shelterDefinition.levelKey] += 1;
+
+        gameState.costs[woodCostKey] = Math.floor(gameState.costs[woodCostKey] * 1.8);
+        gameState.costs[stoneCostKey] = Math.floor(gameState.costs[stoneCostKey] * 1.8);
 
         if (!game.hungerVisible) game.hungerVisible = true;
 
@@ -70,6 +93,24 @@ export function buildShelter() {
         updateUI();
         saveGame();
     }
+}
+
+export function unlockShelterUpgrade() {
+    if (game.shelterUpgradeUnlocked) return;
+    if (gameState.progression.followers < game.shelterUpgradeFollowerRequirement) return;
+
+    const upgradeCost = gameState.costs.unlockShelterUpgradeFaithCost;
+    if (gameState.progression.faith < upgradeCost) return;
+
+    gameState.progression.faith -= upgradeCost;
+    game.shelterUpgradeUnlocked = true;
+    game.shelterCapacityMultiplier = 2;
+
+    applyGlobalCostReduction(0.5);
+    addLog('Shelter upgraded to Shack. Capacity doubled and costs reduced by 50%.');
+
+    updateUI();
+    saveGame();
 }
 
 export function convertFollower() {
@@ -173,9 +214,16 @@ export function feedFollowers() {
 }
 
 export function buildRitualCircle() {
-    if (gameState.progression.faith >= gameState.costs.ritualBtnCost && game.ritualCircleBuilt < 1) {
-        gameState.progression.faith -= gameState.costs.ritualBtnCost;
-        game.ritualCircleBuilt = 1;
+    const ritualDefinition = buildingRegistry.get('ritualCircle');
+    if (!ritualDefinition) return;
+
+    const currentLevel = game[ritualDefinition.levelKey];
+    const canBuildLevel = currentLevel < ritualDefinition.maxLevel;
+    const costKey = ritualDefinition.faithCostKey;
+
+    if (gameState.progression.faith >= gameState.costs[costKey] && canBuildLevel) {
+        gameState.progression.faith -= gameState.costs[costKey];
+        game[ritualDefinition.levelKey] = currentLevel + 1;
         gameState.progression.faithPerFollower += 0.005;
         updateUI();
         saveGame();

@@ -9,7 +9,8 @@ export {
     rollPreachD4,
     cancelPreachRoll,
     feedFollowers,
-    buildRitualCircle
+    buildRitualCircle,
+    unlockShelterUpgrade
 } from './actions.js';
 
 export {

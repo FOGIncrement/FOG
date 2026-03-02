@@ -3,6 +3,7 @@ import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { getUnassignedFollowers } from './utils/helpers.js';
+import { ROLE_DEFINITION_BY_ID } from './config/roles.js';
 
 export function training() {
     if (game.trainingUnlocked) return;
@@ -37,20 +38,26 @@ function trainRole(roleKey, baseCost, label) {
     saveGame();
 }
 
+function trainRoleById(roleId) {
+    const role = ROLE_DEFINITION_BY_ID[roleId];
+    if (!role) return;
+    trainRole(role.id, gameState.costs[role.trainCostKey], role.label.toLowerCase());
+}
+
 export function trainHunters() {
-    trainRole('hunters', gameState.costs.hunterBaseCost, 'hunters');
+    trainRoleById('hunters');
 }
 
 export function trainRitualists() {
-    trainRole('ritualists', gameState.costs.ritualistBaseCost, 'ritualists');
+    trainRoleById('ritualists');
 }
 
 export function trainGatherers() {
-    trainRole('gatherers', gameState.costs.gathererBaseCost, 'gatherers');
+    trainRoleById('gatherers');
 }
 
 export function trainCooks() {
-    trainRole('cooks', gameState.costs.cookBaseCost, 'cooks');
+    trainRoleById('cooks');
 }
 
 function unlockRole(roleKey, cost, label) {
@@ -65,18 +72,24 @@ function unlockRole(roleKey, cost, label) {
     saveGame();
 }
 
+function unlockRoleById(roleId) {
+    const role = ROLE_DEFINITION_BY_ID[roleId];
+    if (!role) return;
+    unlockRole(role.id, gameState.costs[role.unlockCostKey], role.label);
+}
+
 export function unlockHuntersRole() {
-    unlockRole('hunters', gameState.costs.unlockHuntersFaithCost, 'Hunters');
+    unlockRoleById('hunters');
 }
 
 export function unlockRitualistsRole() {
-    unlockRole('ritualists', gameState.costs.unlockRitualistsFaithCost, 'Ritualists');
+    unlockRoleById('ritualists');
 }
 
 export function unlockGatherersRole() {
-    unlockRole('gatherers', gameState.costs.unlockGatherersFaithCost, 'Gatherers');
+    unlockRoleById('gatherers');
 }
 
 export function unlockCooksRole() {
-    unlockRole('cooks', gameState.costs.unlockCooksFaithCost, 'Cooks');
+    unlockRoleById('cooks');
 }

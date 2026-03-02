@@ -1,7 +1,8 @@
 import { gameState, game } from '../classes/GameState.js';
 
 export function getMaxFollowers() {
-    return 1 + game.shelter * 3;
+    const perShelter = (game.shelterCapacityPerShelter || 3) * (game.shelterCapacityMultiplier || 1);
+    return 1 + game.shelter * perShelter;
 }
 
 export function getAssignedFollowers() {

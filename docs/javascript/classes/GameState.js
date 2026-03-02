@@ -3,7 +3,7 @@ import { Resource } from './Resource.js';
 // ===== GAME STATE =====
 export const gameState = {
     progression: {
-        followers: 1,
+        followers: 0,
         hunters: 0,
         ritualists: 0,
         gatherers: 0,
@@ -13,8 +13,12 @@ export const gameState = {
         prophet: 0
     },
     resources: {
-        wood: new Resource('wood', 0, 8, 5),
-        stone: new Resource('stone', 0, 8, 5),
+        wood: new Resource('wood', 0, 8, () => {
+            return gameState.gathering.manualGatherBaseAmount + (game.shelter * gameState.gathering.manualGatherShelterBonus);
+        }),
+        stone: new Resource('stone', 0, 8, () => {
+            return gameState.gathering.manualGatherBaseAmount + (game.shelter * gameState.gathering.manualGatherShelterBonus);
+        }),
         food: new Resource('food', 0, 5, () => {
             const min = gameState.gathering.gatherFoodMinMultiplier;
             const max = gameState.gathering.gatherFoodMaxMultiplier;
@@ -22,8 +26,10 @@ export const gameState = {
         })
     },
     gathering: {
+        manualGatherBaseAmount: 5,
+        manualGatherShelterBonus: 2,
         gatherFoodMinMultiplier: 1,
-        gatherFoodMaxMultiplier: 10
+        gatherFoodMaxMultiplier: 3
     },
     costs: {
         shelterWoodCost: 15,
@@ -33,16 +39,17 @@ export const gameState = {
         ritualistBaseCost: 30,
         gathererBaseCost: 25,
         cookBaseCost: 28,
-        ritualBtnCost: 50,
+        ritualBtnCost: 10,
         preachFaithCost: 1,
         unlockHuntersFaithCost: 40,
         unlockRitualistsFaithCost: 75,
         unlockGatherersFaithCost: 60,
-        unlockCooksFaithCost: 85
+        unlockCooksFaithCost: 85,
+        unlockShelterUpgradeFaithCost: 180
     },
     rates: {
-        hunterFoodPerSecond: 1,
-        ritualistFaithPerSecond: 0.03,
+        hunterFoodPerSecond: 0.07,
+        ritualistFaithPerSecond: 0.1,
         gathererWoodPerSecond: 0.25,
         gathererStonePerSecond: 0.20,
         cookFlatHungerGainPerSecond: 0.2,
@@ -53,10 +60,14 @@ export const gameState = {
 };
 
 export const game = {
-    prayAmt: 1000,
+    prayAmt: 1,
     convertCost: 10,
     ritualCircleBuilt: 0,
     shelter: 0,
+    shelterCapacityPerShelter: 3,
+    shelterCapacityMultiplier: 1,
+    shelterUpgradeUnlocked: false,
+    shelterUpgradeFollowerRequirement: 30,
     shelterBtnUnlocked: false,
     hungerPercent: 100,
     hungerVisible: false,
@@ -64,7 +75,7 @@ export const game = {
     autoFeedFoodPerSecond: 0.15,
     foodHungerGain: 0.15,
     feedAmount: 10,     // manual feed amount per click
-    logMessageLifetime: 3,  // log message lifetime in seconds; messages fade after this
+    logMessageLifetime: 6,  // log message lifetime in seconds; messages fade after this
     logFadeDuration: 500,   // fade duration in milliseconds
     trainingUnlocked: false,
     roleUnlocks: {

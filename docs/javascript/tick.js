@@ -3,9 +3,13 @@ import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 
+function applyRitualistFaithProduction() {
+    gameState.progression.faith += (gameState.progression.ritualists || 0) * gameState.rates.ritualistFaithPerSecond;
+}
+
 export function gameTick() {
     gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower;
-    gameState.progression.faith += (gameState.progression.ritualists || 0) * gameState.rates.ritualistFaithPerSecond;
+    applyRitualistFaithProduction();
 
     gameState.resources.wood.amount += (gameState.progression.gatherers || 0) * gameState.rates.gathererWoodPerSecond;
     gameState.resources.stone.amount += (gameState.progression.gatherers || 0) * gameState.rates.gathererStonePerSecond;

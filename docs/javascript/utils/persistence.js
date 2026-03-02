@@ -32,6 +32,15 @@ export function loadGame() {
             const savedResources = savedState.resources || {};
             const savedGame = data?.game || {};
 
+            if (!Number.isFinite(savedProg.gatherers) && Number.isFinite(savedProg.builders)) {
+                savedProg.gatherers = savedProg.builders;
+            }
+            if (savedGame.roleUnlocks && typeof savedGame.roleUnlocks === 'object') {
+                if (savedGame.roleUnlocks.gatherers == null && savedGame.roleUnlocks.builders != null) {
+                    savedGame.roleUnlocks.gatherers = savedGame.roleUnlocks.builders;
+                }
+            }
+
             // restore progression/costs/rates/gathering (keep shape from current runtime)
             Object.assign(gameState.progression, savedProg);
             Object.assign(gameState.costs, savedCosts);
@@ -43,8 +52,12 @@ export function loadGame() {
             gameState.gathering.gatherFoodMaxMultiplier = 10;
 
             // Ensure resource instances are valid (guards against old/corrupt saves)
-            ensureResourceInstance('wood', 0, 8, 5);
-            ensureResourceInstance('stone', 0, 8, 5);
+            ensureResourceInstance('wood', 0, 8, () => {
+                return gameState.gathering.manualGatherBaseAmount + (game.shelter * gameState.gathering.manualGatherShelterBonus);
+            });
+            ensureResourceInstance('stone', 0, 8, () => {
+                return gameState.gathering.manualGatherBaseAmount + (game.shelter * gameState.gathering.manualGatherShelterBonus);
+            });
             ensureResourceInstance('food', 0, 5, () => {
                 const min = gameState.gathering.gatherFoodMinMultiplier;
                 const max = gameState.gathering.gatherFoodMaxMultiplier;
@@ -82,8 +95,8 @@ export function loadGame() {
             if (!Number.isFinite(gameState.progression.ritualists) || gameState.progression.ritualists < 0) {
                 gameState.progression.ritualists = 0;
             }
-            if (!Number.isFinite(gameState.progression.builders) || gameState.progression.builders < 0) {
-                gameState.progression.builders = 0;
+            if (!Number.isFinite(gameState.progression.gatherers) || gameState.progression.gatherers < 0) {
+                gameState.progression.gatherers = 0;
             }
             if (!Number.isFinite(gameState.progression.cooks) || gameState.progression.cooks < 0) {
                 gameState.progression.cooks = 0;
@@ -94,11 +107,11 @@ export function loadGame() {
             const assignedTotal =
                 gameState.progression.hunters +
                 gameState.progression.ritualists +
-                gameState.progression.builders +
+                gameState.progression.gatherers +
                 gameState.progression.cooks;
             if (assignedTotal > gameState.progression.followers) {
                 let overflow = assignedTotal - gameState.progression.followers;
-                ['cooks', 'builders', 'ritualists', 'hunters'].forEach((role) => {
+                ['cooks', 'gatherers', 'ritualists', 'hunters'].forEach((role) => {
                     if (overflow <= 0) return;
                     const current = gameState.progression[role] || 0;
                     const reduction = Math.min(current, overflow);
@@ -114,15 +127,28 @@ export function loadGame() {
             }
             game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent));
 
+            if (!Number.isFinite(game.shelterCapacityPerShelter) || game.shelterCapacityPerShelter < 1) {
+                game.shelterCapacityPerShelter = 3;
+            }
+            if (!Number.isFinite(game.shelterCapacityMultiplier) || game.shelterCapacityMultiplier < 1) {
+                game.shelterCapacityMultiplier = 1;
+            }
+            if (typeof game.shelterUpgradeUnlocked !== 'boolean') {
+                game.shelterUpgradeUnlocked = false;
+            }
+            if (!Number.isFinite(game.shelterUpgradeFollowerRequirement) || game.shelterUpgradeFollowerRequirement < 1) {
+                game.shelterUpgradeFollowerRequirement = 30;
+            }
+
             // food tab should stay unlocked after first successful gather
             if (gameState.resources.food.amount > 0) {
                 game.hasGatheredFood = true;
             }
 
             if (!game.roleUnlocks || typeof game.roleUnlocks !== 'object') {
-                game.roleUnlocks = { hunters: false, ritualists: false, builders: false, cooks: false };
+                game.roleUnlocks = { hunters: false, ritualists: false, gatherers: false, cooks: false };
             }
-            ['hunters', 'ritualists', 'builders', 'cooks'].forEach((role) => {
+            ['hunters', 'ritualists', 'gatherers', 'cooks'].forEach((role) => {
                 game.roleUnlocks[role] = Boolean(game.roleUnlocks[role]);
             });
 
