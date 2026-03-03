@@ -24,6 +24,16 @@
 </head>
 <body>
 
+    <details id="cheatMenu" class="cheat-menu">
+        <summary>Cheats</summary>
+        <div class="cheat-menu-content">
+            <button id="cheatFaithBtn" type="button">+1,000,000 Faith</button>
+            <button id="cheatFoodBtn" type="button">+1,000,000 Food</button>
+            <button id="cheatWoodBtn" type="button">+1,000,000 Wood</button>
+            <button id="cheatStoneBtn" type="button">+1,000,000 Stone</button>
+        </div>
+    </details>
+
     <h1>F.O.G Prototype</h1>
 
     <div id="appContainer">
@@ -109,6 +119,7 @@
                         <div id="tab-build" class="tab-content" style="display: none;">
                             <button id="buildRitualCircleBtn" style="display: none;">Ritual Circle</button>
                             <button id="buildShelterBtn" style="display: none;">Build Shelter</button>
+                            <button id="buildAltarBtn" style="display: none;">Build Altar</button>
                         </div>
 
                         <div id="tab-unlocks" class="tab-content" style="display: none;">
@@ -185,9 +196,14 @@
 
     <button
         id="resetSaveBtn"
-        title="Clear saved progress and reload"
         onclick="localStorage.removeItem('fogGameSave'); localStorage.removeItem('fogSave'); localStorage.removeItem('fog-save'); location.reload();"
     >Reset Save</button>
+
+    <div id="gameTooltip" class="game-tooltip" style="display: none;">
+        <div id="gameTooltipTitle" class="game-tooltip-title"></div>
+        <div id="gameTooltipSummary" class="game-tooltip-summary"></div>
+        <div id="gameTooltipStats" class="game-tooltip-stats"></div>
+    </div>
 
     <script type="module" src="docs/javascript/main.js"></script>
 </body>

@@ -131,8 +131,8 @@ export function loadGame() {
             }
 
             // migration/sanity guards
-            if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 1) {
-                gameState.progression.followers = 1;
+            if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 0) {
+                gameState.progression.followers = 0;
             }
             ROLE_DEFINITIONS.forEach((roleDefinition) => {
                 const roleId = roleDefinition.id;
@@ -172,11 +172,28 @@ export function loadGame() {
             if (!Number.isFinite(game.shelterCapacityMultiplier) || game.shelterCapacityMultiplier < 1) {
                 game.shelterCapacityMultiplier = 1;
             }
+
+            if (!Number.isFinite(gameState.costs.unlockAltarFaithCost) || gameState.costs.unlockAltarFaithCost < 0) {
+                gameState.costs.unlockAltarFaithCost = 0;
+            }
+            if (!Number.isFinite(gameState.costs.altarBuildWoodCost) || gameState.costs.altarBuildWoodCost < 1) {
+                gameState.costs.altarBuildWoodCost = 150;
+            }
+            if (!Number.isFinite(gameState.costs.altarBuildStoneCost) || gameState.costs.altarBuildStoneCost < 1) {
+                gameState.costs.altarBuildStoneCost = 150;
+            }
+            if (!Number.isFinite(gameState.costs.altarBuildFaithCost) || gameState.costs.altarBuildFaithCost < 1) {
+                gameState.costs.altarBuildFaithCost = 200;
+            }
+
             if (typeof game.shelterUpgradeUnlocked !== 'boolean') {
                 game.shelterUpgradeUnlocked = false;
             }
             if (typeof game.altarUnlocked !== 'boolean') {
                 game.altarUnlocked = false;
+            }
+            if (typeof game.altarBuilt !== 'boolean') {
+                game.altarBuilt = false;
             }
             if (!Number.isFinite(game.shelterUpgradeFollowerRequirement) || game.shelterUpgradeFollowerRequirement < 1) {
                 game.shelterUpgradeFollowerRequirement = 30;
@@ -210,6 +227,14 @@ export function loadGame() {
             if (!Array.isArray(game.preachOutcomeWeights) || game.preachOutcomeWeights.length !== 4) {
                 game.preachOutcomeWeights = [45, 30, 18, 7];
             }
+
+            if (!game.diceBonuses || typeof game.diceBonuses !== 'object') {
+                game.diceBonuses = {};
+            }
+            const savedPreachBonus = Number.isFinite(game.diceBonuses.preach)
+                ? Math.trunc(game.diceBonuses.preach)
+                : 0;
+            game.diceBonuses.preach = game.altarBuilt ? Math.max(1, savedPreachBonus) : 0;
 
             console.log('Game loaded from localStorage');
             return true;

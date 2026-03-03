@@ -11,7 +11,8 @@ export const ACTION_GROUPS = {
     ],
     build: [
         { id: 'buildRitualCircle', buttonId: 'buildRitualCircleBtn', handlerExport: 'buildRitualCircle', tab: 'build', category: 'building' },
-        { id: 'buildShelter', buttonId: 'buildShelterBtn', handlerExport: 'buildShelter', tab: 'build', category: 'building' }
+        { id: 'buildShelter', buttonId: 'buildShelterBtn', handlerExport: 'buildShelter', tab: 'build', category: 'building' },
+        { id: 'buildAltar', buttonId: 'buildAltarBtn', handlerExport: 'buildAltar', tab: 'build', category: 'building' }
     ],
     food: [
         { id: 'feedFollowers', buttonId: 'feedFollowersBtn', handlerExport: 'feedFollowers', tab: 'food', category: 'food' }

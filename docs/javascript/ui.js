@@ -7,8 +7,8 @@ import { getActionUiRules } from './config/action-rules.js';
 import { buildingRegistry, actionRegistry } from './registries/index.js';
 
 export function updateUI() {
-    if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 1) {
-        gameState.progression.followers = 1;
+    if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 0) {
+        gameState.progression.followers = 0;
     }
 
     const followersEl = document.getElementById('followers');
