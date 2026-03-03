@@ -22,7 +22,8 @@ export const ACTION_GROUPS = {
         { id: 'unlockRitualistsRole', buttonId: 'unlockRitualistsBtn', handlerExport: 'unlockRitualistsRole', tab: 'unlocks', category: 'roles' },
         { id: 'unlockGatherersRole', buttonId: 'unlockGatherersBtn', handlerExport: 'unlockGatherersRole', tab: 'unlocks', category: 'roles' },
         { id: 'unlockCooksRole', buttonId: 'unlockCooksBtn', handlerExport: 'unlockCooksRole', tab: 'unlocks', category: 'roles' },
-        { id: 'unlockShelterUpgrade', buttonId: 'unlockShelterUpgradeBtn', handlerExport: 'unlockShelterUpgrade', tab: 'unlocks', category: 'buildingUpgrade' }
+        { id: 'unlockShelterUpgrade', buttonId: 'unlockShelterUpgradeBtn', handlerExport: 'unlockShelterUpgrade', tab: 'unlocks', category: 'buildingUpgrade' },
+        { id: 'unlockAltar', buttonId: 'unlockAltarBtn', handlerExport: 'unlockAltar', tab: 'unlocks', category: 'buildingUpgrade' }
     ],
     followerManager: [
         { id: 'trainHunters', buttonId: 'trainHuntersBtn', handlerExport: 'trainHunters', tab: 'followerManager', category: 'roles' },

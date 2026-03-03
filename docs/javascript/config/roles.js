@@ -6,7 +6,14 @@ export const ROLE_DEFINITIONS = [
         unlockCostKey: 'unlockHuntersFaithCost',
         trainButtonId: 'trainHuntersBtn',
         unlockButtonId: 'unlockHuntersBtn',
-        roleValueId: 'huntersRoleValue'
+        roleValueId: 'huntersRoleValue',
+        simulation: {
+            tickRate: 1,
+            scaling: (count) => count,
+            outputs: [
+                { target: 'resource', key: 'food', rateKey: 'hunterFoodPerSecond' }
+            ]
+        }
     },
     {
         id: 'ritualists',
@@ -15,7 +22,14 @@ export const ROLE_DEFINITIONS = [
         unlockCostKey: 'unlockRitualistsFaithCost',
         trainButtonId: 'trainRitualistsBtn',
         unlockButtonId: 'unlockRitualistsBtn',
-        roleValueId: 'ritualistsRoleValue'
+        roleValueId: 'ritualistsRoleValue',
+        simulation: {
+            tickRate: 1,
+            scaling: (count) => count,
+            outputs: [
+                { target: 'progression', key: 'faith', rateKey: 'ritualistFaithPerSecond' }
+            ]
+        }
     },
     {
         id: 'gatherers',
@@ -24,7 +38,15 @@ export const ROLE_DEFINITIONS = [
         unlockCostKey: 'unlockGatherersFaithCost',
         trainButtonId: 'trainGatherersBtn',
         unlockButtonId: 'unlockGatherersBtn',
-        roleValueId: 'gatherersRoleValue'
+        roleValueId: 'gatherersRoleValue',
+        simulation: {
+            tickRate: 1,
+            scaling: (count) => count,
+            outputs: [
+                { target: 'resource', key: 'wood', rateKey: 'gathererWoodPerSecond' },
+                { target: 'resource', key: 'stone', rateKey: 'gathererStonePerSecond' }
+            ]
+        }
     },
     {
         id: 'cooks',
@@ -33,7 +55,12 @@ export const ROLE_DEFINITIONS = [
         unlockCostKey: 'unlockCooksFaithCost',
         trainButtonId: 'trainCooksBtn',
         unlockButtonId: 'unlockCooksBtn',
-        roleValueId: 'cooksRoleValue'
+        roleValueId: 'cooksRoleValue',
+        simulation: {
+            tickRate: 1,
+            scaling: (count) => count,
+            outputs: []
+        }
     }
 ];
 
@@ -41,3 +68,24 @@ export const ROLE_DEFINITION_BY_ID = ROLE_DEFINITIONS.reduce((map, role) => {
     map[role.id] = role;
     return map;
 }, {});
+
+export function createRoleCountMap(initialValue = 0) {
+    return ROLE_DEFINITIONS.reduce((map, role) => {
+        map[role.id] = initialValue;
+        return map;
+    }, {});
+}
+
+export function createRoleUnlockMap(initialValue = false) {
+    return ROLE_DEFINITIONS.reduce((map, role) => {
+        map[role.id] = initialValue;
+        return map;
+    }, {});
+}
+
+export function createRoleAccumulatorMap(initialValue = 0) {
+    return ROLE_DEFINITIONS.reduce((map, role) => {
+        map[role.id] = initialValue;
+        return map;
+    }, {});
+}

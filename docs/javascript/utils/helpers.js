@@ -1,4 +1,29 @@
 import { gameState, game } from '../classes/GameState.js';
+import { ROLE_DEFINITIONS } from '../config/roles.js';
+
+function normalizeRoleCount(value) {
+    if (!Number.isFinite(value) || value < 0) return 0;
+    return Math.floor(value);
+}
+
+export function getRoleCount(roleId) {
+    const roleMapValue = gameState.progression.roles?.[roleId];
+    if (Number.isFinite(roleMapValue)) return normalizeRoleCount(roleMapValue);
+
+    const legacyValue = gameState.progression[roleId];
+    return normalizeRoleCount(legacyValue);
+}
+
+export function setRoleCount(roleId, count) {
+    const normalized = normalizeRoleCount(count);
+
+    if (!gameState.progression.roles || typeof gameState.progression.roles !== 'object') {
+        gameState.progression.roles = {};
+    }
+
+    gameState.progression.roles[roleId] = normalized;
+    gameState.progression[roleId] = normalized;
+}
 
 export function getMaxFollowers() {
     const perShelter = (game.shelterCapacityPerShelter || 3) * (game.shelterCapacityMultiplier || 1);
@@ -6,12 +31,9 @@ export function getMaxFollowers() {
 }
 
 export function getAssignedFollowers() {
-    return (
-        (gameState.progression.hunters || 0) +
-        (gameState.progression.ritualists || 0) +
-        (gameState.progression.gatherers || 0) +
-        (gameState.progression.cooks || 0)
-    );
+    return ROLE_DEFINITIONS.reduce((total, roleDefinition) => {
+        return total + getRoleCount(roleDefinition.id);
+    }, 0);
 }
 
 export function getUnassignedFollowers() {

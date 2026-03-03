@@ -2,29 +2,113 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
+import { ROLE_DEFINITIONS } from './config/roles.js';
+import { getRoleCount } from './utils/helpers.js';
 
-function applyRitualistFaithProduction() {
-    gameState.progression.faith += (gameState.progression.ritualists || 0) * gameState.rates.ritualistFaithPerSecond;
+function getRuntime() {
+    if (!gameState.runtime || typeof gameState.runtime !== 'object') {
+        gameState.runtime = { roleAccumulators: {}, autoSaveAccumulator: 0 };
+    }
+
+    if (!gameState.runtime.roleAccumulators || typeof gameState.runtime.roleAccumulators !== 'object') {
+        gameState.runtime.roleAccumulators = {};
+    }
+
+    if (!Number.isFinite(gameState.runtime.autoSaveAccumulator) || gameState.runtime.autoSaveAccumulator < 0) {
+        gameState.runtime.autoSaveAccumulator = 0;
+    }
+
+    return gameState.runtime;
 }
 
-export function gameTick() {
-    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower;
-    applyRitualistFaithProduction();
+function applyRoleProduction(roleDefinition, roleCount, dtSeconds) {
+    const simulation = roleDefinition?.simulation;
+    if (!simulation || roleCount <= 0) return;
 
-    gameState.resources.wood.amount += (gameState.progression.gatherers || 0) * gameState.rates.gathererWoodPerSecond;
-    gameState.resources.stone.amount += (gameState.progression.gatherers || 0) * gameState.rates.gathererStonePerSecond;
+    const scalingFn = typeof simulation.scaling === 'function'
+        ? simulation.scaling
+        : (count) => count;
+
+    const scale = scalingFn(roleCount, gameState, game);
+    if (!Number.isFinite(scale) || scale <= 0) return;
+
+    const outputs = Array.isArray(simulation.outputs) ? simulation.outputs : [];
+    outputs.forEach((output) => {
+        const rate = gameState.rates?.[output.rateKey];
+        if (!Number.isFinite(rate) || rate === 0) return;
+
+        const delta = rate * scale * dtSeconds;
+        if (!Number.isFinite(delta) || delta === 0) return;
+
+        if (output.target === 'resource') {
+            const resource = gameState.resources?.[output.key];
+            if (resource && Number.isFinite(resource.amount)) {
+                resource.amount += delta;
+            }
+            return;
+        }
+
+        if (output.target === 'progression') {
+            const current = gameState.progression?.[output.key];
+            if (Number.isFinite(current)) {
+                gameState.progression[output.key] = current + delta;
+            } else {
+                gameState.progression[output.key] = delta;
+            }
+        }
+    });
+}
+
+function processRoleSimulation(dtSeconds) {
+    const runtime = getRuntime();
+
+    ROLE_DEFINITIONS.forEach((roleDefinition) => {
+        const roleId = roleDefinition.id;
+        const roleCount = getRoleCount(roleId);
+
+        const configuredTickRate = roleDefinition?.simulation?.tickRate;
+        const tickRate = Number.isFinite(configuredTickRate) && configuredTickRate > 0
+            ? configuredTickRate
+            : 1;
+
+        const currentAccumulator = runtime.roleAccumulators[roleId];
+        const normalizedAccumulator = Number.isFinite(currentAccumulator) && currentAccumulator >= 0
+            ? currentAccumulator
+            : 0;
+
+        let accumulator = normalizedAccumulator + dtSeconds;
+
+        while (accumulator >= tickRate) {
+            if (roleCount > 0) {
+                applyRoleProduction(roleDefinition, roleCount, tickRate);
+            }
+            accumulator -= tickRate;
+        }
+
+        runtime.roleAccumulators[roleId] = accumulator;
+    });
+}
+
+export function gameTick(dtSeconds = 1) {
+    if (!Number.isFinite(dtSeconds) || dtSeconds <= 0) return;
+
+    const clampedDt = Math.min(2, dtSeconds);
+
+    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * clampedDt;
+    processRoleSimulation(clampedDt);
+
+    const cookCount = getRoleCount('cooks');
 
     if (game.hungerVisible) {
-        gameState.resources.food.amount += gameState.progression.hunters * gameState.rates.hunterFoodPerSecond;
-        const cookFlatGain = (gameState.progression.cooks || 0) * gameState.rates.cookFlatHungerGainPerSecond;
+        const cookFlatGain = cookCount * gameState.rates.cookFlatHungerGainPerSecond * clampedDt;
 
-        const cookEfficiency = Math.min(0.5, (gameState.progression.cooks || 0) * gameState.rates.cookHungerDrainReductionPerCook);
-        const drain = gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency);
+        const cookEfficiency = Math.min(0.5, cookCount * gameState.rates.cookHungerDrainReductionPerCook);
+        const drain = gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency) * clampedDt;
 
         if (gameState.resources.food.amount > 0 && game.hungerPercent < 100) {
-            const autoFeedAmount = Math.min(game.autoFeedFoodPerSecond, gameState.resources.food.amount);
+            const autoFeedAmount = Math.min(game.autoFeedFoodPerSecond * clampedDt, gameState.resources.food.amount);
             gameState.resources.food.spend(autoFeedAmount);
-            const hungerGain = autoFeedAmount * game.foodHungerGain * (1 + (gameState.progression.cooks || 0) * gameState.rates.cookHungerGainBonusPerCook);
+            const hungerGain = autoFeedAmount * game.foodHungerGain * (1 + cookCount * gameState.rates.cookHungerGainBonusPerCook);
             const netEffect = hungerGain + cookFlatGain - drain;
             game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent + netEffect));
         } else {
@@ -42,6 +126,12 @@ export function gameTick() {
         }
     }
 
+    const runtime = getRuntime();
+    runtime.autoSaveAccumulator += clampedDt;
+    if (runtime.autoSaveAccumulator >= 1) {
+        saveGame();
+        runtime.autoSaveAccumulator -= 1;
+    }
+
     updateUI();
-    saveGame();
 }

@@ -1,4 +1,5 @@
 import { Resource } from './Resource.js';
+import { createRoleCountMap, createRoleUnlockMap, createRoleAccumulatorMap } from '../config/roles.js';
 
 // ===== GAME STATE =====
 export const gameState = {
@@ -8,6 +9,7 @@ export const gameState = {
         ritualists: 0,
         gatherers: 0,
         cooks: 0,
+        roles: createRoleCountMap(0),
         faith: 0,
         faithPerFollower: 0.02,
         prophet: 0
@@ -45,7 +47,8 @@ export const gameState = {
         unlockRitualistsFaithCost: 75,
         unlockGatherersFaithCost: 60,
         unlockCooksFaithCost: 85,
-        unlockShelterUpgradeFaithCost: 180
+        unlockShelterUpgradeFaithCost: 180,
+        unlockAltarFaithCost: 200
     },
     rates: {
         hunterFoodPerSecond: 0.07,
@@ -56,17 +59,22 @@ export const gameState = {
         cookHungerDrainReductionPerCook: 0.0,
         cookHungerGainBonusPerCook: 5
     },
+    runtime: {
+        roleAccumulators: createRoleAccumulatorMap(0),
+        autoSaveAccumulator: 0
+    },
     unlocks: {}
 };
 
 export const game = {
-    prayAmt: 1,
+    prayAmt: 10000,
     convertCost: 10,
     ritualCircleBuilt: 0,
     shelter: 0,
     shelterCapacityPerShelter: 3,
     shelterCapacityMultiplier: 1,
     shelterUpgradeUnlocked: false,
+    altarUnlocked: false,
     shelterUpgradeFollowerRequirement: 30,
     shelterBtnUnlocked: false,
     hungerPercent: 100,
@@ -78,12 +86,7 @@ export const game = {
     logMessageLifetime: 6,  // log message lifetime in seconds; messages fade after this
     logFadeDuration: 500,   // fade duration in milliseconds
     trainingUnlocked: false,
-    roleUnlocks: {
-        hunters: false,
-        ritualists: false,
-        gatherers: false,
-        cooks: false
-    },
+    roleUnlocks: createRoleUnlockMap(false),
     roleBulkAssignAmount: 1,
     unlocksTabUnlocked: false,
     hasGatheredFood: false,

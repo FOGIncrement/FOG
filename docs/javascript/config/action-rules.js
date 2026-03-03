@@ -241,6 +241,36 @@ export function getActionUiRules(context) {
             setButtonLabel(el, `Train ${roleDefinition.label}`);
             el.classList.toggle('purchased', !canAfford);
             el.title = `Cost ${cost} faith`;
+        },
+
+        unlockAltar(el) {
+            if (!game.unlocksTabUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+
+            const reachedRequirement = gameState.progression.followers >= game.shelterUpgradeFollowerRequirement;
+            if (!reachedRequirement && !game.altarUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+
+            setVisible(el, true);
+
+            if (game.altarUnlocked) {
+                el.disabled = true;
+                setButtonLabel(el, 'Unlock Altar (Unlocked)');
+                el.classList.add('purchased');
+                el.title = 'Already unlocked';
+                return;
+            }
+
+            const cost = gameState.costs.unlockAltarFaithCost;
+            const canAfford = gameState.progression.faith >= cost;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, 'Unlock Altar');
+            el.classList.toggle('purchased', !canAfford);
+            el.title = `Requires ${game.shelterUpgradeFollowerRequirement} followers. Cost ${cost} faith`;
         }
     };
 }

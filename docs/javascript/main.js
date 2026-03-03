@@ -3,7 +3,7 @@ import { clearNew } from './utils/ui-helpers.js';
 import { gameState } from './classes/GameState.js';
 import * as gameApi from './game.js';
 import { actionRegistry } from './registries/index.js';
-import { ACTION_TAB_ORDER } from './config/actions.js';
+import { ACTION_TAB_ORDER } from './config/action-definitions.js';
 
 // ===== DOM LOADED =====
 document.addEventListener("DOMContentLoaded", () => {
@@ -47,7 +47,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    setInterval(gameApi.gameTick, 1000);
+    let lastTickMs = performance.now();
+    setInterval(() => {
+        const now = performance.now();
+        const dtSeconds = (now - lastTickMs) / 1000;
+        lastTickMs = now;
+        gameApi.gameTick(dtSeconds);
+    }, 100);
     gameApi.updateUI();
 });
 

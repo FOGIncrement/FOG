@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getUnassignedFollowers } from './utils/helpers.js';
+import { getUnassignedFollowers, getRoleCount, setRoleCount } from './utils/helpers.js';
 import { ROLE_DEFINITION_BY_ID } from './config/roles.js';
 
 export function training() {
@@ -31,7 +31,8 @@ function trainRole(roleKey, baseCost, label) {
     if (gameState.progression.faith < cost) return;
 
     gameState.progression.faith -= cost;
-    gameState.progression[roleKey] = (gameState.progression[roleKey] || 0) + toTrain;
+    const currentRoleCount = getRoleCount(roleKey);
+    setRoleCount(roleKey, currentRoleCount + toTrain);
 
     addLog(`Trained ${toTrain} follower${toTrain > 1 ? 's' : ''} as ${label}.`);
     updateUI();

@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getMaxFollowers } from './utils/helpers.js';
+import { getMaxFollowers, getRoleCount } from './utils/helpers.js';
 import { buildingRegistry } from './registries/index.js';
 
 let preachRollReady = false;
@@ -205,7 +205,7 @@ export function rollPreachD4() {
 export function feedFollowers() {
     if (gameState.resources.food.amount <= 0 || game.hungerPercent >= 100) return;
     gameState.resources.food.spend(1);
-    const cookBonusMultiplier = 1 + (gameState.progression.cooks || 0) * gameState.rates.cookHungerGainBonusPerCook;
+    const cookBonusMultiplier = 1 + getRoleCount('cooks') * gameState.rates.cookHungerGainBonusPerCook;
     const hungerGain = game.feedAmount * cookBonusMultiplier;
     game.hungerPercent = Math.min(100, game.hungerPercent + hungerGain);
     addLog('You feed the followers. Hunger restored.');
@@ -228,4 +228,19 @@ export function buildRitualCircle() {
         updateUI();
         saveGame();
     }
+}
+
+export function unlockAltar() {
+    if (game.altarUnlocked) return;
+    if (gameState.progression.followers < game.shelterUpgradeFollowerRequirement) return;
+
+    const cost = gameState.costs.unlockAltarFaithCost;
+    if (gameState.progression.faith < cost) return;
+
+    gameState.progression.faith -= cost;
+    game.altarUnlocked = true;
+    addLog('Altar unlocked. New possibilities await.');
+
+    updateUI();
+    saveGame();
 }

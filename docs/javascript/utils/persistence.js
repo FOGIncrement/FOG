@@ -1,5 +1,11 @@
 import { gameState, game } from '../classes/GameState.js';
 import { Resource } from '../classes/Resource.js';
+import {
+    ROLE_DEFINITIONS,
+    createRoleCountMap,
+    createRoleUnlockMap,
+    createRoleAccumulatorMap
+} from '../config/roles.js';
 
 function ensureResourceInstance(key, fallbackAmount, fallbackCost, fallbackGatherAmount) {
     const current = gameState.resources[key];
@@ -47,6 +53,26 @@ export function loadGame() {
             Object.assign(gameState.gathering, savedGathering);
             Object.assign(gameState.rates, savedRates);
 
+            const savedRoleMap = savedProg.roles && typeof savedProg.roles === 'object'
+                ? savedProg.roles
+                : {};
+            const mergedRoleMap = createRoleCountMap(0);
+
+            ROLE_DEFINITIONS.forEach((roleDefinition) => {
+                const roleId = roleDefinition.id;
+                const mapValue = savedRoleMap[roleId];
+                const legacyValue = savedProg[roleId];
+                const resolvedValue = Number.isFinite(mapValue)
+                    ? mapValue
+                    : (Number.isFinite(legacyValue) ? legacyValue : 0);
+                const normalized = Math.max(0, Math.floor(resolvedValue));
+
+                mergedRoleMap[roleId] = normalized;
+                gameState.progression[roleId] = normalized;
+            });
+
+            gameState.progression.roles = mergedRoleMap;
+
             // enforce intended food gather range (legacy saves may carry older higher values)
             gameState.gathering.gatherFoodMinMultiplier = 1;
             gameState.gathering.gatherFoodMaxMultiplier = 10;
@@ -81,6 +107,25 @@ export function loadGame() {
             // restore top-level game flags
             Object.assign(game, savedGame);
 
+            if (!gameState.runtime || typeof gameState.runtime !== 'object') {
+                gameState.runtime = {};
+            }
+
+            const mergedAccumulators = createRoleAccumulatorMap(0);
+            const savedAccumulators = savedState.runtime?.roleAccumulators;
+            ROLE_DEFINITIONS.forEach((roleDefinition) => {
+                const roleId = roleDefinition.id;
+                const savedAccumulator = savedAccumulators?.[roleId];
+                mergedAccumulators[roleId] = Number.isFinite(savedAccumulator) && savedAccumulator >= 0
+                    ? savedAccumulator
+                    : 0;
+            });
+
+            gameState.runtime.roleAccumulators = mergedAccumulators;
+            gameState.runtime.autoSaveAccumulator = Number.isFinite(savedState.runtime?.autoSaveAccumulator)
+                ? Math.max(0, savedState.runtime.autoSaveAccumulator)
+                : 0;
+
             if (!game.seenItems || typeof game.seenItems !== 'object') {
                 game.seenItems = {};
             }
@@ -89,33 +134,27 @@ export function loadGame() {
             if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 1) {
                 gameState.progression.followers = 1;
             }
-            if (!Number.isFinite(gameState.progression.hunters) || gameState.progression.hunters < 0) {
-                gameState.progression.hunters = 0;
-            }
-            if (!Number.isFinite(gameState.progression.ritualists) || gameState.progression.ritualists < 0) {
-                gameState.progression.ritualists = 0;
-            }
-            if (!Number.isFinite(gameState.progression.gatherers) || gameState.progression.gatherers < 0) {
-                gameState.progression.gatherers = 0;
-            }
-            if (!Number.isFinite(gameState.progression.cooks) || gameState.progression.cooks < 0) {
-                gameState.progression.cooks = 0;
-            }
-            if (gameState.progression.hunters > gameState.progression.followers) {
-                gameState.progression.hunters = gameState.progression.followers;
-            }
-            const assignedTotal =
-                gameState.progression.hunters +
-                gameState.progression.ritualists +
-                gameState.progression.gatherers +
-                gameState.progression.cooks;
+            ROLE_DEFINITIONS.forEach((roleDefinition) => {
+                const roleId = roleDefinition.id;
+                const count = gameState.progression.roles[roleId];
+                const normalized = Number.isFinite(count) && count >= 0 ? Math.floor(count) : 0;
+                gameState.progression.roles[roleId] = normalized;
+                gameState.progression[roleId] = normalized;
+            });
+
+            const assignedTotal = ROLE_DEFINITIONS.reduce((total, roleDefinition) => {
+                return total + gameState.progression.roles[roleDefinition.id];
+            }, 0);
+
             if (assignedTotal > gameState.progression.followers) {
                 let overflow = assignedTotal - gameState.progression.followers;
-                ['cooks', 'gatherers', 'ritualists', 'hunters'].forEach((role) => {
+                ROLE_DEFINITIONS.slice().reverse().forEach((roleDefinition) => {
                     if (overflow <= 0) return;
-                    const current = gameState.progression[role] || 0;
+                    const roleId = roleDefinition.id;
+                    const current = gameState.progression.roles[roleId] || 0;
                     const reduction = Math.min(current, overflow);
-                    gameState.progression[role] = current - reduction;
+                    gameState.progression.roles[roleId] = current - reduction;
+                    gameState.progression[roleId] = gameState.progression.roles[roleId];
                     overflow -= reduction;
                 });
             }
@@ -136,6 +175,9 @@ export function loadGame() {
             if (typeof game.shelterUpgradeUnlocked !== 'boolean') {
                 game.shelterUpgradeUnlocked = false;
             }
+            if (typeof game.altarUnlocked !== 'boolean') {
+                game.altarUnlocked = false;
+            }
             if (!Number.isFinite(game.shelterUpgradeFollowerRequirement) || game.shelterUpgradeFollowerRequirement < 1) {
                 game.shelterUpgradeFollowerRequirement = 30;
             }
@@ -146,11 +188,15 @@ export function loadGame() {
             }
 
             if (!game.roleUnlocks || typeof game.roleUnlocks !== 'object') {
-                game.roleUnlocks = { hunters: false, ritualists: false, gatherers: false, cooks: false };
+                game.roleUnlocks = createRoleUnlockMap(false);
             }
-            ['hunters', 'ritualists', 'gatherers', 'cooks'].forEach((role) => {
-                game.roleUnlocks[role] = Boolean(game.roleUnlocks[role]);
+
+            const normalizedUnlocks = createRoleUnlockMap(false);
+            ROLE_DEFINITIONS.forEach((roleDefinition) => {
+                const roleId = roleDefinition.id;
+                normalizedUnlocks[roleId] = Boolean(game.roleUnlocks[roleId]);
             });
+            game.roleUnlocks = normalizedUnlocks;
 
             if (!game.trainingUnlocked && Object.values(game.roleUnlocks).some(Boolean)) {
                 game.trainingUnlocked = true;
