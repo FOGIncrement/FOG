@@ -219,10 +219,13 @@ export function getActionUiRules(context) {
         feedFollowers(el) {
             if (ritualBuilt) {
                 setVisible(el, true);
-                const canAfford = gameState.resources.food.amount > 0 && game.hungerPercent < 100;
+                const feedFoodCost = Number.isFinite(gameState.costs.manualFeedFoodCost)
+                    ? Math.max(1, Math.floor(gameState.costs.manualFeedFoodCost))
+                    : 1;
+                const canAfford = gameState.resources.food.amount >= feedFoodCost && game.hungerPercent < 100;
                 setAffordability(el, canAfford);
                 el.classList.toggle('purchased', !canAfford);
-                applyTooltip(el, 'Feed Followers\nSpend food to restore hunger immediately.', `Cost: 1 food\nEffect: +${game.feedAmount} hunger (base, boosted by cooks)`);
+                applyTooltip(el, 'Feed Followers\nSpend food to restore hunger immediately.', `Cost: ${feedFoodCost} food\nEffect: +${game.feedAmount} hunger (base, boosted by cooks)`);
             } else {
                 setVisible(el, false);
             }

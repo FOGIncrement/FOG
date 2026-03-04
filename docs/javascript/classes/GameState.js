@@ -28,7 +28,7 @@ export const gameState = {
         })
     },
     gathering: {
-        manualGatherBaseAmount: 5,
+        manualGatherBaseAmount: 1,
         manualGatherShelterBonus: 2,
         gatherFoodMinMultiplier: 1,
         gatherFoodMaxMultiplier: 3
@@ -41,6 +41,7 @@ export const gameState = {
         ritualistBaseCost: 30,
         gathererBaseCost: 25,
         cookBaseCost: 28,
+        manualFeedFoodCost: 1,
         ritualBtnCost: 10,
         preachFaithCost: 1,
         unlockHuntersFaithCost: 40,

@@ -225,8 +225,12 @@ export function rollPreachD4() {
 }
 
 export function feedFollowers() {
-    if (gameState.resources.food.amount <= 0 || game.hungerPercent >= 100) return;
-    gameState.resources.food.spend(1);
+    const feedFoodCost = Number.isFinite(gameState.costs.manualFeedFoodCost)
+        ? Math.max(1, Math.floor(gameState.costs.manualFeedFoodCost))
+        : 1;
+
+    if (gameState.resources.food.amount < feedFoodCost || game.hungerPercent >= 100) return;
+    gameState.resources.food.spend(feedFoodCost);
     const cookBonusMultiplier = 1 + getRoleCount('cooks') * gameState.rates.cookHungerGainBonusPerCook;
     const hungerGain = game.feedAmount * cookBonusMultiplier;
     game.hungerPercent = Math.min(100, game.hungerPercent + hungerGain);

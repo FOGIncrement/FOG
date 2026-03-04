@@ -9,6 +9,35 @@ import {
 
 const SAVE_KEYS = ['fogGameSave', 'fogSave', 'fog-save', 'FOG_SAVE'];
 const RESET_GUARD_KEY = 'fogResetInProgress';
+const SAVE_EPOCH_KEY = 'fogSaveEpoch';
+
+let sessionSaveEpoch = null;
+
+function normalizeEpoch(value) {
+    const parsed = Number.parseInt(String(value), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function getCurrentSaveEpoch() {
+    const existing = normalizeEpoch(localStorage.getItem(SAVE_EPOCH_KEY));
+    if (existing != null) return existing;
+
+    const initialEpoch = 1;
+    localStorage.setItem(SAVE_EPOCH_KEY, String(initialEpoch));
+    return initialEpoch;
+}
+
+function setCurrentSaveEpoch(epoch) {
+    const normalized = normalizeEpoch(epoch) || 1;
+    localStorage.setItem(SAVE_EPOCH_KEY, String(normalized));
+    return normalized;
+}
+
+function ensureSessionEpoch() {
+    if (sessionSaveEpoch != null) return sessionSaveEpoch;
+    sessionSaveEpoch = getCurrentSaveEpoch();
+    return sessionSaveEpoch;
+}
 
 function clearFogStorageKeys(storage) {
     if (!storage) return;
@@ -38,7 +67,14 @@ export function saveGame() {
         return;
     }
 
+    const activeEpoch = getCurrentSaveEpoch();
+    const ownedEpoch = ensureSessionEpoch();
+    if (ownedEpoch !== activeEpoch) {
+        return;
+    }
+
     const saveData = {
+        saveEpoch: ownedEpoch,
         gameState,
         game
     };
@@ -52,10 +88,18 @@ export function loadGame() {
         return false;
     }
 
+    const activeEpoch = getCurrentSaveEpoch();
+    sessionSaveEpoch = activeEpoch;
+
     const saved = localStorage.getItem('fogGameSave');
     if (saved) {
         try {
             const data = JSON.parse(saved);
+
+            const savedEpoch = normalizeEpoch(data?.saveEpoch);
+            if (savedEpoch != null && savedEpoch !== activeEpoch) {
+                return false;
+            }
 
             const savedState = data?.gameState || {};
             const savedProg = savedState.progression || {};
@@ -241,6 +285,10 @@ export function loadGame() {
             if (!Number.isFinite(gameState.costs.altarBuildFaithCost) || gameState.costs.altarBuildFaithCost < 1) {
                 gameState.costs.altarBuildFaithCost = 200;
             }
+            if (!Number.isFinite(gameState.costs.manualFeedFoodCost) || gameState.costs.manualFeedFoodCost < 1) {
+                gameState.costs.manualFeedFoodCost = 1;
+            }
+            gameState.costs.manualFeedFoodCost = Math.max(1, Math.floor(gameState.costs.manualFeedFoodCost));
 
             if (typeof game.shelterUpgradeUnlocked !== 'boolean') {
                 game.shelterUpgradeUnlocked = false;
@@ -303,10 +351,14 @@ export function loadGame() {
 }
 
 export function clearSave() {
+    const nextEpoch = getCurrentSaveEpoch() + 1;
+
     sessionStorage.setItem(RESET_GUARD_KEY, '1');
     SAVE_KEYS.forEach((key) => localStorage.removeItem(key));
     clearFogStorageKeys(localStorage);
     clearFogStorageKeys(sessionStorage);
+    setCurrentSaveEpoch(nextEpoch);
+    sessionSaveEpoch = nextEpoch;
     sessionStorage.setItem(RESET_GUARD_KEY, '1');
     console.log('Save cleared. Reloading...');
     location.reload();
