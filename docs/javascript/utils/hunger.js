@@ -52,6 +52,11 @@ export function getHungerDrainPerSecond(gameState, game) {
     const drainMultiplier = Number.isFinite(game.hungerDrainPerFoodDeficit)
         ? game.hungerDrainPerFoodDeficit
         : 0;
+    const cookCount = getRoleCount('cooks');
+    const drainReductionPerCook = Number.isFinite(gameState.rates?.cookHungerDrainReductionPerCook)
+        ? Math.max(0, gameState.rates.cookHungerDrainReductionPerCook)
+        : 0;
+    const drainReduction = cookCount * drainReductionPerCook;
 
-    return Math.max(0, deficit * Math.max(0, drainMultiplier));
+    return Math.max(0, (deficit * Math.max(0, drainMultiplier)) - drainReduction);
 }

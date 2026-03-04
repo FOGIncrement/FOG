@@ -38,7 +38,8 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Ritualist Faith Per Second', target: gameState.rates, key: 'ritualistFaithPerSecond', step: 0.01, min: 0 },
             { label: 'Gatherer Wood Per Second', target: gameState.rates, key: 'gathererWoodPerSecond', step: 0.01, min: 0 },
             { label: 'Gatherer Stone Per Second', target: gameState.rates, key: 'gathererStonePerSecond', step: 0.01, min: 0 },
-            { label: 'Cook Flat Hunger Gain Per Second', target: gameState.rates, key: 'cookFlatHungerGainPerSecond', step: 0.01, min: 0 },
+            { label: 'Cook Hunger Gain Per Cook Per Second', target: gameState.rates, key: 'cookFlatHungerGainPerSecond', step: 0.01, min: 0 },
+            { label: 'Cook Hunger Drain Reduction Per Cook', target: gameState.rates, key: 'cookHungerDrainReductionPerCook', step: 0.01, min: 0 },
             { label: 'Cook Hunger Bonus Per Cook', target: gameState.rates, key: 'cookHungerGainBonusPerCook', step: 0.1, min: 0 }
         ]
     },

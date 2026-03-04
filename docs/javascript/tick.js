@@ -143,6 +143,12 @@ export function gameTick(dtSeconds = 1) {
     processRoleSimulation(clampedDt);
 
     if (game.hungerVisible) {
+        const cookCount = getRoleCount('cooks');
+        const cookHungerGainPerSecond = Math.max(0, Number.isFinite(gameState.rates.cookFlatHungerGainPerSecond)
+            ? gameState.rates.cookFlatHungerGainPerSecond
+            : 0);
+        const cookPassiveHungerPerSecond = cookCount * cookHungerGainPerSecond;
+
         const foodAmountBeforeConsumption = Math.max(0, gameState.resources.food.amount);
         const consumptionPerSecond = getFollowerFoodConsumptionPerSecond(gameState, game);
         gameState.resources.food.amount -= consumptionPerSecond * clampedDt;
@@ -170,6 +176,10 @@ export function gameTick(dtSeconds = 1) {
 
         if (starving) {
             game.hungerPercent = clampPercent(game.hungerPercent - (hungerDrainPerSecond * starvationSeconds));
+        }
+
+        if (cookPassiveHungerPerSecond > 0) {
+            game.hungerPercent = clampPercent(game.hungerPercent + (cookPassiveHungerPerSecond * clampedDt));
         }
 
         applyHiddenStability(starving, deficitPerSecond, clampedDt);
