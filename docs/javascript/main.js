@@ -1,18 +1,21 @@
 import { loadGame, clearSave, saveGame } from './utils/persistence.js';
 import { clearNew } from './utils/ui-helpers.js';
+import { initTooltips, setTooltipContent } from './utils/tooltip.js';
+import { addLog } from './utils/logging.js';
 import { gameState } from './classes/GameState.js';
 import * as gameApi from './game.js';
 import { actionRegistry } from './registries/index.js';
-import { ACTION_TAB_ORDER } from './config/actions.js';
+import { ACTION_TAB_ORDER } from './config/action-definitions.js';
 
 // ===== DOM LOADED =====
 document.addEventListener("DOMContentLoaded", () => {
     // Try to load saved game first
     loadGame();
+    initTooltips();
 
     // startup sanity (defensive against bad legacy saves)
-    if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 1) {
-        gameState.progression.followers = 1;
+    if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 0) {
+        gameState.progression.followers = 0;
     }
     if (!Number.isFinite(gameState.progression.faith) || gameState.progression.faith < 0) {
         gameState.progression.faith = 0;
@@ -41,13 +44,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const resetSaveBtn = document.getElementById('resetSaveBtn');
     if (resetSaveBtn) {
+        setTooltipContent(
+            resetSaveBtn,
+            'Reset Save\nClear saved progress and restart from the beginning.',
+            'Deletes local save data for this browser profile.'
+        );
         resetSaveBtn.addEventListener('click', () => {
             const confirmed = window.confirm('Clear saved progress and restart?');
             if (confirmed) clearSave();
         });
     }
 
-    setInterval(gameApi.gameTick, 1000);
+    initCheatMenu();
+
+    let lastTickMs = performance.now();
+    setInterval(() => {
+        const now = performance.now();
+        const dtSeconds = (now - lastTickMs) / 1000;
+        lastTickMs = now;
+        gameApi.gameTick(dtSeconds);
+    }, 100);
     gameApi.updateUI();
 });
 
@@ -67,4 +83,48 @@ function initTabs() {
 
     // default active tab: actions
     activate('actions');
+}
+
+function initCheatMenu() {
+    const MILLION = 1_000_000;
+
+    const cheatFaithBtn = document.getElementById('cheatFaithBtn');
+    if (cheatFaithBtn) {
+        cheatFaithBtn.addEventListener('click', () => {
+            gameState.progression.faith += MILLION;
+            addLog('Cheat used: +1,000,000 faith.');
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
+
+    const cheatFoodBtn = document.getElementById('cheatFoodBtn');
+    if (cheatFoodBtn) {
+        cheatFoodBtn.addEventListener('click', () => {
+            gameState.resources.food.amount += MILLION;
+            addLog('Cheat used: +1,000,000 food.');
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
+
+    const cheatWoodBtn = document.getElementById('cheatWoodBtn');
+    if (cheatWoodBtn) {
+        cheatWoodBtn.addEventListener('click', () => {
+            gameState.resources.wood.amount += MILLION;
+            addLog('Cheat used: +1,000,000 wood.');
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
+
+    const cheatStoneBtn = document.getElementById('cheatStoneBtn');
+    if (cheatStoneBtn) {
+        cheatStoneBtn.addEventListener('click', () => {
+            gameState.resources.stone.amount += MILLION;
+            addLog('Cheat used: +1,000,000 stone.');
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
 }

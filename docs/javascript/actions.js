@@ -2,7 +2,8 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getMaxFollowers } from './utils/helpers.js';
+import { getMaxFollowers, getRoleCount } from './utils/helpers.js';
+import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 
 let preachRollReady = false;
@@ -127,9 +128,15 @@ export function preach() {
     if (!canPreachNow() || preachRollInProgress) return;
     preachRollReady = true;
 
+    const preachBonus = Number.isFinite(game.diceBonuses?.preach) ? Math.trunc(game.diceBonuses.preach) : 0;
+
     const text = document.getElementById('preachDiceText');
     const die = document.getElementById('preachDieFace');
-    if (text) text.innerText = 'Roll 1d4 for conversion:';
+    if (text) {
+        text.innerText = preachBonus > 0
+            ? `Roll 1d4 + ${preachBonus} for conversion:`
+            : 'Roll 1d4 for conversion:';
+    }
     if (die) die.innerText = '?';
 
     setPreachDiceVisible(true);
@@ -165,7 +172,10 @@ export function rollPreachD4() {
 
         if (tick >= animationTicks) {
             clearInterval(timer);
-            const finalRoll = Math.floor(Math.random() * 4) + 1;
+            const preachBonus = Number.isFinite(game.diceBonuses?.preach) ? Math.trunc(game.diceBonuses.preach) : 0;
+            const result = rollDice('1d4', { bonus: preachBonus });
+            const finalRoll = result.total;
+            const baseRoll = result.baseTotal;
             if (die) die.innerText = `${finalRoll}`;
 
             const max = getMaxFollowers();
@@ -181,12 +191,24 @@ export function rollPreachD4() {
                     game.unlocksTabUnlocked = true;
                     addLog('Unlocks tab is now available.');
                 }
-                addLog(`D4 rolled ${finalRoll}. Your sermon converted ${converted} follower${converted > 1 ? 's' : ''}.`);
+                if (result.bonus > 0) {
+                    addLog(`Preach roll ${result.notation}: ${baseRoll} + ${result.bonus} = ${finalRoll}. Your sermon converted ${converted} follower${converted > 1 ? 's' : ''}.`);
+                } else {
+                    addLog(`Preach roll ${result.notation}: ${finalRoll}. Your sermon converted ${converted} follower${converted > 1 ? 's' : ''}.`);
+                }
             } else {
-                addLog(`D4 rolled ${finalRoll}, but you have no room for more followers.`);
+                if (result.bonus > 0) {
+                    addLog(`Preach roll ${result.notation}: ${baseRoll} + ${result.bonus} = ${finalRoll}, but you have no room for more followers.`);
+                } else {
+                    addLog(`Preach roll ${result.notation}: ${finalRoll}, but you have no room for more followers.`);
+                }
             }
 
-            if (text) text.innerText = `Rolled ${finalRoll} on 1d4.`;
+            if (text) {
+                text.innerText = result.bonus > 0
+                    ? `Rolled ${baseRoll} + ${result.bonus} = ${finalRoll} on ${result.notation}.`
+                    : `Rolled ${finalRoll} on ${result.notation}.`;
+            }
 
             preachRollInProgress = false;
             preachRollReady = false;
@@ -205,7 +227,7 @@ export function rollPreachD4() {
 export function feedFollowers() {
     if (gameState.resources.food.amount <= 0 || game.hungerPercent >= 100) return;
     gameState.resources.food.spend(1);
-    const cookBonusMultiplier = 1 + (gameState.progression.cooks || 0) * gameState.rates.cookHungerGainBonusPerCook;
+    const cookBonusMultiplier = 1 + getRoleCount('cooks') * gameState.rates.cookHungerGainBonusPerCook;
     const hungerGain = game.feedAmount * cookBonusMultiplier;
     game.hungerPercent = Math.min(100, game.hungerPercent + hungerGain);
     addLog('You feed the followers. Hunger restored.');
@@ -228,4 +250,41 @@ export function buildRitualCircle() {
         updateUI();
         saveGame();
     }
+}
+
+export function buildAltar() {
+    if (!game.altarUnlocked || game.altarBuilt) return;
+
+    const woodCost = gameState.costs.altarBuildWoodCost;
+    const stoneCost = gameState.costs.altarBuildStoneCost;
+    const faithCost = gameState.costs.altarBuildFaithCost;
+
+    const canAfford =
+        gameState.resources.wood.amount >= woodCost &&
+        gameState.resources.stone.amount >= stoneCost &&
+        gameState.progression.faith >= faithCost;
+
+    if (!canAfford) return;
+
+    gameState.resources.wood.spend(woodCost);
+    gameState.resources.stone.spend(stoneCost);
+    gameState.progression.faith -= faithCost;
+
+    game.altarBuilt = true;
+    game.diceBonuses.preach = Math.max(1, Number.isFinite(game.diceBonuses.preach) ? Math.trunc(game.diceBonuses.preach) : 0);
+    addLog('Altar built. Preach rolls now gain +1 (1d4 + 1).');
+
+    updateUI();
+    saveGame();
+}
+
+export function unlockAltar() {
+    if (game.altarUnlocked) return;
+    if (gameState.progression.followers < game.shelterUpgradeFollowerRequirement) return;
+
+    game.altarUnlocked = true;
+    addLog('Altar unlocked. Build it in the Build tab to activate its effects.');
+
+    updateUI();
+    saveGame();
 }

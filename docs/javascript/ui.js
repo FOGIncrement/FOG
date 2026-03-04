@@ -1,14 +1,14 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount } from './utils/helpers.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
-import { ACTION_TAB_ORDER } from './config/actions.js';
+import { ACTION_TAB_ORDER } from './config/action-definitions.js';
 import { getActionUiRules } from './config/action-rules.js';
 import { buildingRegistry, actionRegistry } from './registries/index.js';
 
 export function updateUI() {
-    if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 1) {
-        gameState.progression.followers = 1;
+    if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 0) {
+        gameState.progression.followers = 0;
     }
 
     const followersEl = document.getElementById('followers');
@@ -31,23 +31,23 @@ export function updateUI() {
     if (followersEl) followersEl.innerText = `${gameState.progression.followers}/${getMaxFollowers()}`;
     if (faithEl) {
         const followerFaithRate = gameState.progression.followers * gameState.progression.faithPerFollower;
-        const ritualistFaithRate = (gameState.progression.ritualists || 0) * gameState.rates.ritualistFaithPerSecond;
+        const ritualistFaithRate = getRoleCount('ritualists') * gameState.rates.ritualistFaithPerSecond;
         const totalFaithRate = followerFaithRate + ritualistFaithRate;
         faithEl.innerText = `${gameState.progression.faith.toFixed(2)} (+${totalFaithRate.toFixed(3)}/s)`;
     }
 
     if (woodRateEl) {
-        const woodRate = (gameState.progression.gatherers || 0) * gameState.rates.gathererWoodPerSecond;
+        const woodRate = getRoleCount('gatherers') * gameState.rates.gathererWoodPerSecond;
         woodRateEl.innerText = `(+${woodRate.toFixed(3)}/s)`;
     }
 
     if (stoneRateEl) {
-        const stoneRate = (gameState.progression.gatherers || 0) * gameState.rates.gathererStonePerSecond;
+        const stoneRate = getRoleCount('gatherers') * gameState.rates.gathererStonePerSecond;
         stoneRateEl.innerText = `(+${stoneRate.toFixed(3)}/s)`;
     }
 
     if (hunterContainer && hunterValue) {
-        const hunterCount = gameState.progression.hunters || 0;
+        const hunterCount = getRoleCount('hunters');
         hunterValue.innerText = hunterCount;
         hunterContainer.style.display = hunterCount > 0 ? 'block' : 'none';
         if (hunterBonus) {
@@ -56,7 +56,7 @@ export function updateUI() {
         }
     }
     if (ritualistContainer && ritualistValue) {
-        const ritualistCount = gameState.progression.ritualists || 0;
+        const ritualistCount = getRoleCount('ritualists');
         ritualistValue.innerText = ritualistCount;
         ritualistContainer.style.display = ritualistCount > 0 ? 'block' : 'none';
         if (ritualistBonus) {
@@ -65,7 +65,7 @@ export function updateUI() {
         }
     }
     if (gathererContainer && gathererValue) {
-        const gathererCount = gameState.progression.gatherers || 0;
+        const gathererCount = getRoleCount('gatherers');
         gathererValue.innerText = gathererCount;
         gathererContainer.style.display = gathererCount > 0 ? 'block' : 'none';
         if (gathererBonus) {
@@ -75,7 +75,7 @@ export function updateUI() {
         }
     }
     if (cookContainer && cookValue) {
-        const cookCount = gameState.progression.cooks || 0;
+        const cookCount = getRoleCount('cooks');
         cookValue.innerText = cookCount;
         cookContainer.style.display = cookCount > 0 ? 'block' : 'none';
         if (cookBonus) {
@@ -94,7 +94,7 @@ export function updateUI() {
         if (type === 'food') {
             const rateEl = document.getElementById('foodRate');
             if (rateEl) {
-                const hunterRate = gameState.progression.hunters * gameState.rates.hunterFoodPerSecond;
+                const hunterRate = getRoleCount('hunters') * gameState.rates.hunterFoodPerSecond;
                 const autoFeedCost = (game.hungerVisible && game.hungerPercent < 100)
                     ? Math.min(game.autoFeedFoodPerSecond, gameState.resources.food.amount)
                     : 0;
@@ -123,8 +123,8 @@ export function updateUI() {
         const drain = gameState.progression.followers * game.followerHungerDrain;
         const autoFeeding = game.hungerVisible && gameState.resources.food.amount > 0 && game.hungerPercent < 100;
         const autoFeedAmount = autoFeeding ? Math.min(game.autoFeedFoodPerSecond, gameState.resources.food.amount) : 0;
-        const cookFlatGain = (gameState.progression.cooks || 0) * gameState.rates.cookFlatHungerGainPerSecond;
-        const cookBonusMultiplier = 1 + (gameState.progression.cooks || 0) * gameState.rates.cookHungerGainBonusPerCook;
+        const cookFlatGain = getRoleCount('cooks') * gameState.rates.cookFlatHungerGainPerSecond;
+        const cookBonusMultiplier = 1 + getRoleCount('cooks') * gameState.rates.cookHungerGainBonusPerCook;
         const netRate = autoFeeding
             ? ((autoFeedAmount * game.foodHungerGain * cookBonusMultiplier) + cookFlatGain - drain)
             : (cookFlatGain - drain);
@@ -144,7 +144,7 @@ export function updateUI() {
     if (unassignedFollowersValue) unassignedFollowersValue.innerText = `${getUnassignedFollowers()}`;
     ROLE_DEFINITIONS.forEach((role) => {
         const roleValueEl = document.getElementById(role.roleValueId);
-        if (roleValueEl) roleValueEl.innerText = `${gameState.progression[role.id] || 0}`;
+        if (roleValueEl) roleValueEl.innerText = `${getRoleCount(role.id)}`;
     });
 
     updateButtons();

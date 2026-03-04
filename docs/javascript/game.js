@@ -10,7 +10,9 @@ export {
     cancelPreachRoll,
     feedFollowers,
     buildRitualCircle,
-    unlockShelterUpgrade
+    buildAltar,
+    unlockShelterUpgrade,
+    unlockAltar
 } from './actions.js';
 
 export {
