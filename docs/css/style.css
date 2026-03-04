@@ -27,7 +27,68 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    min-width: 180px;
+    min-width: 320px;
+    max-height: 80vh;
+    overflow: auto;
+}
+
+.cheat-balance-panel {
+    margin-top: 6px;
+    border-top: 1px solid #3b3b3b;
+    padding-top: 8px;
+}
+
+.cheat-balance-title {
+    margin: 0 0 6px;
+    color: #bbb;
+    font-weight: bold;
+}
+
+.cheat-balance-actions {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+#cheatBalanceTableContainer {
+    max-height: 48vh;
+    overflow: auto;
+    border: 1px solid #343434;
+}
+
+.cheat-balance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.cheat-balance-table th,
+.cheat-balance-table td {
+    border-bottom: 1px solid #2a2a2a;
+    padding: 4px 6px;
+    text-align: left;
+}
+
+.cheat-balance-table th {
+    color: #aaa;
+    background: #171717;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.cheat-balance-table .section-row td {
+    background: #151515;
+    color: #9ec5ff;
+    font-weight: bold;
+}
+
+.cheat-balance-table input[type="number"] {
+    width: 100px;
+    background: #101010;
+    color: #ddd;
+    border: 1px solid #555;
+    padding: 3px 4px;
 }
 
 button {
