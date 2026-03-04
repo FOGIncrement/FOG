@@ -41,7 +41,7 @@ export const gameState = {
         ritualistBaseCost: 30,
         gathererBaseCost: 25,
         cookBaseCost: 28,
-        manualFeedFoodCost: 1,
+        manualFeedFoodCost: 100,
         ritualBtnCost: 10,
         preachFaithCost: 1,
         unlockHuntersFaithCost: 40,

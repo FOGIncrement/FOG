@@ -10,6 +10,9 @@ import {
 const SAVE_KEYS = ['fogGameSave', 'fogSave', 'fog-save', 'FOG_SAVE'];
 const RESET_GUARD_KEY = 'fogResetInProgress';
 const SAVE_EPOCH_KEY = 'fogSaveEpoch';
+const DEFAULT_MANUAL_FEED_FOOD_COST = Number.isFinite(gameState.costs?.manualFeedFoodCost)
+    ? Math.max(1, Math.floor(gameState.costs.manualFeedFoodCost))
+    : 1;
 
 let sessionSaveEpoch = null;
 
@@ -286,7 +289,7 @@ export function loadGame() {
                 gameState.costs.altarBuildFaithCost = 200;
             }
             if (!Number.isFinite(gameState.costs.manualFeedFoodCost) || gameState.costs.manualFeedFoodCost < 1) {
-                gameState.costs.manualFeedFoodCost = 1;
+                gameState.costs.manualFeedFoodCost = DEFAULT_MANUAL_FEED_FOOD_COST;
             }
             gameState.costs.manualFeedFoodCost = Math.max(1, Math.floor(gameState.costs.manualFeedFoodCost));
 
