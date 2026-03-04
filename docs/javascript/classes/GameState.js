@@ -75,6 +75,7 @@ export const game = {
     convertCost: 10,
     ritualCircleBuilt: 0,
     shelter: 0,
+    shelterCostScalePerBuilt: 0.8,
     shelterCapacityPerShelter: 3,
     shelterCapacityMultiplier: 1,
     shelterUpgradeUnlocked: false,

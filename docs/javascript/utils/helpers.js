@@ -54,7 +54,10 @@ export function getRoleTrainingCost(baseCost) {
 
 export function getShelterBuildCosts() {
     const sheltersBuilt = Number.isFinite(game.shelter) ? Math.max(0, game.shelter) : 0;
-    const scale = 1 + (0.25 * sheltersBuilt);
+    const scalePerBuilt = Number.isFinite(game.shelterCostScalePerBuilt)
+        ? game.shelterCostScalePerBuilt
+        : 0.1;
+    const scale = 1 + (scalePerBuilt * sheltersBuilt);
     const woodBase = Number.isFinite(gameState.costs.shelterWoodCost) ? gameState.costs.shelterWoodCost : 0;
     const stoneBase = Number.isFinite(gameState.costs.shelterStoneCost) ? gameState.costs.shelterStoneCost : 0;
 
