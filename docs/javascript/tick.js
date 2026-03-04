@@ -4,6 +4,7 @@ import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
 import { getRoleCount } from './utils/helpers.js';
+import { getFollowerFoodConsumptionPerSecond, getFoodDeficitPerSecond, getHungerDrainPerSecond } from './utils/hunger.js';
 
 function getRuntime() {
     if (!gameState.runtime || typeof gameState.runtime !== 'object') {
@@ -89,6 +90,50 @@ function processRoleSimulation(dtSeconds) {
     });
 }
 
+function clampPercent(value) {
+    if (!Number.isFinite(value)) return 0;
+    return Math.max(0, Math.min(100, value));
+}
+
+function applyHiddenStability(starving, deficitPerSecond, dtSeconds) {
+    if (!Number.isFinite(game.stability)) {
+        game.stability = 100;
+    }
+
+    const stabilityGainPerSecondWhenFed = Number.isFinite(game.stabilityGainPerSecondWhenFed)
+        ? Math.max(0, game.stabilityGainPerSecondWhenFed)
+        : 0;
+    const stabilityDrainPerFoodDeficit = Number.isFinite(game.stabilityDrainPerFoodDeficit)
+        ? Math.max(0, game.stabilityDrainPerFoodDeficit)
+        : 0;
+    const weakThreshold = Number.isFinite(game.stabilityWeakHungerThreshold)
+        ? game.stabilityWeakHungerThreshold
+        : 20;
+    const criticalThreshold = Number.isFinite(game.stabilityCriticalHungerThreshold)
+        ? game.stabilityCriticalHungerThreshold
+        : 5;
+    const weakDrainPerSecond = Number.isFinite(game.stabilityWeakDrainPerSecond)
+        ? Math.max(0, game.stabilityWeakDrainPerSecond)
+        : 0;
+    const criticalDrainPerSecond = Number.isFinite(game.stabilityCriticalDrainPerSecond)
+        ? Math.max(0, game.stabilityCriticalDrainPerSecond)
+        : 0;
+
+    if (starving) {
+        game.stability -= deficitPerSecond * stabilityDrainPerFoodDeficit * dtSeconds;
+    } else {
+        game.stability += stabilityGainPerSecondWhenFed * dtSeconds;
+    }
+
+    if (game.hungerPercent < criticalThreshold) {
+        game.stability -= criticalDrainPerSecond * dtSeconds;
+    } else if (game.hungerPercent < weakThreshold) {
+        game.stability -= weakDrainPerSecond * dtSeconds;
+    }
+
+    game.stability = clampPercent(game.stability);
+}
+
 export function gameTick(dtSeconds = 1) {
     if (!Number.isFinite(dtSeconds) || dtSeconds <= 0) return;
 
@@ -97,23 +142,23 @@ export function gameTick(dtSeconds = 1) {
     gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * clampedDt;
     processRoleSimulation(clampedDt);
 
-    const cookCount = getRoleCount('cooks');
-
     if (game.hungerVisible) {
-        const cookFlatGain = cookCount * gameState.rates.cookFlatHungerGainPerSecond * clampedDt;
+        const consumptionPerSecond = getFollowerFoodConsumptionPerSecond(gameState, game);
+        gameState.resources.food.amount -= consumptionPerSecond * clampedDt;
 
-        const cookEfficiency = Math.min(0.5, cookCount * gameState.rates.cookHungerDrainReductionPerCook);
-        const drain = gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency) * clampedDt;
+        const deficitPerSecond = getFoodDeficitPerSecond(gameState, game);
+        const hungerDrainPerSecond = getHungerDrainPerSecond(gameState, game);
+        const starving = gameState.resources.food.amount < 0 && deficitPerSecond > 0;
 
-        if (gameState.resources.food.amount > 0 && game.hungerPercent < 100) {
-            const autoFeedAmount = Math.min(game.autoFeedFoodPerSecond * clampedDt, gameState.resources.food.amount);
-            gameState.resources.food.spend(autoFeedAmount);
-            const hungerGain = autoFeedAmount * game.foodHungerGain * (1 + cookCount * gameState.rates.cookHungerGainBonusPerCook);
-            const netEffect = hungerGain + cookFlatGain - drain;
-            game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent + netEffect));
-        } else {
-            game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent + cookFlatGain - drain));
+        if (gameState.resources.food.amount < 0) {
+            gameState.resources.food.amount = 0;
         }
+
+        if (starving) {
+            game.hungerPercent = clampPercent(game.hungerPercent - (hungerDrainPerSecond * clampedDt));
+        }
+
+        applyHiddenStability(starving, deficitPerSecond, clampedDt);
 
         if (game.hungerPercent < 5 && game.lastHungerWarning !== 'critical') {
             addLog('The faithful are starving.');

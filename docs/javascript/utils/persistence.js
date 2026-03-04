@@ -7,6 +7,9 @@ import {
     createRoleAccumulatorMap
 } from '../config/roles.js';
 
+const SAVE_KEYS = ['fogGameSave', 'fogSave', 'fog-save', 'FOG_SAVE'];
+const RESET_GUARD_KEY = 'fogResetInProgress';
+
 function ensureResourceInstance(key, fallbackAmount, fallbackCost, fallbackGatherAmount) {
     const current = gameState.resources[key];
     if (current instanceof Resource && typeof current.gather === 'function') return current;
@@ -16,6 +19,10 @@ function ensureResourceInstance(key, fallbackAmount, fallbackCost, fallbackGathe
 }
 
 export function saveGame() {
+    if (sessionStorage.getItem(RESET_GUARD_KEY) === '1') {
+        return;
+    }
+
     const saveData = {
         gameState,
         game
@@ -25,6 +32,11 @@ export function saveGame() {
 }
 
 export function loadGame() {
+    if (sessionStorage.getItem(RESET_GUARD_KEY) === '1') {
+        sessionStorage.removeItem(RESET_GUARD_KEY);
+        return false;
+    }
+
     const saved = localStorage.getItem('fogGameSave');
     if (saved) {
         try {
@@ -166,6 +178,35 @@ export function loadGame() {
             }
             game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent));
 
+            if (!Number.isFinite(game.followerFoodPerSecond) || game.followerFoodPerSecond < 0) {
+                game.followerFoodPerSecond = 0.12;
+            }
+            if (!Number.isFinite(game.hungerDrainPerFoodDeficit) || game.hungerDrainPerFoodDeficit < 0) {
+                game.hungerDrainPerFoodDeficit = 4;
+            }
+            if (!Number.isFinite(game.stability)) {
+                game.stability = 100;
+            }
+            game.stability = Math.max(0, Math.min(100, game.stability));
+            if (!Number.isFinite(game.stabilityGainPerSecondWhenFed) || game.stabilityGainPerSecondWhenFed < 0) {
+                game.stabilityGainPerSecondWhenFed = 0.04;
+            }
+            if (!Number.isFinite(game.stabilityDrainPerFoodDeficit) || game.stabilityDrainPerFoodDeficit < 0) {
+                game.stabilityDrainPerFoodDeficit = 2;
+            }
+            if (!Number.isFinite(game.stabilityWeakHungerThreshold) || game.stabilityWeakHungerThreshold < 0) {
+                game.stabilityWeakHungerThreshold = 20;
+            }
+            if (!Number.isFinite(game.stabilityCriticalHungerThreshold) || game.stabilityCriticalHungerThreshold < 0) {
+                game.stabilityCriticalHungerThreshold = 5;
+            }
+            if (!Number.isFinite(game.stabilityWeakDrainPerSecond) || game.stabilityWeakDrainPerSecond < 0) {
+                game.stabilityWeakDrainPerSecond = 0.03;
+            }
+            if (!Number.isFinite(game.stabilityCriticalDrainPerSecond) || game.stabilityCriticalDrainPerSecond < 0) {
+                game.stabilityCriticalDrainPerSecond = 0.08;
+            }
+
             if (!Number.isFinite(game.shelterCapacityPerShelter) || game.shelterCapacityPerShelter < 1) {
                 game.shelterCapacityPerShelter = 3;
             }
@@ -247,11 +288,8 @@ export function loadGame() {
 }
 
 export function clearSave() {
-    localStorage.removeItem('fogGameSave');
-    // legacy/fallback keys from previous structures
-    localStorage.removeItem('fogSave');
-    localStorage.removeItem('fog-save');
-    localStorage.removeItem('FOG_SAVE');
+    sessionStorage.setItem(RESET_GUARD_KEY, '1');
+    SAVE_KEYS.forEach((key) => localStorage.removeItem(key));
     console.log('Save cleared. Reloading...');
     location.reload();
 }
