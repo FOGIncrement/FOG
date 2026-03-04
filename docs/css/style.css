@@ -51,6 +51,7 @@ body {
 }
 
 #cheatBalanceTableContainer {
+    min-height: 180px;
     max-height: 48vh;
     overflow: auto;
     border: 1px solid #343434;

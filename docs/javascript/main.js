@@ -191,109 +191,126 @@ function initCheatMenu() {
 function initCheatBalanceEditor() {
     const container = document.getElementById('cheatBalanceTableContainer');
     if (!container) return;
+    container.innerHTML = '<p style="margin:6px;color:#999;">Loading balance controls...</p>';
 
     const applyAllBtn = document.getElementById('cheatApplyAllBtn');
     const resetInputsBtn = document.getElementById('cheatResetInputsBtn');
 
-    const bindings = CHEAT_BALANCE_FIELD_SECTIONS.flatMap((section) => section.entries);
+    const bindings = CHEAT_BALANCE_FIELD_SECTIONS
+        .flatMap((section) => section.entries)
+        .filter((entry) => entry && entry.target && typeof entry.target === 'object' && typeof entry.key === 'string');
 
-    const table = document.createElement('table');
-    table.className = 'cheat-balance-table';
+    try {
+        if (bindings.length === 0) {
+            container.innerHTML = '<p style="margin:6px;color:#caa;">No balance fields available.</p>';
+            return;
+        }
 
-    const head = document.createElement('thead');
-    const headRow = document.createElement('tr');
-    ['Variable', 'Value', 'Apply'].forEach((label) => {
-        const th = document.createElement('th');
-        th.innerText = label;
-        headRow.appendChild(th);
-    });
-    head.appendChild(headRow);
-    table.appendChild(head);
+        const table = document.createElement('table');
+        table.className = 'cheat-balance-table';
 
-    const body = document.createElement('tbody');
+        const head = document.createElement('thead');
+        const headRow = document.createElement('tr');
+        ['Variable', 'Value', 'Apply'].forEach((label) => {
+            const th = document.createElement('th');
+            th.innerText = label;
+            headRow.appendChild(th);
+        });
+        head.appendChild(headRow);
+        table.appendChild(head);
 
-    CHEAT_BALANCE_FIELD_SECTIONS.forEach((section) => {
-        const sectionRow = document.createElement('tr');
-        sectionRow.className = 'section-row';
-        const sectionCell = document.createElement('td');
-        sectionCell.colSpan = 3;
-        sectionCell.innerText = section.title;
-        sectionRow.appendChild(sectionCell);
-        body.appendChild(sectionRow);
+        const body = document.createElement('tbody');
 
-        section.entries.forEach((entry) => {
-            const row = document.createElement('tr');
+        CHEAT_BALANCE_FIELD_SECTIONS.forEach((section) => {
+            const validEntries = section.entries.filter((entry) => entry && entry.target && typeof entry.target === 'object' && typeof entry.key === 'string');
+            if (!validEntries.length) return;
 
-            const labelCell = document.createElement('td');
-            labelCell.innerText = entry.label;
+            const sectionRow = document.createElement('tr');
+            sectionRow.className = 'section-row';
+            const sectionCell = document.createElement('td');
+            sectionCell.colSpan = 3;
+            sectionCell.innerText = section.title;
+            sectionRow.appendChild(sectionCell);
+            body.appendChild(sectionRow);
 
-            const valueCell = document.createElement('td');
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.step = String(entry.step ?? 0.01);
-            if (Number.isFinite(entry.min)) input.min = String(entry.min);
-            input.value = String(entry.target[entry.key]);
-            input.dataset.cheatKey = entry.key;
-            input.dataset.cheatLabel = entry.label;
-            valueCell.appendChild(input);
+            validEntries.forEach((entry) => {
+                const row = document.createElement('tr');
 
-            const actionCell = document.createElement('td');
-            const applyBtn = document.createElement('button');
-            applyBtn.type = 'button';
-            applyBtn.innerText = 'Set';
-            applyBtn.addEventListener('click', () => {
-                if (applyEntryValue(entry, input.value)) {
+                const labelCell = document.createElement('td');
+                labelCell.innerText = entry.label;
+
+                const valueCell = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.step = String(entry.step ?? 0.01);
+                if (Number.isFinite(entry.min)) input.min = String(entry.min);
+                const currentValue = Number.isFinite(entry.target[entry.key]) ? entry.target[entry.key] : 0;
+                input.value = String(currentValue);
+                input.dataset.cheatKey = entry.key;
+                input.dataset.cheatLabel = entry.label;
+                valueCell.appendChild(input);
+
+                const actionCell = document.createElement('td');
+                const applyBtn = document.createElement('button');
+                applyBtn.type = 'button';
+                applyBtn.innerText = 'Set';
+                applyBtn.addEventListener('click', () => {
+                    if (applyEntryValue(entry, input.value)) {
+                        normalizeBalanceSettings();
+                        input.value = String(entry.target[entry.key]);
+                        gameApi.updateUI();
+                        saveGame();
+                        addLog(`Cheat tune: ${entry.label} set to ${entry.target[entry.key]}.`);
+                    }
+                });
+                actionCell.appendChild(applyBtn);
+
+                row.appendChild(labelCell);
+                row.appendChild(valueCell);
+                row.appendChild(actionCell);
+                body.appendChild(row);
+            });
+        });
+
+        table.appendChild(body);
+        container.innerHTML = '';
+        container.appendChild(table);
+
+        if (applyAllBtn) {
+            applyAllBtn.addEventListener('click', () => {
+                let changedCount = 0;
+                bindings.forEach((entry) => {
+                    const selector = `input[data-cheat-key="${entry.key}"][data-cheat-label="${entry.label}"]`;
+                    const input = table.querySelector(selector);
+                    if (!input) return;
+                    if (applyEntryValue(entry, input.value)) {
+                        changedCount += 1;
+                        input.value = String(entry.target[entry.key]);
+                    }
+                });
+
+                if (changedCount > 0) {
                     normalizeBalanceSettings();
-                    input.value = String(entry.target[entry.key]);
                     gameApi.updateUI();
                     saveGame();
-                    addLog(`Cheat tune: ${entry.label} set to ${entry.target[entry.key]}.`);
+                    addLog(`Cheat tune: applied ${changedCount} balance value${changedCount === 1 ? '' : 's'}.`);
                 }
             });
-            actionCell.appendChild(applyBtn);
+        }
 
-            row.appendChild(labelCell);
-            row.appendChild(valueCell);
-            row.appendChild(actionCell);
-            body.appendChild(row);
-        });
-    });
-
-    table.appendChild(body);
-    container.innerHTML = '';
-    container.appendChild(table);
-
-    if (applyAllBtn) {
-        applyAllBtn.addEventListener('click', () => {
-            let changedCount = 0;
-            bindings.forEach((entry) => {
-                const selector = `input[data-cheat-key="${entry.key}"][data-cheat-label="${entry.label}"]`;
-                const input = table.querySelector(selector);
-                if (!input) return;
-                if (applyEntryValue(entry, input.value)) {
-                    changedCount += 1;
+        if (resetInputsBtn) {
+            resetInputsBtn.addEventListener('click', () => {
+                bindings.forEach((entry) => {
+                    const selector = `input[data-cheat-key="${entry.key}"][data-cheat-label="${entry.label}"]`;
+                    const input = table.querySelector(selector);
+                    if (!input) return;
                     input.value = String(entry.target[entry.key]);
-                }
+                });
             });
-
-            if (changedCount > 0) {
-                normalizeBalanceSettings();
-                gameApi.updateUI();
-                saveGame();
-                addLog(`Cheat tune: applied ${changedCount} balance value${changedCount === 1 ? '' : 's'}.`);
-            }
-        });
-    }
-
-    if (resetInputsBtn) {
-        resetInputsBtn.addEventListener('click', () => {
-            bindings.forEach((entry) => {
-                const selector = `input[data-cheat-key="${entry.key}"][data-cheat-label="${entry.label}"]`;
-                const input = table.querySelector(selector);
-                if (!input) return;
-                input.value = String(entry.target[entry.key]);
-            });
-        });
+        }
+    } catch (error) {
+        console.error('Failed to build cheat balance editor:', error);
+        container.innerHTML = '<p style="margin:6px;color:#c66;">Could not render balance controls. Check console for details.</p>';
     }
 }
 
