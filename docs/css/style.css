@@ -5,6 +5,17 @@ body {
     padding: 20px;
 }
 
+.site-title-art {
+    margin: 0 0 16px;
+    padding: 0;
+    white-space: pre;
+    overflow-x: auto;
+    overflow-y: hidden;
+    font-size: 14px;
+    line-height: 1.12;
+    color: #ddd;
+}
+
 .cheat-menu {
     position: fixed;
     top: 10px;
