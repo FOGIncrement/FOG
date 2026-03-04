@@ -4,7 +4,7 @@ import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
 import { getRoleCount } from './utils/helpers.js';
-import { getFollowerFoodConsumptionPerSecond, getFoodDeficitPerSecond, getHungerDrainPerSecond } from './utils/hunger.js';
+import { getFollowerFoodConsumptionPerSecond, getFoodDeficitPerSecond, getHungerDrainPerSecond, getFoodProductionPerSecond } from './utils/hunger.js';
 
 function getRuntime() {
     if (!gameState.runtime || typeof gameState.runtime !== 'object') {
@@ -143,19 +143,33 @@ export function gameTick(dtSeconds = 1) {
     processRoleSimulation(clampedDt);
 
     if (game.hungerVisible) {
+        const foodAmountBeforeConsumption = Math.max(0, gameState.resources.food.amount);
         const consumptionPerSecond = getFollowerFoodConsumptionPerSecond(gameState, game);
         gameState.resources.food.amount -= consumptionPerSecond * clampedDt;
 
+        const productionPerSecond = getFoodProductionPerSecond(gameState, game);
         const deficitPerSecond = getFoodDeficitPerSecond(gameState, game);
         const hungerDrainPerSecond = getHungerDrainPerSecond(gameState, game);
-        const starving = gameState.resources.food.amount < 0 && deficitPerSecond > 0;
+
+        let starvationSeconds = 0;
+        if (deficitPerSecond > 0) {
+            if (foodAmountBeforeConsumption <= 0) {
+                starvationSeconds = clampedDt;
+            } else if (consumptionPerSecond > productionPerSecond) {
+                const netFoodLossPerSecond = consumptionPerSecond - productionPerSecond;
+                const secondsUntilFoodRunsOut = foodAmountBeforeConsumption / netFoodLossPerSecond;
+                starvationSeconds = Math.max(0, clampedDt - Math.min(clampedDt, secondsUntilFoodRunsOut));
+            }
+        }
+
+        const starving = starvationSeconds > 0;
 
         if (gameState.resources.food.amount < 0) {
             gameState.resources.food.amount = 0;
         }
 
         if (starving) {
-            game.hungerPercent = clampPercent(game.hungerPercent - (hungerDrainPerSecond * clampedDt));
+            game.hungerPercent = clampPercent(game.hungerPercent - (hungerDrainPerSecond * starvationSeconds));
         }
 
         applyHiddenStability(starving, deficitPerSecond, clampedDt);

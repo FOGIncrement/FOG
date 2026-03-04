@@ -10,6 +10,21 @@ import {
 const SAVE_KEYS = ['fogGameSave', 'fogSave', 'fog-save', 'FOG_SAVE'];
 const RESET_GUARD_KEY = 'fogResetInProgress';
 
+function clearFogStorageKeys(storage) {
+    if (!storage) return;
+
+    const keysToDelete = [];
+    for (let i = 0; i < storage.length; i += 1) {
+        const key = storage.key(i);
+        if (!key) continue;
+        if (/fog/i.test(key)) {
+            keysToDelete.push(key);
+        }
+    }
+
+    keysToDelete.forEach((key) => storage.removeItem(key));
+}
+
 function ensureResourceInstance(key, fallbackAmount, fallbackCost, fallbackGatherAmount) {
     const current = gameState.resources[key];
     if (current instanceof Resource && typeof current.gather === 'function') return current;
@@ -290,6 +305,9 @@ export function loadGame() {
 export function clearSave() {
     sessionStorage.setItem(RESET_GUARD_KEY, '1');
     SAVE_KEYS.forEach((key) => localStorage.removeItem(key));
+    clearFogStorageKeys(localStorage);
+    clearFogStorageKeys(sessionStorage);
+    sessionStorage.setItem(RESET_GUARD_KEY, '1');
     console.log('Save cleared. Reloading...');
     location.reload();
 }
