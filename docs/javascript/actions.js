@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getMaxFollowers, getRoleCount } from './utils/helpers.js';
+import { getMaxFollowers, getRoleCount, getShelterBuildCosts } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 
@@ -74,19 +74,15 @@ export function buildShelter() {
     const shelterDefinition = buildingRegistry.get('shelter');
     if (!shelterDefinition) return;
 
-    const woodCostKey = shelterDefinition.resourceCostKeys.wood;
-    const stoneCostKey = shelterDefinition.resourceCostKeys.stone;
+    const shelterCosts = getShelterBuildCosts();
 
     if (
-        gameState.resources.wood.amount >= gameState.costs[woodCostKey] &&
-        gameState.resources.stone.amount >= gameState.costs[stoneCostKey]
+        gameState.resources.wood.amount >= shelterCosts.wood &&
+        gameState.resources.stone.amount >= shelterCosts.stone
     ) {
-        gameState.resources.wood.spend(gameState.costs[woodCostKey]);
-        gameState.resources.stone.spend(gameState.costs[stoneCostKey]);
+        gameState.resources.wood.spend(shelterCosts.wood);
+        gameState.resources.stone.spend(shelterCosts.stone);
         game[shelterDefinition.levelKey] += 1;
-
-        gameState.costs[woodCostKey] = Math.floor(gameState.costs[woodCostKey] * 1.8);
-        gameState.costs[stoneCostKey] = Math.floor(gameState.costs[stoneCostKey] * 1.8);
 
         if (!game.hungerVisible) game.hungerVisible = true;
 

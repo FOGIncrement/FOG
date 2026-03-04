@@ -108,7 +108,7 @@ export function initTooltips() {
         pendingTarget = target;
         clearShowTimer();
         showTimer = setTimeout(() => {
-            if (pendingTarget === target && !mouseDown) {
+            if (pendingTarget === target && !mouseDown && target.matches(':hover')) {
                 showTooltip(target);
             }
             showTimer = null;
@@ -139,6 +139,10 @@ export function initTooltips() {
         const target = event.target.closest('button');
         if (!target) return;
         const nextTarget = event.relatedTarget?.closest?.('button') || null;
+        if (pendingTarget === target && nextTarget !== target) {
+            clearShowTimer();
+            pendingTarget = null;
+        }
         if (activeEl === target && nextTarget !== target) hideTooltip();
     }, true);
 
@@ -163,6 +167,10 @@ export function initTooltips() {
     window.addEventListener('blur', () => {
         hideTooltip();
     });
+
+    document.addEventListener('mouseleave', () => {
+        hideTooltip();
+    }, true);
 
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) hideTooltip();

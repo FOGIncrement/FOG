@@ -52,6 +52,18 @@ export function getRoleTrainingCost(baseCost) {
     return toTrain * baseCost;
 }
 
+export function getShelterBuildCosts() {
+    const sheltersBuilt = Number.isFinite(game.shelter) ? Math.max(0, game.shelter) : 0;
+    const scale = 1 + (0.25 * sheltersBuilt);
+    const woodBase = Number.isFinite(gameState.costs.shelterWoodCost) ? gameState.costs.shelterWoodCost : 0;
+    const stoneBase = Number.isFinite(gameState.costs.shelterStoneCost) ? gameState.costs.shelterStoneCost : 0;
+
+    return {
+        wood: woodBase * scale,
+        stone: stoneBase * scale
+    };
+}
+
 export function rollPreachConversions() {
     const weights = Array.isArray(game.preachOutcomeWeights) && game.preachOutcomeWeights.length === 4
         ? game.preachOutcomeWeights

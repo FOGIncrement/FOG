@@ -1,4 +1,5 @@
 import { setTooltipContent } from '../utils/tooltip.js';
+import { getShelterBuildCosts } from '../utils/helpers.js';
 
 function applyTooltip(el, summary, stats = '') {
     setTooltipContent(el, summary, stats);
@@ -22,8 +23,6 @@ export function getActionUiRules(context) {
     const ritualCostKey = ritualDefinition.faithCostKey;
 
     const shelterLevel = game[shelterDefinition.levelKey];
-    const shelterWoodCostKey = shelterDefinition.resourceCostKeys.wood;
-    const shelterStoneCostKey = shelterDefinition.resourceCostKeys.stone;
     const preachBonus = Number.isFinite(game.diceBonuses?.preach) ? Math.trunc(game.diceBonuses.preach) : 0;
 
     return {
@@ -98,10 +97,11 @@ export function getActionUiRules(context) {
             }
         },
         buildShelter(el) {
+            const shelterCosts = getShelterBuildCosts();
             if (
                 !game.shelterBtnUnlocked &&
-                gameState.resources.wood.amount >= gameState.costs[shelterWoodCostKey] &&
-                gameState.resources.stone.amount >= gameState.costs[shelterStoneCostKey]
+                gameState.resources.wood.amount >= shelterCosts.wood &&
+                gameState.resources.stone.amount >= shelterCosts.stone
             ) {
                 game.shelterBtnUnlocked = true;
             }
@@ -109,13 +109,13 @@ export function getActionUiRules(context) {
             if (game.shelterBtnUnlocked) {
                 setVisible(el, true);
                 const canAfford =
-                    gameState.resources.wood.amount >= gameState.costs[shelterWoodCostKey] &&
-                    gameState.resources.stone.amount >= gameState.costs[shelterStoneCostKey];
+                    gameState.resources.wood.amount >= shelterCosts.wood &&
+                    gameState.resources.stone.amount >= shelterCosts.stone;
                 setAffordability(el, canAfford);
                 const shelterLabel = game.shelterUpgradeUnlocked ? 'Build shack' : 'Build shelter';
-                setButtonLabel(el, `${shelterLabel} (${gameState.costs[shelterWoodCostKey]}/${gameState.costs[shelterStoneCostKey]})`);
+                setButtonLabel(el, `${shelterLabel} (${shelterLevel} built)`);
                 el.classList.toggle('purchased', !canAfford);
-                applyTooltip(el, 'Build Shelter\nIncrease follower capacity.', `Cost: ${gameState.costs[shelterWoodCostKey]} wood, ${gameState.costs[shelterStoneCostKey]} stone\nCapacity: +${(game.shelterCapacityPerShelter || 3) * (game.shelterCapacityMultiplier || 1)} followers`);
+                applyTooltip(el, 'Build Shelter\nIncrease follower capacity.', `Built: ${shelterLevel}\nCost: ${shelterCosts.wood} wood, ${shelterCosts.stone} stone\nCapacity: +${(game.shelterCapacityPerShelter || 3) * (game.shelterCapacityMultiplier || 1)} followers`);
             } else {
                 setVisible(el, false);
             }
