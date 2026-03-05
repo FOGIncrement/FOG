@@ -114,7 +114,6 @@ function normalizeExplorationTuning(exploration) {
     exploration.hazardAmbushMaxLossPercent = clampMinimum(exploration.hazardAmbushMaxLossPercent, 60, exploration.hazardAmbushMinLossPercent);
     exploration.prophetHeavyLossDeathChance = clampProbability(exploration.prophetHeavyLossDeathChance, 0.5);
 
-    exploration.wildAreaDiscoveryChance = clampProbability(exploration.wildAreaDiscoveryChance, 0.12);
     exploration.wildAreaSeedCount = Math.max(1, Math.floor(clampMinimum(exploration.wildAreaSeedCount, 8, 1)));
     exploration.wildAreaDistanceMinStep = Math.max(1, Math.floor(clampMinimum(exploration.wildAreaDistanceMinStep, 30, 1)));
     exploration.wildAreaDistanceMaxStep = Math.max(
@@ -194,6 +193,10 @@ function seedWildAreas(exploration) {
 function ensureWildAreaSeeds(exploration) {
     normalizeExplorationTuning(exploration);
 
+    if (typeof exploration.wildAreaSeedInitialized !== 'boolean') {
+        exploration.wildAreaSeedInitialized = false;
+    }
+
     if (!Array.isArray(exploration.discoveredAreas) || exploration.discoveredAreas.length === 0) {
         seedWildAreas(exploration);
         return;
@@ -231,32 +234,42 @@ function ensureWildAreaSeeds(exploration) {
 
     if (!hasAssignedDistance) {
         seedWildAreas(exploration);
+        exploration.wildAreaSeedInitialized = true;
         return;
     }
 
-    migrateLegacyWildAreaDistances(exploration);
+    initializeWildAreaSeedIfNeeded(exploration);
 }
 
-function migrateLegacyWildAreaDistances(exploration) {
+function initializeWildAreaSeedIfNeeded(exploration) {
+    if (exploration?.wildAreaSeedInitialized) return;
     if (!Array.isArray(exploration?.discoveredAreas) || exploration.discoveredAreas.length === 0) return;
 
     const hasAnyDiscovered = exploration.discoveredAreas.some((area) => area?.discovered);
-    if (hasAnyDiscovered) return;
+    if (hasAnyDiscovered) {
+        exploration.wildAreaSeedInitialized = true;
+        return;
+    }
 
     const distances = exploration.discoveredAreas
         .map((area) => Number.isFinite(area?.distanceFromCamp) ? Math.floor(area.distanceFromCamp) : 0)
         .filter((distance) => distance > 0)
         .sort((left, right) => left - right);
 
-    if (distances.length === 0) return;
+    if (distances.length === 0) {
+        exploration.wildAreaSeedInitialized = true;
+        return;
+    }
     const nearestDistance = distances[0];
-    if (nearestDistance <= 10) return;
+    if (nearestDistance > 10) {
+        const offset = nearestDistance - 10;
+        exploration.discoveredAreas.forEach((area) => {
+            if (!Number.isFinite(area.distanceFromCamp)) return;
+            area.distanceFromCamp = Math.max(1, Math.floor(area.distanceFromCamp) - offset);
+        });
+    }
 
-    const offset = nearestDistance - 10;
-    exploration.discoveredAreas.forEach((area) => {
-        if (!Number.isFinite(area.distanceFromCamp)) return;
-        area.distanceFromCamp = Math.max(1, Math.floor(area.distanceFromCamp) - offset);
-    });
+    exploration.wildAreaSeedInitialized = true;
 }
 
 function applyWildAreaPassiveEffect(area) {

@@ -305,6 +305,9 @@ export function loadGame() {
             if (!Number.isFinite(game.exploration.totalMetersExplored) || game.exploration.totalMetersExplored < 0) {
                 game.exploration.totalMetersExplored = 0;
             }
+            if (typeof game.exploration.wildAreaSeedInitialized !== 'boolean') {
+                game.exploration.wildAreaSeedInitialized = false;
+            }
             if (!Array.isArray(game.exploration.discoveredAreas)) {
                 game.exploration.discoveredAreas = [];
             }
@@ -327,7 +330,6 @@ export function loadGame() {
                 : 60;
             game.exploration.prophetHeavyLossDeathChance = clampProbability(game.exploration.prophetHeavyLossDeathChance, 0.5);
 
-            game.exploration.wildAreaDiscoveryChance = clampProbability(game.exploration.wildAreaDiscoveryChance, 0.12);
             game.exploration.wildAreaSeedCount = Number.isFinite(game.exploration.wildAreaSeedCount)
                 ? Math.max(1, Math.floor(game.exploration.wildAreaSeedCount))
                 : 8;

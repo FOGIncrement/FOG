@@ -85,7 +85,6 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Ambush Loss Min Percent', target: game.exploration, key: 'hazardAmbushMinLossPercent', step: 1, min: 1 },
             { label: 'Ambush Loss Max Percent', target: game.exploration, key: 'hazardAmbushMaxLossPercent', step: 1, min: 1 },
             { label: 'Prophet Heavy Loss Death Chance', target: game.exploration, key: 'prophetHeavyLossDeathChance', step: 0.01, min: 0 },
-            { label: 'Wild Area Discovery Chance', target: game.exploration, key: 'wildAreaDiscoveryChance', step: 0.01, min: 0 },
             { label: 'Wild Area Seed Count', target: game.exploration, key: 'wildAreaSeedCount', step: 1, min: 1 },
             { label: 'Wild Area Distance Min Step', target: game.exploration, key: 'wildAreaDistanceMinStep', step: 1, min: 1 },
             { label: 'Wild Area Distance Max Step', target: game.exploration, key: 'wildAreaDistanceMaxStep', step: 1, min: 1 },
@@ -513,7 +512,6 @@ function normalizeBalanceSettings() {
         'hazardAmbushChance',
         'hazardHeavyLossFraction',
         'prophetHeavyLossDeathChance',
-        'wildAreaDiscoveryChance',
         'wildAreaResourceCacheChance',
         'wildAreaFaithPerFollowerBonusChance',
         'wildAreaHungerDrainPenaltyChance'
