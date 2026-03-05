@@ -355,11 +355,28 @@ button { position: relative; }
 }
 
 #discoveredSidebar {
+    position: fixed;
+    top: 220px;
+    left: calc(50% + 390px);
     width: 280px;
-    margin-left: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+    z-index: 20;
 }
 
 #discoveredSidebar h3 {
     margin-top: 0;
     margin-bottom: 10px;
+}
+
+@media (max-width: 1400px) {
+    #discoveredSidebar {
+        position: static;
+        left: auto;
+        top: auto;
+        width: min(720px, 95%);
+        margin: 14px auto 0;
+        max-height: none;
+        overflow-y: visible;
+    }
 }

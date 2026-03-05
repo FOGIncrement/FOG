@@ -12,6 +12,7 @@ export {
     buildRitualCircle,
     buildAltar,
     unlockShelterUpgrade,
+    unlockExploration,
     unlockAltar,
     startExpedition,
     rollExpedition,

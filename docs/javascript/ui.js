@@ -6,6 +6,16 @@ import { ACTION_TAB_ORDER } from './config/action-definitions.js';
 import { getActionUiRules } from './config/action-rules.js';
 import { buildingRegistry, actionRegistry } from './registries/index.js';
 
+function getExplorationCapacityRequirement() {
+    return Number.isFinite(game.prophetUnlockCapacityRequirement)
+        ? Math.floor(game.prophetUnlockCapacityRequirement)
+        : 150;
+}
+
+function hasExplorationSystemAccess() {
+    return getMaxFollowers() >= getExplorationCapacityRequirement() && Boolean(game.explorationUnlocked);
+}
+
 export function updateUI() {
     if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 0) {
         gameState.progression.followers = 0;
@@ -154,13 +164,21 @@ export function updateUI() {
         if (roleValueEl) roleValueEl.innerText = `${getRoleCount(role.id)}`;
     });
 
-    renderExplorationPanel();
-    renderDiscoveredAreas();
+    const explorationAccess = hasExplorationSystemAccess();
+    renderExplorationPanel(explorationAccess);
+    renderDiscoveredAreas(explorationAccess);
 
     updateButtons();
 }
 
-function renderExplorationPanel() {
+function renderExplorationPanel(hasExplorationAccess) {
+    const panel = document.getElementById('tab-explore');
+    if (panel) {
+        panel.style.display = hasExplorationAccess ? panel.style.display : 'none';
+    }
+
+    if (!hasExplorationAccess) return;
+
     const exploration = game.exploration || {};
     const expedition = exploration.activeExpedition;
 
@@ -203,17 +221,26 @@ function renderExplorationPanel() {
     }
 }
 
-function renderDiscoveredAreas() {
+function renderDiscoveredAreas(hasExplorationAccess) {
     const container = document.getElementById('discoveredAreasList');
-    if (!container) return;
+    const sidebar = document.getElementById('discoveredSidebar');
+    if (!container || !sidebar) return;
+
+    if (!hasExplorationAccess) {
+        sidebar.style.display = 'none';
+        return;
+    }
 
     const exploration = game.exploration || {};
     const villages = Array.isArray(exploration.villages)
         ? exploration.villages.filter((village) => village.discovered)
         : [];
     const wildAreas = Array.isArray(exploration.discoveredAreas) ? exploration.discoveredAreas : [];
+    const hasDiscoveries = villages.length > 0 || wildAreas.length > 0;
 
-    if (villages.length === 0 && wildAreas.length === 0) {
+    sidebar.style.display = hasDiscoveries ? 'block' : 'none';
+
+    if (!hasDiscoveries) {
         container.innerHTML = '<p class="area-empty">No discovered areas yet.</p>';
         return;
     }
@@ -315,6 +342,14 @@ function updateButtons() {
     const followerManagerHeader = document.querySelector('.tab-btn[data-tab="followerManager"]');
     if (followerManagerHeader) {
         followerManagerHeader.style.display = tabHeaderVisibility.followerManager ? 'inline-block' : 'none';
+    }
+
+    const activeTabHeader = document.querySelector('.tab-btn.active');
+    if (activeTabHeader instanceof HTMLElement && activeTabHeader.style.display === 'none') {
+        const actionsHeader = document.querySelector('.tab-btn[data-tab="actions"]');
+        if (actionsHeader instanceof HTMLElement) {
+            actionsHeader.click();
+        }
     }
 
     ROLE_DEFINITIONS.forEach((roleDefinition) => {

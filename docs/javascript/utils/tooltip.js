@@ -49,6 +49,7 @@ export function initTooltips() {
     let showTimer = null;
 
     const SHOW_DELAY_MS = 80;
+    const TOOLTIP_TARGET_SELECTOR = '[data-tooltip-summary], [data-tooltip-stats]';
 
     function clearShowTimer() {
         if (showTimer) {
@@ -59,6 +60,10 @@ export function initTooltips() {
 
     function hasTooltipContent(target) {
         return Boolean(target?.dataset?.tooltipSummary || target?.dataset?.tooltipStats);
+    }
+
+    function getTooltipTarget(node) {
+        return node?.closest?.(TOOLTIP_TARGET_SELECTOR) || null;
     }
 
     function positionTooltip(pointerX, pointerY) {
@@ -125,32 +130,36 @@ export function initTooltips() {
     document.addEventListener('pointermove', (event) => {
         lastPointer = { x: event.clientX, y: event.clientY };
         if (activeEl) {
+            if (!activeEl.isConnected || !activeEl.matches(':hover')) {
+                hideTooltip();
+                return;
+            }
             positionTooltip(lastPointer.x, lastPointer.y);
         }
     }, true);
 
     document.addEventListener('pointerover', (event) => {
-        const target = event.target.closest('button');
+        const target = getTooltipTarget(event.target);
         if (!target) return;
         scheduleShow(target);
     }, true);
 
     document.addEventListener('pointerout', (event) => {
-        const target = event.target.closest('button');
+        const target = getTooltipTarget(event.target);
         if (!target) return;
-        const nextTarget = event.relatedTarget?.closest?.('button') || null;
+        const nextTarget = getTooltipTarget(event.relatedTarget);
         if (activeEl === target && nextTarget !== target) hideTooltip();
     }, true);
 
     document.addEventListener('pointerdown', (event) => {
-        if (!event.target.closest('button')) return;
+        if (!getTooltipTarget(event.target)) return;
         mouseDown = true;
         hideTooltip();
     }, true);
 
     document.addEventListener('pointerup', () => {
         mouseDown = false;
-        const hovered = document.querySelector('button:hover');
+        const hovered = document.querySelector(`${TOOLTIP_TARGET_SELECTOR}:hover`);
         if (hovered) scheduleShow(hovered);
     }, true);
 

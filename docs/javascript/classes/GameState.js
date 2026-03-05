@@ -51,6 +51,7 @@ export const gameState = {
         unlockGatherersFaithCost: 60,
         unlockCooksFaithCost: 85,
         unlockProphetFaithCost: 500,
+        unlockExplorationFaithCost: 650,
         unlockShelterUpgradeFaithCost: 180,
         unlockAltarFaithCost: 0,
         altarBuildWoodCost: 150,
@@ -104,6 +105,7 @@ export const game = {
     },
     prophetUnlocked: false,
     prophetUnlockCapacityRequirement: 150,
+    explorationUnlocked: false,
     exploration: {
         followerSendLimit: 10,
         activeExpedition: null,

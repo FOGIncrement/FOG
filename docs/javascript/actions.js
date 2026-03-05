@@ -347,6 +347,29 @@ export function unlockShelterUpgrade() {
     saveGame();
 }
 
+export function unlockExploration() {
+    if (game.explorationUnlocked) return;
+
+    const requiredCapacity = Number.isFinite(game.prophetUnlockCapacityRequirement)
+        ? Math.floor(game.prophetUnlockCapacityRequirement)
+        : 150;
+
+    if (getMaxFollowers() < requiredCapacity) return;
+
+    const unlockCost = Number.isFinite(gameState.costs.unlockExplorationFaithCost)
+        ? Math.max(0, Math.floor(gameState.costs.unlockExplorationFaithCost))
+        : 650;
+
+    if (gameState.progression.faith < unlockCost) return;
+
+    gameState.progression.faith -= unlockCost;
+    game.explorationUnlocked = true;
+    addLog('Exploration unlocked. Expeditions are now available from the Explore tab.');
+
+    updateUI();
+    saveGame();
+}
+
 export function convertFollower() {
     if (gameState.progression.faith >= game.convertCost) {
         gameState.progression.faith -= game.convertCost;

@@ -25,6 +25,11 @@ export function getActionUiRules(context) {
     const shelterWoodCostKey = shelterDefinition.resourceCostKeys.wood;
     const shelterStoneCostKey = shelterDefinition.resourceCostKeys.stone;
     const preachBonus = Number.isFinite(game.diceBonuses?.preach) ? Math.trunc(game.diceBonuses.preach) : 0;
+    const explorationCapacityRequirement = Number.isFinite(game.prophetUnlockCapacityRequirement)
+        ? Math.floor(game.prophetUnlockCapacityRequirement)
+        : 150;
+    const hasExplorationCapacity = getMaxFollowers() >= explorationCapacityRequirement;
+    const hasExplorationAccess = hasExplorationCapacity && Boolean(game.explorationUnlocked);
 
     return {
         pray(el) {
@@ -222,6 +227,41 @@ export function getActionUiRules(context) {
             el.classList.toggle('purchased', !canAfford);
             applyTooltip(el, 'Upgrade Shelter to Shack\nBoost shelter effectiveness and reduce costs.', `Requirement: ${game.shelterUpgradeFollowerRequirement} followers\nCost: ${cost} faith\nEffect: x2 shelter capacity, 50% global cost reduction`);
         },
+        unlockExploration(el) {
+            if (!game.unlocksTabUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+
+            if (!hasExplorationCapacity && !game.explorationUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+
+            setVisible(el, true);
+
+            if (game.explorationUnlocked) {
+                el.disabled = true;
+                setButtonLabel(el, 'Unlock Exploration (Unlocked)');
+                el.classList.add('purchased');
+                applyTooltip(el, 'Unlock Exploration\nExploration systems are fully unlocked.', 'Status: unlocked');
+                return;
+            }
+
+            const cost = Number.isFinite(gameState.costs.unlockExplorationFaithCost)
+                ? Math.max(0, Math.floor(gameState.costs.unlockExplorationFaithCost))
+                : 650;
+            const canAfford = gameState.progression.faith >= cost;
+
+            setAffordability(el, canAfford);
+            setButtonLabel(el, 'Unlock Exploration');
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Unlock Exploration\nOpen expeditions and discovered-area tracking.',
+                `Requirement: ${explorationCapacityRequirement} follower capacity\nCost: ${cost} faith`
+            );
+        },
         preach(el) {
             const max = getMaxFollowers();
             if (max >= 3) {
@@ -274,12 +314,15 @@ export function getActionUiRules(context) {
             return Boolean(ritualButtonElement && (ritualButtonElement.dataset.unlocked === 'true' || ritualBuilt));
         },
         getTabHeaderVisibility(roleDefinitions) {
+            const hasDiscoveredArea = Boolean((game.exploration?.villages || []).some((village) => village.discovered))
+                || Boolean((game.exploration?.discoveredAreas || []).length > 0);
+
             return {
-                explore: Boolean(ritualBuilt),
+                explore: Boolean(ritualBuilt && hasExplorationAccess),
                 unlocks: Boolean(game.unlocksTabUnlocked),
                 food: Boolean(game.hasGatheredFood),
                 followerManager: roleDefinitions.some((role) => game.roleUnlocks[role.id]),
-                discovered: Boolean((game.exploration?.villages || []).some((village) => village.discovered))
+                discovered: Boolean(ritualBuilt && hasExplorationAccess && hasDiscoveredArea)
             };
         },
         hasAnyRoleUnlocked(roleDefinitions) {

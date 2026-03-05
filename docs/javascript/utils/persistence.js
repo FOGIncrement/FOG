@@ -190,6 +190,9 @@ export function loadGame() {
             if (!Number.isFinite(gameState.costs.unlockProphetFaithCost) || gameState.costs.unlockProphetFaithCost < 1) {
                 gameState.costs.unlockProphetFaithCost = 500;
             }
+            if (!Number.isFinite(gameState.costs.unlockExplorationFaithCost) || gameState.costs.unlockExplorationFaithCost < 0) {
+                gameState.costs.unlockExplorationFaithCost = 650;
+            }
             if (!Number.isFinite(gameState.costs.expeditionRollFaithCost) || gameState.costs.expeditionRollFaithCost < 1) {
                 gameState.costs.expeditionRollFaithCost = 50;
             }
@@ -214,6 +217,9 @@ export function loadGame() {
             }
             if (typeof game.prophetUnlocked !== 'boolean') {
                 game.prophetUnlocked = Boolean(game.roleUnlocks?.prophet);
+            }
+            if (typeof game.explorationUnlocked !== 'boolean') {
+                game.explorationUnlocked = false;
             }
             if (!Number.isFinite(game.prophetUnlockCapacityRequirement) || game.prophetUnlockCapacityRequirement < 1) {
                 game.prophetUnlockCapacityRequirement = 150;

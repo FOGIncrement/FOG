@@ -56,12 +56,21 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Unlock Gatherers Cost (Faith)', target: gameState.costs, key: 'unlockGatherersFaithCost', step: 1, min: 0 },
             { label: 'Unlock Cooks Cost (Faith)', target: gameState.costs, key: 'unlockCooksFaithCost', step: 1, min: 0 },
             { label: 'Unlock Prophet Cost (Faith)', target: gameState.costs, key: 'unlockProphetFaithCost', step: 1, min: 0 },
+            { label: 'Unlock Exploration Cost (Faith)', target: gameState.costs, key: 'unlockExplorationFaithCost', step: 1, min: 0 },
             { label: 'Expedition Roll Cost (Faith)', target: gameState.costs, key: 'expeditionRollFaithCost', step: 1, min: 0 },
             { label: 'Unlock Shelter Upgrade Cost (Faith)', target: gameState.costs, key: 'unlockShelterUpgradeFaithCost', step: 1, min: 0 },
             { label: 'Unlock Altar Cost (Faith)', target: gameState.costs, key: 'unlockAltarFaithCost', step: 1, min: 0 },
             { label: 'Build Altar Wood Cost', target: gameState.costs, key: 'altarBuildWoodCost', step: 1, min: 0 },
             { label: 'Build Altar Stone Cost', target: gameState.costs, key: 'altarBuildStoneCost', step: 1, min: 0 },
             { label: 'Build Altar Faith Cost', target: gameState.costs, key: 'altarBuildFaithCost', step: 1, min: 0 }
+        ]
+    },
+    {
+        title: 'Live Progression',
+        entries: [
+            { label: 'Current Followers', target: gameState.progression, key: 'followers', step: 1, min: 0 },
+            { label: 'Current Faith', target: gameState.progression, key: 'faith', step: 1, min: 0 },
+            { label: 'Shelter Count', target: game, key: 'shelter', step: 1, min: 0 }
         ]
     },
     {
@@ -360,5 +369,20 @@ function normalizeBalanceSettings() {
 
     if (!Number.isFinite(game.exploration.followerSendLimit) || game.exploration.followerSendLimit < 1) {
         game.exploration.followerSendLimit = 1;
+    }
+    game.exploration.followerSendLimit = Math.max(1, Math.floor(game.exploration.followerSendLimit));
+
+    if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 0) {
+        gameState.progression.followers = 0;
+    }
+    gameState.progression.followers = Math.floor(gameState.progression.followers);
+
+    if (!Number.isFinite(game.shelter) || game.shelter < 0) {
+        game.shelter = 0;
+    }
+    game.shelter = Math.floor(game.shelter);
+
+    if (!Number.isFinite(gameState.costs.unlockExplorationFaithCost) || gameState.costs.unlockExplorationFaithCost < 0) {
+        gameState.costs.unlockExplorationFaithCost = 0;
     }
 }
