@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, hasProphetAssigned, setRoleCount } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, hasProphetAssigned, setRoleCount } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 
@@ -69,6 +69,8 @@ function getExplorationState() {
         game.exploration.nextAreaIndex = 1;
     }
 
+    ensureWildAreaSeeds(game.exploration);
+
     return game.exploration;
 }
 
@@ -79,6 +81,172 @@ function getExpeditionConfig() {
         ? Math.max(1, Math.floor(gameState.costs.expeditionRollFaithCost))
         : 50;
     return { exploration, limit, rollFaithCost };
+}
+
+function clampProbability(value, fallback) {
+    const normalized = Number.isFinite(value) ? value : fallback;
+    return Math.max(0, Math.min(1, normalized));
+}
+
+function clampMinimum(value, fallback, minValue = 0) {
+    const normalized = Number.isFinite(value) ? value : fallback;
+    return Math.max(minValue, normalized);
+}
+
+function randomInRange(minValue, maxValue) {
+    const min = Math.min(minValue, maxValue);
+    const max = Math.max(minValue, maxValue);
+    return Math.random() * (max - min) + min;
+}
+
+function randomIntInRange(minValue, maxValue) {
+    return Math.floor(randomInRange(minValue, maxValue + 1));
+}
+
+function normalizeExplorationTuning(exploration) {
+    exploration.villageSpawnChance = clampProbability(exploration.villageSpawnChance, 0.2);
+    exploration.hazardWipeoutChance = clampProbability(exploration.hazardWipeoutChance, 0.08);
+    exploration.hazardHeavyLossChance = clampProbability(exploration.hazardHeavyLossChance, 0.17);
+    exploration.hazardAmbushChance = clampProbability(exploration.hazardAmbushChance, 0.20);
+    exploration.hazardHeavyLossFraction = clampProbability(exploration.hazardHeavyLossFraction, 0.5);
+    exploration.hazardAmbushMinLossPercent = clampMinimum(exploration.hazardAmbushMinLossPercent, 20, 1);
+    exploration.hazardAmbushMaxLossPercent = clampMinimum(exploration.hazardAmbushMaxLossPercent, 60, exploration.hazardAmbushMinLossPercent);
+    exploration.prophetHeavyLossDeathChance = clampProbability(exploration.prophetHeavyLossDeathChance, 0.5);
+
+    exploration.wildAreaDiscoveryChance = clampProbability(exploration.wildAreaDiscoveryChance, 0.12);
+    exploration.wildAreaSeedCount = Math.max(1, Math.floor(clampMinimum(exploration.wildAreaSeedCount, 8, 1)));
+    exploration.wildAreaDistanceMinStep = Math.max(50, Math.floor(clampMinimum(exploration.wildAreaDistanceMinStep, 180, 1)));
+    exploration.wildAreaDistanceMaxStep = Math.max(
+        exploration.wildAreaDistanceMinStep,
+        Math.floor(clampMinimum(exploration.wildAreaDistanceMaxStep, 520, exploration.wildAreaDistanceMinStep))
+    );
+
+    exploration.wildAreaResourceCacheChance = clampProbability(exploration.wildAreaResourceCacheChance, 0.45);
+    exploration.wildAreaResourceCacheWoodMin = Math.max(0, Math.floor(clampMinimum(exploration.wildAreaResourceCacheWoodMin, 80, 0)));
+    exploration.wildAreaResourceCacheWoodMax = Math.max(exploration.wildAreaResourceCacheWoodMin, Math.floor(clampMinimum(exploration.wildAreaResourceCacheWoodMax, 220, exploration.wildAreaResourceCacheWoodMin)));
+    exploration.wildAreaResourceCacheStoneMin = Math.max(0, Math.floor(clampMinimum(exploration.wildAreaResourceCacheStoneMin, 70, 0)));
+    exploration.wildAreaResourceCacheStoneMax = Math.max(exploration.wildAreaResourceCacheStoneMin, Math.floor(clampMinimum(exploration.wildAreaResourceCacheStoneMax, 200, exploration.wildAreaResourceCacheStoneMin)));
+
+    exploration.wildAreaFaithPerFollowerBonusChance = clampProbability(exploration.wildAreaFaithPerFollowerBonusChance, 0.2);
+    exploration.wildAreaFaithPerFollowerBonusMin = Math.max(0, clampMinimum(exploration.wildAreaFaithPerFollowerBonusMin, 0.001, 0));
+    exploration.wildAreaFaithPerFollowerBonusMax = Math.max(exploration.wildAreaFaithPerFollowerBonusMin, clampMinimum(exploration.wildAreaFaithPerFollowerBonusMax, 0.006, exploration.wildAreaFaithPerFollowerBonusMin));
+
+    exploration.wildAreaHungerDrainPenaltyChance = clampProbability(exploration.wildAreaHungerDrainPenaltyChance, 0.18);
+    exploration.wildAreaHungerDrainPenaltyMin = Math.max(0, clampMinimum(exploration.wildAreaHungerDrainPenaltyMin, 0.01, 0));
+    exploration.wildAreaHungerDrainPenaltyMax = Math.max(exploration.wildAreaHungerDrainPenaltyMin, clampMinimum(exploration.wildAreaHungerDrainPenaltyMax, 0.05, exploration.wildAreaHungerDrainPenaltyMin));
+}
+
+function createWildArea(index, distanceFromCamp, exploration) {
+    const area = {
+        id: `wild-area-${index}`,
+        name: `Wild Area ${index}`,
+        distanceFromCamp,
+        discovered: false,
+        discoveredAtMeters: null,
+        resourceCache: null,
+        passiveEffect: null
+    };
+
+    if (Math.random() < exploration.wildAreaResourceCacheChance) {
+        area.resourceCache = {
+            wood: randomIntInRange(exploration.wildAreaResourceCacheWoodMin, exploration.wildAreaResourceCacheWoodMax),
+            stone: randomIntInRange(exploration.wildAreaResourceCacheStoneMin, exploration.wildAreaResourceCacheStoneMax),
+            collected: false
+        };
+    }
+
+    if (Math.random() < exploration.wildAreaFaithPerFollowerBonusChance) {
+        const amount = randomInRange(exploration.wildAreaFaithPerFollowerBonusMin, exploration.wildAreaFaithPerFollowerBonusMax);
+        area.passiveEffect = {
+            type: 'faithPerFollowerBonus',
+            amount: Number(amount.toFixed(4)),
+            applied: false
+        };
+    } else if (Math.random() < exploration.wildAreaHungerDrainPenaltyChance) {
+        const amount = randomInRange(exploration.wildAreaHungerDrainPenaltyMin, exploration.wildAreaHungerDrainPenaltyMax);
+        area.passiveEffect = {
+            type: 'hungerDrainPenalty',
+            amount: Number(amount.toFixed(4)),
+            applied: false
+        };
+    }
+
+    return area;
+}
+
+function seedWildAreas(exploration) {
+    const areas = [];
+    let currentDistance = 0;
+
+    for (let index = 1; index <= exploration.wildAreaSeedCount; index += 1) {
+        const step = randomIntInRange(exploration.wildAreaDistanceMinStep, exploration.wildAreaDistanceMaxStep);
+        currentDistance += Math.max(1, step);
+        areas.push(createWildArea(index, currentDistance, exploration));
+    }
+
+    exploration.discoveredAreas = areas;
+    exploration.nextAreaIndex = exploration.wildAreaSeedCount + 1;
+}
+
+function ensureWildAreaSeeds(exploration) {
+    normalizeExplorationTuning(exploration);
+
+    if (!Array.isArray(exploration.discoveredAreas) || exploration.discoveredAreas.length === 0) {
+        seedWildAreas(exploration);
+        return;
+    }
+
+    let hasAssignedDistance = false;
+    exploration.discoveredAreas = exploration.discoveredAreas.map((area, index) => {
+        const distanceFromCamp = Number.isFinite(area?.distanceFromCamp)
+            ? Math.max(1, Math.floor(area.distanceFromCamp))
+            : 0;
+        if (distanceFromCamp > 0) hasAssignedDistance = true;
+
+        return {
+            id: area?.id || `wild-area-${index + 1}`,
+            name: area?.name || `Wild Area ${index + 1}`,
+            distanceFromCamp,
+            discovered: Boolean(area?.discovered),
+            discoveredAtMeters: Number.isFinite(area?.discoveredAtMeters) ? Math.max(0, Math.floor(area.discoveredAtMeters)) : null,
+            resourceCache: area?.resourceCache && typeof area.resourceCache === 'object'
+                ? {
+                    wood: Number.isFinite(area.resourceCache.wood) ? Math.max(0, Math.floor(area.resourceCache.wood)) : 0,
+                    stone: Number.isFinite(area.resourceCache.stone) ? Math.max(0, Math.floor(area.resourceCache.stone)) : 0,
+                    collected: Boolean(area.resourceCache.collected)
+                }
+                : null,
+            passiveEffect: area?.passiveEffect && typeof area.passiveEffect === 'object'
+                ? {
+                    type: area.passiveEffect.type,
+                    amount: Number.isFinite(area.passiveEffect.amount) ? Math.max(0, area.passiveEffect.amount) : 0,
+                    applied: Boolean(area.passiveEffect.applied)
+                }
+                : null
+        };
+    });
+
+    if (!hasAssignedDistance) {
+        seedWildAreas(exploration);
+    }
+}
+
+function applyWildAreaPassiveEffect(area) {
+    const effect = area?.passiveEffect;
+    if (!effect || effect.applied) return;
+
+    if (effect.type === 'faithPerFollowerBonus') {
+        gameState.progression.faithPerFollower += effect.amount;
+        effect.applied = true;
+        addLog(`${area.name} grants a sacred inspiration: +${effect.amount.toFixed(4)} faith per follower/s.`);
+        return;
+    }
+
+    if (effect.type === 'hungerDrainPenalty') {
+        game.followerHungerDrain += effect.amount;
+        effect.applied = true;
+        addLog(`${area.name} is harsh terrain: +${effect.amount.toFixed(4)} hunger drain per follower/s.`);
+    }
 }
 
 function removeFollowersFromSettlement(losses, includeProphetLoss = false) {
@@ -123,7 +291,7 @@ function maybeCreateNewVillage(exploration) {
     const discoveredVillages = exploration.villages.filter((village) => village.discovered).length;
     if (discoveredVillages < 1) return;
 
-    const shouldSpawn = Math.random() < 0.2;
+    const shouldSpawn = Math.random() < exploration.villageSpawnChance;
     if (!shouldSpawn) return;
 
     const villageId = `village-${exploration.nextVillageIndex}`;
@@ -148,18 +316,20 @@ function maybeCreateNewVillage(exploration) {
 }
 
 function maybeDiscoverArea(exploration, rollTotal) {
-    const chance = Math.min(0.55, Math.max(0.05, (rollTotal - 3) * 0.05));
+    const chance = exploration.wildAreaDiscoveryChance;
     if (Math.random() > chance) return;
 
-    const areaId = `wild-area-${exploration.nextAreaIndex}`;
     const meters = Number.isFinite(exploration.totalMetersExplored) ? Math.floor(exploration.totalMetersExplored) : 0;
-    exploration.discoveredAreas.push({
-        id: areaId,
-        name: `Wild Area ${exploration.nextAreaIndex}`,
-        discoveredAtMeters: meters
-    });
-    exploration.nextAreaIndex += 1;
-    addLog(`The expedition discovered ${areaId.replace('-', ' ')} while scouting.`);
+    const candidate = (exploration.discoveredAreas || [])
+        .filter((area) => !area.discovered && Number.isFinite(area.distanceFromCamp) && area.distanceFromCamp > 0 && area.distanceFromCamp <= meters)
+        .sort((left, right) => left.distanceFromCamp - right.distanceFromCamp)[0];
+
+    if (!candidate) return;
+
+    candidate.discovered = true;
+    candidate.discoveredAtMeters = meters;
+    applyWildAreaPassiveEffect(candidate);
+    addLog(`The expedition discovered ${candidate.name} at ${Math.floor(candidate.distanceFromCamp)}m from camp.`);
 }
 
 function processExpeditionHazard(expedition) {
@@ -167,7 +337,12 @@ function processExpeditionHazard(expedition) {
     const alive = Math.max(0, Math.floor(expedition.followersAlive));
     if (alive <= 0) return { casualties: 0, ended: true, prophetDied: false };
 
-    if (hazardRoll < 0.08) {
+    const exploration = getExplorationState();
+    const wipeoutThreshold = exploration.hazardWipeoutChance;
+    const heavyLossThreshold = wipeoutThreshold + exploration.hazardHeavyLossChance;
+    const ambushThreshold = heavyLossThreshold + exploration.hazardAmbushChance;
+
+    if (hazardRoll < wipeoutThreshold) {
         const prophetDied = Boolean(expedition.includesProphet);
         const casualties = alive;
         expedition.followersAlive = 0;
@@ -175,16 +350,16 @@ function processExpeditionHazard(expedition) {
         return { casualties, ended: true, prophetDied };
     }
 
-    if (hazardRoll < 0.25) {
-        const casualties = Math.max(1, Math.floor(alive * 0.5));
+    if (hazardRoll < heavyLossThreshold) {
+        const casualties = Math.max(1, Math.floor(alive * exploration.hazardHeavyLossFraction));
         expedition.followersAlive = Math.max(0, alive - casualties);
-        const prophetDied = Boolean(expedition.includesProphet && Math.random() < 0.5);
+        const prophetDied = Boolean(expedition.includesProphet && Math.random() < exploration.prophetHeavyLossDeathChance);
         addLog(`Followers encountered a bear and half were slaughtered (-${casualties}).`);
         return { casualties, ended: expedition.followersAlive <= 0, prophetDied };
     }
 
-    if (hazardRoll < 0.45) {
-        const lossPercent = Math.floor(Math.random() * 41) + 20;
+    if (hazardRoll < ambushThreshold) {
+        const lossPercent = randomIntInRange(exploration.hazardAmbushMinLossPercent, exploration.hazardAmbushMaxLossPercent);
         const casualties = Math.max(1, Math.floor(alive * (lossPercent / 100)));
         expedition.followersAlive = Math.max(0, alive - casualties);
         const prophetDied = Boolean(expedition.includesProphet && Math.random() < (lossPercent / 100));
@@ -553,7 +728,13 @@ export function startExpedition() {
     let followersToSend = inputEl ? parseInt(inputEl.value, 10) : 1;
     if (!Number.isFinite(followersToSend)) followersToSend = 1;
 
-    const maxSelectable = Math.min(limit, gameState.progression.followers);
+    const unassignedFollowers = getUnassignedFollowers();
+    if (unassignedFollowers <= 0) {
+        addLog('No unassigned followers available for expedition duty.');
+        return;
+    }
+
+    const maxSelectable = Math.min(limit, unassignedFollowers);
     followersToSend = Math.max(1, Math.min(maxSelectable, followersToSend));
 
     const minimumRequired = includeProphet ? 1 : 1;
@@ -709,6 +890,26 @@ export function holdVillageSermon(villageId) {
         `Sermon at ${village.name}: roll ${roll.baseTotal}${roll.bonus > 0 ? ` + ${roll.bonus}` : ''} = ${roll.total}. Converted ${gainPercent}% (${convertedPeople} followers).`
     );
 
+    updateUI();
+    saveGame();
+}
+
+export function collectWildAreaResources(areaId) {
+    const exploration = getExplorationState();
+    const area = (exploration.discoveredAreas || []).find((candidate) => candidate.id === areaId && candidate.discovered);
+    if (!area) return;
+
+    const cache = area.resourceCache;
+    if (!cache || cache.collected) return;
+
+    const wood = Number.isFinite(cache.wood) ? Math.max(0, Math.floor(cache.wood)) : 0;
+    const stone = Number.isFinite(cache.stone) ? Math.max(0, Math.floor(cache.stone)) : 0;
+
+    if (wood > 0) gameState.resources.wood.amount += wood;
+    if (stone > 0) gameState.resources.stone.amount += stone;
+
+    cache.collected = true;
+    addLog(`Recovered supplies from ${area.name}: +${wood} wood, +${stone} stone.`);
     updateUI();
     saveGame();
 }

@@ -19,7 +19,8 @@ export {
     rollExpeditionD6,
     cancelExpeditionRoll,
     cancelExpedition,
-    holdVillageSermon
+    holdVillageSermon,
+    collectWildAreaResources
 } from './actions.js';
 
 export {

@@ -111,7 +111,78 @@ export const game = {
         followerSendLimit: 10,
         activeExpedition: null,
         totalMetersExplored: 0,
-        discoveredAreas: [],
+        villageSpawnChance: 0.2,
+        hazardWipeoutChance: 0.08,
+        hazardHeavyLossChance: 0.17,
+        hazardAmbushChance: 0.20,
+        hazardHeavyLossFraction: 0.5,
+        hazardAmbushMinLossPercent: 20,
+        hazardAmbushMaxLossPercent: 60,
+        prophetHeavyLossDeathChance: 0.5,
+        wildAreaDiscoveryChance: 0.12,
+        wildAreaSeedCount: 8,
+        wildAreaDistanceMinStep: 180,
+        wildAreaDistanceMaxStep: 520,
+        wildAreaResourceCacheChance: 0.45,
+        wildAreaResourceCacheWoodMin: 80,
+        wildAreaResourceCacheWoodMax: 220,
+        wildAreaResourceCacheStoneMin: 70,
+        wildAreaResourceCacheStoneMax: 200,
+        wildAreaFaithPerFollowerBonusChance: 0.2,
+        wildAreaFaithPerFollowerBonusMin: 0.001,
+        wildAreaFaithPerFollowerBonusMax: 0.006,
+        wildAreaHungerDrainPenaltyChance: 0.18,
+        wildAreaHungerDrainPenaltyMin: 0.01,
+        wildAreaHungerDrainPenaltyMax: 0.05,
+        discoveredAreas: (() => {
+            const areas = [];
+            let distance = 0;
+            const seedCount = 8;
+            const minStep = 180;
+            const maxStep = 520;
+            const resourceCacheChance = 0.45;
+            const faithBonusChance = 0.2;
+            const hungerPenaltyChance = 0.18;
+            for (let i = 1; i <= seedCount; i += 1) {
+                const step = Math.floor(Math.random() * (maxStep - minStep + 1)) + minStep;
+                distance += Math.max(1, step);
+
+                let resourceCache = null;
+                if (Math.random() < resourceCacheChance) {
+                    resourceCache = {
+                        wood: Math.floor(Math.random() * (220 - 80 + 1)) + 80,
+                        stone: Math.floor(Math.random() * (200 - 70 + 1)) + 70,
+                        collected: false
+                    };
+                }
+
+                let passiveEffect = null;
+                if (Math.random() < faithBonusChance) {
+                    passiveEffect = {
+                        type: 'faithPerFollowerBonus',
+                        amount: Number((Math.random() * (0.006 - 0.001) + 0.001).toFixed(4)),
+                        applied: false
+                    };
+                } else if (Math.random() < hungerPenaltyChance) {
+                    passiveEffect = {
+                        type: 'hungerDrainPenalty',
+                        amount: Number((Math.random() * (0.05 - 0.01) + 0.01).toFixed(4)),
+                        applied: false
+                    };
+                }
+
+                areas.push({
+                    id: `wild-area-${i}`,
+                    name: `Wild Area ${i}`,
+                    distanceFromCamp: distance,
+                    discovered: false,
+                    discoveredAtMeters: null,
+                    resourceCache,
+                    passiveEffect
+                });
+            }
+            return areas;
+        })(),
         villages: [
             {
                 id: 'village-1',

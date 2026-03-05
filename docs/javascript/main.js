@@ -77,6 +77,29 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
         title: 'Exploration & Prophet',
         entries: [
             { label: 'Expedition Follower Send Limit', target: game.exploration, key: 'followerSendLimit', step: 1, min: 1 },
+            { label: 'Village Spawn Chance', target: game.exploration, key: 'villageSpawnChance', step: 0.01, min: 0 },
+            { label: 'Hazard Wipeout Chance', target: game.exploration, key: 'hazardWipeoutChance', step: 0.01, min: 0 },
+            { label: 'Hazard Heavy Loss Chance', target: game.exploration, key: 'hazardHeavyLossChance', step: 0.01, min: 0 },
+            { label: 'Hazard Ambush Chance', target: game.exploration, key: 'hazardAmbushChance', step: 0.01, min: 0 },
+            { label: 'Heavy Loss Fraction', target: game.exploration, key: 'hazardHeavyLossFraction', step: 0.01, min: 0 },
+            { label: 'Ambush Loss Min Percent', target: game.exploration, key: 'hazardAmbushMinLossPercent', step: 1, min: 1 },
+            { label: 'Ambush Loss Max Percent', target: game.exploration, key: 'hazardAmbushMaxLossPercent', step: 1, min: 1 },
+            { label: 'Prophet Heavy Loss Death Chance', target: game.exploration, key: 'prophetHeavyLossDeathChance', step: 0.01, min: 0 },
+            { label: 'Wild Area Discovery Chance', target: game.exploration, key: 'wildAreaDiscoveryChance', step: 0.01, min: 0 },
+            { label: 'Wild Area Seed Count', target: game.exploration, key: 'wildAreaSeedCount', step: 1, min: 1 },
+            { label: 'Wild Area Distance Min Step', target: game.exploration, key: 'wildAreaDistanceMinStep', step: 1, min: 1 },
+            { label: 'Wild Area Distance Max Step', target: game.exploration, key: 'wildAreaDistanceMaxStep', step: 1, min: 1 },
+            { label: 'Wild Area Resource Cache Chance', target: game.exploration, key: 'wildAreaResourceCacheChance', step: 0.01, min: 0 },
+            { label: 'Wild Area Cache Wood Min', target: game.exploration, key: 'wildAreaResourceCacheWoodMin', step: 1, min: 0 },
+            { label: 'Wild Area Cache Wood Max', target: game.exploration, key: 'wildAreaResourceCacheWoodMax', step: 1, min: 0 },
+            { label: 'Wild Area Cache Stone Min', target: game.exploration, key: 'wildAreaResourceCacheStoneMin', step: 1, min: 0 },
+            { label: 'Wild Area Cache Stone Max', target: game.exploration, key: 'wildAreaResourceCacheStoneMax', step: 1, min: 0 },
+            { label: 'Wild Area Faith Bonus Chance', target: game.exploration, key: 'wildAreaFaithPerFollowerBonusChance', step: 0.01, min: 0 },
+            { label: 'Wild Area Faith Bonus Min', target: game.exploration, key: 'wildAreaFaithPerFollowerBonusMin', step: 0.0001, min: 0 },
+            { label: 'Wild Area Faith Bonus Max', target: game.exploration, key: 'wildAreaFaithPerFollowerBonusMax', step: 0.0001, min: 0 },
+            { label: 'Wild Area Hunger Penalty Chance', target: game.exploration, key: 'wildAreaHungerDrainPenaltyChance', step: 0.01, min: 0 },
+            { label: 'Wild Area Hunger Penalty Min', target: game.exploration, key: 'wildAreaHungerDrainPenaltyMin', step: 0.0001, min: 0 },
+            { label: 'Wild Area Hunger Penalty Max', target: game.exploration, key: 'wildAreaHungerDrainPenaltyMax', step: 0.0001, min: 0 },
             { label: 'Prophet Sway', target: gameState.progression, key: 'prophetSway', step: 1, min: 1 },
             { label: 'Prophet Unlock Capacity Requirement', target: game, key: 'prophetUnlockCapacityRequirement', step: 1, min: 1 }
         ]
@@ -123,6 +146,16 @@ document.addEventListener("DOMContentLoaded", () => {
         discoveredAreasList.addEventListener('click', (event) => {
             const target = event.target;
             if (!(target instanceof HTMLElement)) return;
+
+            const collectBtn = target.closest('.wild-area-collect-btn');
+            if (collectBtn) {
+                const areaId = collectBtn.dataset.areaId;
+                if (areaId && typeof gameApi.collectWildAreaResources === 'function') {
+                    gameApi.collectWildAreaResources(areaId);
+                }
+                return;
+            }
+
             const sermonBtn = target.closest('.village-sermon-btn');
             if (!sermonBtn) return;
             const villageId = sermonBtn.dataset.villageId;
@@ -463,6 +496,35 @@ function normalizeBalanceSettings() {
         game.exploration.followerSendLimit = 1;
     }
     game.exploration.followerSendLimit = Math.max(1, Math.floor(game.exploration.followerSendLimit));
+    if (!Number.isFinite(game.exploration.wildAreaSeedCount) || game.exploration.wildAreaSeedCount < 1) {
+        game.exploration.wildAreaSeedCount = 1;
+    }
+    game.exploration.wildAreaSeedCount = Math.max(1, Math.floor(game.exploration.wildAreaSeedCount));
+    if (!Number.isFinite(game.exploration.wildAreaDistanceMinStep) || game.exploration.wildAreaDistanceMinStep < 1) {
+        game.exploration.wildAreaDistanceMinStep = 1;
+    }
+    if (!Number.isFinite(game.exploration.wildAreaDistanceMaxStep) || game.exploration.wildAreaDistanceMaxStep < game.exploration.wildAreaDistanceMinStep) {
+        game.exploration.wildAreaDistanceMaxStep = game.exploration.wildAreaDistanceMinStep;
+    }
+    [
+        'villageSpawnChance',
+        'hazardWipeoutChance',
+        'hazardHeavyLossChance',
+        'hazardAmbushChance',
+        'hazardHeavyLossFraction',
+        'prophetHeavyLossDeathChance',
+        'wildAreaDiscoveryChance',
+        'wildAreaResourceCacheChance',
+        'wildAreaFaithPerFollowerBonusChance',
+        'wildAreaHungerDrainPenaltyChance'
+    ].forEach((key) => {
+        const value = Number(game.exploration[key]);
+        if (!Number.isFinite(value)) {
+            game.exploration[key] = 0;
+            return;
+        }
+        game.exploration[key] = Math.max(0, Math.min(1, value));
+    });
 
     if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 0) {
         gameState.progression.followers = 0;

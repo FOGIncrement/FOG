@@ -249,7 +249,7 @@ function renderExplorationPanel(hasExplorationAccess) {
     const metersEl = document.getElementById('exploredMetersValue');
 
     if (inputEl) {
-        const maxValue = Math.max(1, Math.min(limit, gameState.progression.followers));
+        const maxValue = Math.max(1, Math.min(limit, getUnassignedFollowers()));
         inputEl.max = `${maxValue}`;
         if (!inputEl.value) inputEl.value = '1';
         const current = parseInt(inputEl.value, 10);
@@ -295,7 +295,9 @@ function renderDiscoveredAreas(hasExplorationAccess) {
     const villages = Array.isArray(exploration.villages)
         ? exploration.villages.filter((village) => village.discovered)
         : [];
-    const wildAreas = Array.isArray(exploration.discoveredAreas) ? exploration.discoveredAreas : [];
+    const wildAreas = Array.isArray(exploration.discoveredAreas)
+        ? exploration.discoveredAreas.filter((area) => area.discovered)
+        : [];
     const hasDiscoveries = villages.length > 0 || wildAreas.length > 0;
 
     sidebar.style.display = hasDiscoveries ? 'block' : 'none';
@@ -328,11 +330,27 @@ function renderDiscoveredAreas(hasExplorationAccess) {
 
     const areaCards = wildAreas
         .map((area) => {
-            const discoveredAt = Number.isFinite(area.discoveredAtMeters) ? Math.floor(area.discoveredAtMeters) : 0;
+            const discoveredAt = Number.isFinite(area.discoveredAtMeters) ? Math.floor(area.discoveredAtMeters) : Math.floor(area.distanceFromCamp || 0);
+            const cache = area.resourceCache;
+            const hasCache = Boolean(cache);
+            const cacheCollected = Boolean(cache?.collected);
+            const wood = Number.isFinite(cache?.wood) ? Math.floor(cache.wood) : 0;
+            const stone = Number.isFinite(cache?.stone) ? Math.floor(cache.stone) : 0;
+
+            let effectLine = '<p>Effect: none.</p>';
+            if (area.passiveEffect?.type === 'faithPerFollowerBonus') {
+                effectLine = `<p>Effect: +${Number(area.passiveEffect.amount || 0).toFixed(4)} faith/follower/s ${area.passiveEffect.applied ? '(active)' : ''}</p>`;
+            } else if (area.passiveEffect?.type === 'hungerDrainPenalty') {
+                effectLine = `<p>Effect: +${Number(area.passiveEffect.amount || 0).toFixed(4)} hunger drain/follower/s ${area.passiveEffect.applied ? '(active)' : ''}</p>`;
+            }
+
             return `
                 <div class="area-card">
                     <h4>${area.name}</h4>
                     <p>Discovered around ${discoveredAt}m from camp.</p>
+                    ${effectLine}
+                    ${hasCache ? `<p>Cache: ${wood} wood, ${stone} stone ${cacheCollected ? '(collected)' : ''}</p>` : '<p>Cache: none</p>'}
+                    ${hasCache && !cacheCollected ? `<button class="wild-area-collect-btn" data-area-id="${area.id}">Collect Resources</button>` : ''}
                 </div>
             `;
         })
@@ -353,6 +371,7 @@ function updateButtons() {
         ritualDefinition,
         shelterDefinition,
         getMaxFollowers,
+        getUnassignedFollowers,
         getShelterBuildCosts,
         getRoleTrainingCost,
         setVisible,

@@ -11,6 +11,7 @@ export function getActionUiRules(context) {
         ritualDefinition,
         shelterDefinition,
         getMaxFollowers,
+        getUnassignedFollowers,
         getShelterBuildCosts,
         getRoleTrainingCost,
         setVisible,
@@ -42,7 +43,7 @@ export function getActionUiRules(context) {
         },
         startExpedition(el) {
             setVisible(el, true);
-            const hasParty = gameState.progression.followers > 0;
+            const hasParty = getUnassignedFollowers() > 0;
             const idle = !game.exploration?.activeExpedition;
             setAffordability(el, hasParty && idle);
             applyTooltip(
@@ -315,7 +316,7 @@ export function getActionUiRules(context) {
         },
         getTabHeaderVisibility(roleDefinitions) {
             const hasDiscoveredArea = Boolean((game.exploration?.villages || []).some((village) => village.discovered))
-                || Boolean((game.exploration?.discoveredAreas || []).length > 0);
+                || Boolean((game.exploration?.discoveredAreas || []).some((area) => area.discovered));
 
             return {
                 explore: Boolean(ritualBuilt && hasExplorationAccess),

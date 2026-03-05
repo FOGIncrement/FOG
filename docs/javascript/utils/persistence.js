@@ -247,6 +247,128 @@ export function loadGame() {
             if (!Array.isArray(game.exploration.discoveredAreas)) {
                 game.exploration.discoveredAreas = [];
             }
+
+            const clampProbability = (value, fallback) => {
+                const normalized = Number.isFinite(value) ? value : fallback;
+                return Math.max(0, Math.min(1, normalized));
+            };
+
+            game.exploration.villageSpawnChance = clampProbability(game.exploration.villageSpawnChance, 0.2);
+            game.exploration.hazardWipeoutChance = clampProbability(game.exploration.hazardWipeoutChance, 0.08);
+            game.exploration.hazardHeavyLossChance = clampProbability(game.exploration.hazardHeavyLossChance, 0.17);
+            game.exploration.hazardAmbushChance = clampProbability(game.exploration.hazardAmbushChance, 0.20);
+            game.exploration.hazardHeavyLossFraction = clampProbability(game.exploration.hazardHeavyLossFraction, 0.5);
+            game.exploration.hazardAmbushMinLossPercent = Number.isFinite(game.exploration.hazardAmbushMinLossPercent)
+                ? Math.max(1, Math.floor(game.exploration.hazardAmbushMinLossPercent))
+                : 20;
+            game.exploration.hazardAmbushMaxLossPercent = Number.isFinite(game.exploration.hazardAmbushMaxLossPercent)
+                ? Math.max(game.exploration.hazardAmbushMinLossPercent, Math.floor(game.exploration.hazardAmbushMaxLossPercent))
+                : 60;
+            game.exploration.prophetHeavyLossDeathChance = clampProbability(game.exploration.prophetHeavyLossDeathChance, 0.5);
+
+            game.exploration.wildAreaDiscoveryChance = clampProbability(game.exploration.wildAreaDiscoveryChance, 0.12);
+            game.exploration.wildAreaSeedCount = Number.isFinite(game.exploration.wildAreaSeedCount)
+                ? Math.max(1, Math.floor(game.exploration.wildAreaSeedCount))
+                : 8;
+            game.exploration.wildAreaDistanceMinStep = Number.isFinite(game.exploration.wildAreaDistanceMinStep)
+                ? Math.max(50, Math.floor(game.exploration.wildAreaDistanceMinStep))
+                : 180;
+            game.exploration.wildAreaDistanceMaxStep = Number.isFinite(game.exploration.wildAreaDistanceMaxStep)
+                ? Math.max(game.exploration.wildAreaDistanceMinStep, Math.floor(game.exploration.wildAreaDistanceMaxStep))
+                : 520;
+            game.exploration.wildAreaResourceCacheChance = clampProbability(game.exploration.wildAreaResourceCacheChance, 0.45);
+            game.exploration.wildAreaResourceCacheWoodMin = Number.isFinite(game.exploration.wildAreaResourceCacheWoodMin)
+                ? Math.max(0, Math.floor(game.exploration.wildAreaResourceCacheWoodMin))
+                : 80;
+            game.exploration.wildAreaResourceCacheWoodMax = Number.isFinite(game.exploration.wildAreaResourceCacheWoodMax)
+                ? Math.max(game.exploration.wildAreaResourceCacheWoodMin, Math.floor(game.exploration.wildAreaResourceCacheWoodMax))
+                : 220;
+            game.exploration.wildAreaResourceCacheStoneMin = Number.isFinite(game.exploration.wildAreaResourceCacheStoneMin)
+                ? Math.max(0, Math.floor(game.exploration.wildAreaResourceCacheStoneMin))
+                : 70;
+            game.exploration.wildAreaResourceCacheStoneMax = Number.isFinite(game.exploration.wildAreaResourceCacheStoneMax)
+                ? Math.max(game.exploration.wildAreaResourceCacheStoneMin, Math.floor(game.exploration.wildAreaResourceCacheStoneMax))
+                : 200;
+            game.exploration.wildAreaFaithPerFollowerBonusChance = clampProbability(game.exploration.wildAreaFaithPerFollowerBonusChance, 0.2);
+            game.exploration.wildAreaFaithPerFollowerBonusMin = Number.isFinite(game.exploration.wildAreaFaithPerFollowerBonusMin)
+                ? Math.max(0, game.exploration.wildAreaFaithPerFollowerBonusMin)
+                : 0.001;
+            game.exploration.wildAreaFaithPerFollowerBonusMax = Number.isFinite(game.exploration.wildAreaFaithPerFollowerBonusMax)
+                ? Math.max(game.exploration.wildAreaFaithPerFollowerBonusMin, game.exploration.wildAreaFaithPerFollowerBonusMax)
+                : 0.006;
+            game.exploration.wildAreaHungerDrainPenaltyChance = clampProbability(game.exploration.wildAreaHungerDrainPenaltyChance, 0.18);
+            game.exploration.wildAreaHungerDrainPenaltyMin = Number.isFinite(game.exploration.wildAreaHungerDrainPenaltyMin)
+                ? Math.max(0, game.exploration.wildAreaHungerDrainPenaltyMin)
+                : 0.01;
+            game.exploration.wildAreaHungerDrainPenaltyMax = Number.isFinite(game.exploration.wildAreaHungerDrainPenaltyMax)
+                ? Math.max(game.exploration.wildAreaHungerDrainPenaltyMin, game.exploration.wildAreaHungerDrainPenaltyMax)
+                : 0.05;
+
+            game.exploration.discoveredAreas = game.exploration.discoveredAreas.map((area, index) => ({
+                id: area?.id || `wild-area-${index + 1}`,
+                name: area?.name || `Wild Area ${index + 1}`,
+                distanceFromCamp: Number.isFinite(area?.distanceFromCamp) ? Math.max(1, Math.floor(area.distanceFromCamp)) : 0,
+                discovered: Boolean(area?.discovered),
+                discoveredAtMeters: Number.isFinite(area?.discoveredAtMeters) ? Math.max(0, Math.floor(area.discoveredAtMeters)) : null,
+                resourceCache: area?.resourceCache && typeof area.resourceCache === 'object'
+                    ? {
+                        wood: Number.isFinite(area.resourceCache.wood) ? Math.max(0, Math.floor(area.resourceCache.wood)) : 0,
+                        stone: Number.isFinite(area.resourceCache.stone) ? Math.max(0, Math.floor(area.resourceCache.stone)) : 0,
+                        collected: Boolean(area.resourceCache.collected)
+                    }
+                    : null,
+                passiveEffect: area?.passiveEffect && typeof area.passiveEffect === 'object'
+                    ? {
+                        type: area.passiveEffect.type,
+                        amount: Number.isFinite(area.passiveEffect.amount) ? Math.max(0, area.passiveEffect.amount) : 0,
+                        applied: Boolean(area.passiveEffect.applied)
+                    }
+                    : null
+            }));
+
+            if (game.exploration.discoveredAreas.length === 0 || game.exploration.discoveredAreas.every((area) => !Number.isFinite(area.distanceFromCamp) || area.distanceFromCamp <= 0)) {
+                const seededAreas = [];
+                let distance = 0;
+                for (let index = 1; index <= game.exploration.wildAreaSeedCount; index += 1) {
+                    const step = Math.floor(Math.random() * (game.exploration.wildAreaDistanceMaxStep - game.exploration.wildAreaDistanceMinStep + 1)) + game.exploration.wildAreaDistanceMinStep;
+                    distance += Math.max(1, step);
+
+                    let resourceCache = null;
+                    if (Math.random() < game.exploration.wildAreaResourceCacheChance) {
+                        resourceCache = {
+                            wood: Math.floor(Math.random() * (game.exploration.wildAreaResourceCacheWoodMax - game.exploration.wildAreaResourceCacheWoodMin + 1)) + game.exploration.wildAreaResourceCacheWoodMin,
+                            stone: Math.floor(Math.random() * (game.exploration.wildAreaResourceCacheStoneMax - game.exploration.wildAreaResourceCacheStoneMin + 1)) + game.exploration.wildAreaResourceCacheStoneMin,
+                            collected: false
+                        };
+                    }
+
+                    let passiveEffect = null;
+                    if (Math.random() < game.exploration.wildAreaFaithPerFollowerBonusChance) {
+                        passiveEffect = {
+                            type: 'faithPerFollowerBonus',
+                            amount: Number((Math.random() * (game.exploration.wildAreaFaithPerFollowerBonusMax - game.exploration.wildAreaFaithPerFollowerBonusMin) + game.exploration.wildAreaFaithPerFollowerBonusMin).toFixed(4)),
+                            applied: false
+                        };
+                    } else if (Math.random() < game.exploration.wildAreaHungerDrainPenaltyChance) {
+                        passiveEffect = {
+                            type: 'hungerDrainPenalty',
+                            amount: Number((Math.random() * (game.exploration.wildAreaHungerDrainPenaltyMax - game.exploration.wildAreaHungerDrainPenaltyMin) + game.exploration.wildAreaHungerDrainPenaltyMin).toFixed(4)),
+                            applied: false
+                        };
+                    }
+
+                    seededAreas.push({
+                        id: `wild-area-${index}`,
+                        name: `Wild Area ${index}`,
+                        distanceFromCamp: distance,
+                        discovered: false,
+                        discoveredAtMeters: null,
+                        resourceCache,
+                        passiveEffect
+                    });
+                }
+                game.exploration.discoveredAreas = seededAreas;
+            }
             if (!Array.isArray(game.exploration.villages) || game.exploration.villages.length === 0) {
                 game.exploration.villages = [{
                     id: 'village-1',
