@@ -687,7 +687,7 @@ export function rollPreachD4() {
 
             setTimeout(() => {
                 if (!preachRollInProgress) setPreachDiceVisible(false);
-            }, 500);
+            }, 1000);
 
             updateUI();
             saveGame();
@@ -884,7 +884,7 @@ export function rollExpeditionD6() {
 
             setTimeout(() => {
                 if (!expeditionRollInProgress) setExpeditionDiceVisible(false);
-            }, 500);
+            }, 1000);
         }
     }, 80);
 }
