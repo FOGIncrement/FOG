@@ -48,6 +48,28 @@ function applyDiscoveredAreaPassiveEffects(exploration) {
     });
 }
 
+function migrateLegacyWildAreaDistances(exploration) {
+    if (!exploration || !Array.isArray(exploration.discoveredAreas) || exploration.discoveredAreas.length === 0) return;
+
+    const hasAnyDiscovered = exploration.discoveredAreas.some((area) => area?.discovered);
+    if (hasAnyDiscovered) return;
+
+    const distances = exploration.discoveredAreas
+        .map((area) => Number.isFinite(area?.distanceFromCamp) ? Math.floor(area.distanceFromCamp) : 0)
+        .filter((distance) => distance > 0)
+        .sort((left, right) => left - right);
+
+    if (distances.length === 0) return;
+    const nearestDistance = distances[0];
+    if (nearestDistance <= 10) return;
+
+    const offset = nearestDistance - 10;
+    exploration.discoveredAreas.forEach((area) => {
+        if (!Number.isFinite(area.distanceFromCamp)) return;
+        area.distanceFromCamp = Math.max(1, Math.floor(area.distanceFromCamp) - offset);
+    });
+}
+
 function ensureResourceInstance(key, fallbackAmount, fallbackCost, fallbackGatherAmount) {
     const current = gameState.resources[key];
     if (current instanceof Resource && typeof current.gather === 'function') return current;
@@ -410,6 +432,7 @@ export function loadGame() {
                 }
                 game.exploration.discoveredAreas = seededAreas;
             }
+            migrateLegacyWildAreaDistances(game.exploration);
             syncDiscoveredAreasByDistance(game.exploration);
             applyDiscoveredAreaPassiveEffects(game.exploration);
             if (!Array.isArray(game.exploration.villages) || game.exploration.villages.length === 0) {

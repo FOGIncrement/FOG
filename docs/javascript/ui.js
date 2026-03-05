@@ -234,7 +234,7 @@ export function updateUI() {
 function renderExplorationPanel(hasExplorationAccess) {
     const panel = document.getElementById('tab-explore');
     if (panel) {
-        panel.style.display = hasExplorationAccess ? panel.style.display : 'none';
+        panel.style.display = hasExplorationAccess ? '' : 'none';
     }
 
     if (!hasExplorationAccess) return;

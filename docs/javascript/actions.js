@@ -231,7 +231,32 @@ function ensureWildAreaSeeds(exploration) {
 
     if (!hasAssignedDistance) {
         seedWildAreas(exploration);
+        return;
     }
+
+    migrateLegacyWildAreaDistances(exploration);
+}
+
+function migrateLegacyWildAreaDistances(exploration) {
+    if (!Array.isArray(exploration?.discoveredAreas) || exploration.discoveredAreas.length === 0) return;
+
+    const hasAnyDiscovered = exploration.discoveredAreas.some((area) => area?.discovered);
+    if (hasAnyDiscovered) return;
+
+    const distances = exploration.discoveredAreas
+        .map((area) => Number.isFinite(area?.distanceFromCamp) ? Math.floor(area.distanceFromCamp) : 0)
+        .filter((distance) => distance > 0)
+        .sort((left, right) => left - right);
+
+    if (distances.length === 0) return;
+    const nearestDistance = distances[0];
+    if (nearestDistance <= 10) return;
+
+    const offset = nearestDistance - 10;
+    exploration.discoveredAreas.forEach((area) => {
+        if (!Number.isFinite(area.distanceFromCamp)) return;
+        area.distanceFromCamp = Math.max(1, Math.floor(area.distanceFromCamp) - offset);
+    });
 }
 
 function applyWildAreaPassiveEffect(area) {
@@ -429,6 +454,11 @@ function resolveExpeditionRoll(baseRoll) {
     const totalRoll = Math.max(1, Math.floor(baseRoll) + bonusFollowers);
     const moved = totalRoll;
     expedition.distanceCovered += moved;
+    exploration.totalMetersExplored = Math.max(
+        0,
+        Math.floor((Number.isFinite(exploration.totalMetersExplored) ? exploration.totalMetersExplored : 0) + moved)
+    );
+    syncDiscoveredAreasByDistance(exploration, { logDiscoveries: true });
 
     addLog(`Expedition roll 1d6 + followers: ${baseRoll} + ${bonusFollowers} = ${totalRoll}. Progress: +${moved}m.`);
 
@@ -436,18 +466,10 @@ function resolveExpeditionRoll(baseRoll) {
     if (targetVillage && expedition.distanceCovered >= targetVillage.distanceFromCamp) {
         targetVillage.discovered = true;
         targetVillage.prophetPresent = Boolean(expedition.includesProphet && expedition.prophetAlive);
-        const metersGained = Math.floor(expedition.distanceCovered);
-        exploration.totalMetersExplored = Math.max(exploration.totalMetersExplored, metersGained);
-        syncDiscoveredAreasByDistance(exploration, { logDiscoveries: true });
         addLog(`The expedition has reached ${targetVillage.name}. It now appears in Discovered Areas.`);
         maybeCreateNewVillage(exploration);
         finishExpedition(expedition, `Expedition complete. ${Math.max(1, expedition.followersAlive)} followers arrived at ${targetVillage.name}.`);
     } else {
-        exploration.totalMetersExplored = Math.max(
-            exploration.totalMetersExplored,
-            Math.floor(expedition.distanceCovered)
-        );
-        syncDiscoveredAreasByDistance(exploration, { logDiscoveries: true });
         addLog(`Expedition is now ${Math.floor(expedition.distanceCovered)}m from camp.`);
     }
 
