@@ -310,11 +310,11 @@ export function loadGame() {
                 ? Math.max(1, Math.floor(game.exploration.wildAreaSeedCount))
                 : 8;
             game.exploration.wildAreaDistanceMinStep = Number.isFinite(game.exploration.wildAreaDistanceMinStep)
-                ? Math.max(50, Math.floor(game.exploration.wildAreaDistanceMinStep))
-                : 180;
+                ? Math.max(1, Math.floor(game.exploration.wildAreaDistanceMinStep))
+                : 30;
             game.exploration.wildAreaDistanceMaxStep = Number.isFinite(game.exploration.wildAreaDistanceMaxStep)
                 ? Math.max(game.exploration.wildAreaDistanceMinStep, Math.floor(game.exploration.wildAreaDistanceMaxStep))
-                : 520;
+                : 120;
             game.exploration.wildAreaResourceCacheChance = clampProbability(game.exploration.wildAreaResourceCacheChance, 0.45);
             game.exploration.wildAreaResourceCacheWoodMin = Number.isFinite(game.exploration.wildAreaResourceCacheWoodMin)
                 ? Math.max(0, Math.floor(game.exploration.wildAreaResourceCacheWoodMin))
@@ -369,7 +369,9 @@ export function loadGame() {
                 const seededAreas = [];
                 let distance = 0;
                 for (let index = 1; index <= game.exploration.wildAreaSeedCount; index += 1) {
-                    const step = Math.floor(Math.random() * (game.exploration.wildAreaDistanceMaxStep - game.exploration.wildAreaDistanceMinStep + 1)) + game.exploration.wildAreaDistanceMinStep;
+                    const step = index === 1
+                        ? 10
+                        : Math.floor(Math.random() * (game.exploration.wildAreaDistanceMaxStep - game.exploration.wildAreaDistanceMinStep + 1)) + game.exploration.wildAreaDistanceMinStep;
                     distance += Math.max(1, step);
 
                     let resourceCache = null;

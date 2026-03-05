@@ -116,10 +116,10 @@ function normalizeExplorationTuning(exploration) {
 
     exploration.wildAreaDiscoveryChance = clampProbability(exploration.wildAreaDiscoveryChance, 0.12);
     exploration.wildAreaSeedCount = Math.max(1, Math.floor(clampMinimum(exploration.wildAreaSeedCount, 8, 1)));
-    exploration.wildAreaDistanceMinStep = Math.max(50, Math.floor(clampMinimum(exploration.wildAreaDistanceMinStep, 180, 1)));
+    exploration.wildAreaDistanceMinStep = Math.max(1, Math.floor(clampMinimum(exploration.wildAreaDistanceMinStep, 30, 1)));
     exploration.wildAreaDistanceMaxStep = Math.max(
         exploration.wildAreaDistanceMinStep,
-        Math.floor(clampMinimum(exploration.wildAreaDistanceMaxStep, 520, exploration.wildAreaDistanceMinStep))
+        Math.floor(clampMinimum(exploration.wildAreaDistanceMaxStep, 120, exploration.wildAreaDistanceMinStep))
     );
 
     exploration.wildAreaResourceCacheChance = clampProbability(exploration.wildAreaResourceCacheChance, 0.45);
@@ -180,7 +180,9 @@ function seedWildAreas(exploration) {
     let currentDistance = 0;
 
     for (let index = 1; index <= exploration.wildAreaSeedCount; index += 1) {
-        const step = randomIntInRange(exploration.wildAreaDistanceMinStep, exploration.wildAreaDistanceMaxStep);
+        const step = index === 1
+            ? 10
+            : randomIntInRange(exploration.wildAreaDistanceMinStep, exploration.wildAreaDistanceMaxStep);
         currentDistance += Math.max(1, step);
         areas.push(createWildArea(index, currentDistance, exploration));
     }

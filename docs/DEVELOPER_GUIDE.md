@@ -211,6 +211,7 @@ How it works:
 - Roll phase uses `1d6 + followersSent`.
 - Hazard outcomes can reduce or wipe expedition.
 - Wild areas are pre-seeded with random non-zero distances.
+- The first wild area seeds at about `10m` from camp for early discovery feedback.
 - Areas are guaranteed to be discovered once explored meters reach or exceed that area's distance.
 - Some areas apply one-time effects (positive or negative).
 - Some areas have resource caches claimable from sidebar cards.

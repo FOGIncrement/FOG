@@ -121,8 +121,8 @@ export const game = {
         prophetHeavyLossDeathChance: 0.5,
         wildAreaDiscoveryChance: 0.12,
         wildAreaSeedCount: 8,
-        wildAreaDistanceMinStep: 180,
-        wildAreaDistanceMaxStep: 520,
+        wildAreaDistanceMinStep: 30,
+        wildAreaDistanceMaxStep: 120,
         wildAreaResourceCacheChance: 0.45,
         wildAreaResourceCacheWoodMin: 80,
         wildAreaResourceCacheWoodMax: 220,
@@ -138,13 +138,13 @@ export const game = {
             const areas = [];
             let distance = 0;
             const seedCount = 8;
-            const minStep = 180;
-            const maxStep = 520;
+            const minStep = 30;
+            const maxStep = 120;
             const resourceCacheChance = 0.45;
             const faithBonusChance = 0.2;
             const hungerPenaltyChance = 0.18;
             for (let i = 1; i <= seedCount; i += 1) {
-                const step = Math.floor(Math.random() * (maxStep - minStep + 1)) + minStep;
+                const step = i === 1 ? 10 : Math.floor(Math.random() * (maxStep - minStep + 1)) + minStep;
                 distance += Math.max(1, step);
 
                 let resourceCache = null;
