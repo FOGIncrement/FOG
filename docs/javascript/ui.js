@@ -27,6 +27,8 @@ export function updateUI() {
     const cookContainer = document.getElementById('cookContainer');
     const cookValue = document.getElementById('cookValue');
     const cookBonus = document.getElementById('cookBonus');
+    const prophetContainer = document.getElementById('prophetContainer');
+    const prophetValue = document.getElementById('prophetValue');
 
     if (followersEl) followersEl.innerText = `${gameState.progression.followers}/${getMaxFollowers()}`;
     if (faithEl) {
@@ -83,6 +85,11 @@ export function updateUI() {
             const flatGain = cookCount * gameState.rates.cookFlatHungerGainPerSecond;
             cookBonus.innerText = `(+${flatGain.toFixed(2)} hunger/s, -${drainReductionPct.toFixed(0)}% drain)`;
         }
+    }
+    if (prophetContainer && prophetValue) {
+        const prophetCount = getRoleCount('prophet');
+        prophetValue.innerText = prophetCount;
+        prophetContainer.style.display = prophetCount > 0 ? 'block' : 'none';
     }
 
     ['wood', 'stone', 'food'].forEach((type) => {
@@ -147,7 +154,104 @@ export function updateUI() {
         if (roleValueEl) roleValueEl.innerText = `${getRoleCount(role.id)}`;
     });
 
+    renderExplorationPanel();
+    renderDiscoveredAreas();
+
     updateButtons();
+}
+
+function renderExplorationPanel() {
+    const exploration = game.exploration || {};
+    const expedition = exploration.activeExpedition;
+
+    const limit = Number.isFinite(exploration.followerSendLimit) ? Math.floor(exploration.followerSendLimit) : 10;
+    const inputEl = document.getElementById('expeditionFollowersInput');
+    const includeProphetEl = document.getElementById('includeProphetCheckbox');
+    const expeditionStatusEl = document.getElementById('expeditionStatus');
+    const metersEl = document.getElementById('exploredMetersValue');
+
+    if (inputEl) {
+        const maxValue = Math.max(1, Math.min(limit, gameState.progression.followers));
+        inputEl.max = `${maxValue}`;
+        if (!inputEl.value) inputEl.value = '1';
+        const current = parseInt(inputEl.value, 10);
+        if (!Number.isFinite(current) || current < 1) inputEl.value = '1';
+        if (Number.isFinite(current) && current > maxValue) inputEl.value = `${maxValue}`;
+    }
+
+    if (includeProphetEl) {
+        const hasProphet = getRoleCount('prophet') > 0;
+        includeProphetEl.disabled = !hasProphet;
+        if (!hasProphet) includeProphetEl.checked = false;
+    }
+
+    if (metersEl) {
+        const explored = Number.isFinite(exploration.totalMetersExplored) ? Math.floor(exploration.totalMetersExplored) : 0;
+        metersEl.innerText = `${explored}`;
+    }
+
+    if (expeditionStatusEl) {
+        if (!expedition) {
+            expeditionStatusEl.innerText = `No active expedition. Roll cost: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith.`;
+        } else {
+            const targetVillage = (exploration.villages || []).find((village) => village.id === expedition.targetVillageId);
+            const villageText = targetVillage
+                ? `${targetVillage.name} at ${targetVillage.distanceFromCamp}m`
+                : 'unknown destination';
+            expeditionStatusEl.innerText = `Expedition active: ${expedition.followersAlive}/${expedition.followersSent} alive, distance ${Math.floor(expedition.distanceCovered)}m, target ${villageText}.`;
+        }
+    }
+}
+
+function renderDiscoveredAreas() {
+    const container = document.getElementById('discoveredAreasList');
+    if (!container) return;
+
+    const exploration = game.exploration || {};
+    const villages = Array.isArray(exploration.villages)
+        ? exploration.villages.filter((village) => village.discovered)
+        : [];
+    const wildAreas = Array.isArray(exploration.discoveredAreas) ? exploration.discoveredAreas : [];
+
+    if (villages.length === 0 && wildAreas.length === 0) {
+        container.innerHTML = '<p class="area-empty">No discovered areas yet.</p>';
+        return;
+    }
+
+    const villageCards = villages
+        .map((village) => {
+            const converted = Number.isFinite(village.convertedPercent) ? Math.floor(village.convertedPercent) : 0;
+            const resistance = Number.isFinite(village.resistance) ? village.resistance : 0;
+            const sermonsHeld = Number.isFinite(village.sermonsHeld) ? village.sermonsHeld : 0;
+            const prophetStatus = village.prophetPresent ? 'Present' : 'Not present';
+            return `
+                <div class="area-card village-card">
+                    <h4>${village.name}</h4>
+                    <p>Distance: ${Math.floor(village.distanceFromCamp)}m</p>
+                    <p>Population: ${Math.floor(village.population).toLocaleString()}</p>
+                    <p>Resistance: ${resistance}</p>
+                    <p>Converted: ${converted}%</p>
+                    <p>Sermons Held: ${sermonsHeld}</p>
+                    <p>Prophet: ${prophetStatus}</p>
+                    <button class="village-sermon-btn" data-village-id="${village.id}" ${converted >= 100 || !village.prophetPresent ? 'disabled' : ''}>Hold Sermon</button>
+                </div>
+            `;
+        })
+        .join('');
+
+    const areaCards = wildAreas
+        .map((area) => {
+            const discoveredAt = Number.isFinite(area.discoveredAtMeters) ? Math.floor(area.discoveredAtMeters) : 0;
+            return `
+                <div class="area-card">
+                    <h4>${area.name}</h4>
+                    <p>Discovered around ${discoveredAt}m from camp.</p>
+                </div>
+            `;
+        })
+        .join('');
+
+    container.innerHTML = `${villageCards}${areaCards}`;
 }
 
 function updateButtons() {
@@ -196,6 +300,16 @@ function updateButtons() {
     const foodHeader = document.querySelector('.tab-btn[data-tab="food"]');
     if (foodHeader) {
         foodHeader.style.display = tabHeaderVisibility.food ? 'inline-block' : 'none';
+    }
+
+    const exploreHeader = document.querySelector('.tab-btn[data-tab="explore"]');
+    if (exploreHeader) {
+        exploreHeader.style.display = tabHeaderVisibility.explore ? 'inline-block' : 'none';
+    }
+
+    const discoveredHeader = document.querySelector('.tab-btn[data-tab="discovered"]');
+    if (discoveredHeader) {
+        discoveredHeader.style.display = tabHeaderVisibility.discovered ? 'inline-block' : 'none';
     }
 
     const followerManagerHeader = document.querySelector('.tab-btn[data-tab="followerManager"]');

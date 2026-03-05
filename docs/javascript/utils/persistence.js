@@ -176,6 +176,12 @@ export function loadGame() {
             if (!Number.isFinite(gameState.costs.unlockAltarFaithCost) || gameState.costs.unlockAltarFaithCost < 0) {
                 gameState.costs.unlockAltarFaithCost = 0;
             }
+            if (!Number.isFinite(gameState.costs.unlockProphetFaithCost) || gameState.costs.unlockProphetFaithCost < 1) {
+                gameState.costs.unlockProphetFaithCost = 500;
+            }
+            if (!Number.isFinite(gameState.costs.expeditionRollFaithCost) || gameState.costs.expeditionRollFaithCost < 1) {
+                gameState.costs.expeditionRollFaithCost = 50;
+            }
             if (!Number.isFinite(gameState.costs.altarBuildWoodCost) || gameState.costs.altarBuildWoodCost < 1) {
                 gameState.costs.altarBuildWoodCost = 150;
             }
@@ -195,8 +201,69 @@ export function loadGame() {
             if (typeof game.altarBuilt !== 'boolean') {
                 game.altarBuilt = false;
             }
+            if (typeof game.prophetUnlocked !== 'boolean') {
+                game.prophetUnlocked = Boolean(game.roleUnlocks?.prophet);
+            }
+            if (!Number.isFinite(game.prophetUnlockCapacityRequirement) || game.prophetUnlockCapacityRequirement < 1) {
+                game.prophetUnlockCapacityRequirement = 150;
+            }
             if (!Number.isFinite(game.shelterUpgradeFollowerRequirement) || game.shelterUpgradeFollowerRequirement < 1) {
                 game.shelterUpgradeFollowerRequirement = 30;
+            }
+
+            if (!game.exploration || typeof game.exploration !== 'object') {
+                game.exploration = {};
+            }
+            if (!Number.isFinite(game.exploration.followerSendLimit) || game.exploration.followerSendLimit < 1) {
+                game.exploration.followerSendLimit = 10;
+            }
+            if (!Number.isFinite(game.exploration.totalMetersExplored) || game.exploration.totalMetersExplored < 0) {
+                game.exploration.totalMetersExplored = 0;
+            }
+            if (!Array.isArray(game.exploration.discoveredAreas)) {
+                game.exploration.discoveredAreas = [];
+            }
+            if (!Array.isArray(game.exploration.villages) || game.exploration.villages.length === 0) {
+                game.exploration.villages = [{
+                    id: 'village-1',
+                    name: 'First Village',
+                    distanceFromCamp: 500,
+                    population: 1500,
+                    resistance: 42,
+                    convertedPercent: 0,
+                    discovered: false,
+                    sermonsHeld: 0,
+                    prophetPresent: false
+                }];
+            }
+            game.exploration.villages = game.exploration.villages.map((village, index) => ({
+                id: village?.id || `village-${index + 1}`,
+                name: village?.name || `Village ${index + 1}`,
+                distanceFromCamp: Number.isFinite(village?.distanceFromCamp) ? Math.floor(village.distanceFromCamp) : 500,
+                population: Number.isFinite(village?.population) ? Math.floor(village.population) : 1500,
+                resistance: Number.isFinite(village?.resistance) ? Math.floor(village.resistance) : 45,
+                convertedPercent: Number.isFinite(village?.convertedPercent) ? Math.max(0, Math.min(100, Math.floor(village.convertedPercent))) : 0,
+                discovered: Boolean(village?.discovered),
+                sermonsHeld: Number.isFinite(village?.sermonsHeld) ? Math.max(0, Math.floor(village.sermonsHeld)) : 0,
+                prophetPresent: Boolean(village?.prophetPresent)
+            }));
+            if (!Number.isFinite(game.exploration.nextVillageIndex) || game.exploration.nextVillageIndex < 2) {
+                game.exploration.nextVillageIndex = game.exploration.villages.length + 1;
+            }
+            if (!Number.isFinite(game.exploration.nextAreaIndex) || game.exploration.nextAreaIndex < 1) {
+                game.exploration.nextAreaIndex = 1;
+            }
+            if (!game.exploration.villageDistanceRange || typeof game.exploration.villageDistanceRange !== 'object') {
+                game.exploration.villageDistanceRange = {};
+            }
+            if (!Number.isFinite(game.exploration.villageDistanceRange.min) || game.exploration.villageDistanceRange.min < 200) {
+                game.exploration.villageDistanceRange.min = Math.floor(Math.random() * 201) + 350;
+            }
+            if (!Number.isFinite(game.exploration.villageDistanceRange.max) || game.exploration.villageDistanceRange.max <= game.exploration.villageDistanceRange.min) {
+                game.exploration.villageDistanceRange.max = game.exploration.villageDistanceRange.min + (Math.floor(Math.random() * 251) + 300);
+            }
+            if (!game.exploration.activeExpedition || typeof game.exploration.activeExpedition !== 'object') {
+                game.exploration.activeExpedition = null;
             }
 
             // food tab should stay unlocked after first successful gather
@@ -213,6 +280,7 @@ export function loadGame() {
                 const roleId = roleDefinition.id;
                 normalizedUnlocks[roleId] = Boolean(game.roleUnlocks[roleId]);
             });
+            normalizedUnlocks.prophet = Boolean(normalizedUnlocks.prophet || game.prophetUnlocked);
             game.roleUnlocks = normalizedUnlocks;
 
             if (!game.trainingUnlocked && Object.values(game.roleUnlocks).some(Boolean)) {
@@ -226,6 +294,10 @@ export function loadGame() {
 
             if (!Array.isArray(game.preachOutcomeWeights) || game.preachOutcomeWeights.length !== 4) {
                 game.preachOutcomeWeights = [45, 30, 18, 7];
+            }
+
+            if (!Number.isFinite(gameState.progression.prophetSway) || gameState.progression.prophetSway < 1) {
+                gameState.progression.prophetSway = 12;
             }
 
             if (!game.diceBonuses || typeof game.diceBonuses !== 'object') {

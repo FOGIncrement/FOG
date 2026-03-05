@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getMaxFollowers, getRoleCount } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, hasProphetAssigned, setRoleCount } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 
@@ -36,6 +36,171 @@ function applyGlobalCostReduction(multiplier) {
         if (!resource || !Number.isFinite(resource.gatherCost)) return;
         resource.gatherCost = Math.max(1, Math.floor(resource.gatherCost * multiplier));
     });
+}
+
+function getExplorationState() {
+    if (!game.exploration || typeof game.exploration !== 'object') {
+        game.exploration = {};
+    }
+
+    if (!Number.isFinite(game.exploration.followerSendLimit) || game.exploration.followerSendLimit < 1) {
+        game.exploration.followerSendLimit = 10;
+    }
+    if (!Number.isFinite(game.exploration.totalMetersExplored) || game.exploration.totalMetersExplored < 0) {
+        game.exploration.totalMetersExplored = 0;
+    }
+    if (!Array.isArray(game.exploration.discoveredAreas)) {
+        game.exploration.discoveredAreas = [];
+    }
+    if (!Array.isArray(game.exploration.villages)) {
+        game.exploration.villages = [];
+    }
+    if (!Number.isFinite(game.exploration.nextVillageIndex) || game.exploration.nextVillageIndex < 2) {
+        game.exploration.nextVillageIndex = 2;
+    }
+    if (!Number.isFinite(game.exploration.nextAreaIndex) || game.exploration.nextAreaIndex < 1) {
+        game.exploration.nextAreaIndex = 1;
+    }
+
+    return game.exploration;
+}
+
+function getExpeditionConfig() {
+    const exploration = getExplorationState();
+    const limit = getExpeditionFollowerLimit();
+    const rollFaithCost = Number.isFinite(gameState.costs.expeditionRollFaithCost)
+        ? Math.max(1, Math.floor(gameState.costs.expeditionRollFaithCost))
+        : 50;
+    return { exploration, limit, rollFaithCost };
+}
+
+function removeFollowersFromSettlement(losses, includeProphetLoss = false) {
+    if (!Number.isFinite(losses) || losses <= 0) return 0;
+
+    const currentFollowers = Math.max(0, Math.floor(gameState.progression.followers));
+    const casualtyCount = Math.min(currentFollowers, Math.floor(losses));
+    if (casualtyCount <= 0) return 0;
+
+    gameState.progression.followers = currentFollowers - casualtyCount;
+
+    if (includeProphetLoss && getRoleCount('prophet') > 0) {
+        setRoleCount('prophet', 0);
+        addLog('Your Prophet was slain during the expedition.');
+    }
+
+    const roleReductionOrder = ['hunters', 'ritualists', 'gatherers', 'cooks'];
+    let assignedOverflow = 0;
+    roleReductionOrder.concat(['prophet']).forEach((roleId) => {
+        assignedOverflow += getRoleCount(roleId);
+    });
+    assignedOverflow = Math.max(0, assignedOverflow - gameState.progression.followers);
+
+    for (const roleId of roleReductionOrder) {
+        if (assignedOverflow <= 0) break;
+        const currentRoleCount = getRoleCount(roleId);
+        if (currentRoleCount <= 0) continue;
+        const reduction = Math.min(currentRoleCount, assignedOverflow);
+        setRoleCount(roleId, currentRoleCount - reduction);
+        assignedOverflow -= reduction;
+    }
+
+    if (assignedOverflow > 0 && getRoleCount('prophet') > 0) {
+        const prophetReduction = Math.min(getRoleCount('prophet'), assignedOverflow);
+        setRoleCount('prophet', getRoleCount('prophet') - prophetReduction);
+    }
+
+    return casualtyCount;
+}
+
+function maybeCreateNewVillage(exploration) {
+    const discoveredVillages = exploration.villages.filter((village) => village.discovered).length;
+    if (discoveredVillages < 1) return;
+
+    const shouldSpawn = Math.random() < 0.2;
+    if (!shouldSpawn) return;
+
+    const villageId = `village-${exploration.nextVillageIndex}`;
+    const distanceFromCamp = getNextVillageDistance();
+    const population = Math.floor(Math.random() * 1001) + 800;
+    const resistance = Math.floor(Math.random() * 41) + 35;
+
+    exploration.villages.push({
+        id: villageId,
+        name: `Village ${exploration.nextVillageIndex}`,
+        distanceFromCamp,
+        population,
+        resistance,
+        convertedPercent: 0,
+        discovered: false,
+        sermonsHeld: 0,
+        prophetPresent: false
+    });
+
+    exploration.nextVillageIndex += 1;
+    addLog(`Scouts charted rumors of another settlement around ${distanceFromCamp}m from camp.`);
+}
+
+function maybeDiscoverArea(exploration, rollTotal) {
+    const chance = Math.min(0.55, Math.max(0.05, (rollTotal - 3) * 0.05));
+    if (Math.random() > chance) return;
+
+    const areaId = `wild-area-${exploration.nextAreaIndex}`;
+    const meters = Number.isFinite(exploration.totalMetersExplored) ? Math.floor(exploration.totalMetersExplored) : 0;
+    exploration.discoveredAreas.push({
+        id: areaId,
+        name: `Wild Area ${exploration.nextAreaIndex}`,
+        discoveredAtMeters: meters
+    });
+    exploration.nextAreaIndex += 1;
+    addLog(`The expedition discovered ${areaId.replace('-', ' ')} while scouting.`);
+}
+
+function processExpeditionHazard(expedition) {
+    const hazardRoll = Math.random();
+    const alive = Math.max(0, Math.floor(expedition.followersAlive));
+    if (alive <= 0) return { casualties: 0, ended: true, prophetDied: false };
+
+    if (hazardRoll < 0.08) {
+        const prophetDied = Boolean(expedition.includesProphet);
+        const casualties = alive;
+        expedition.followersAlive = 0;
+        addLog(`Followers encountered a bear and were all slaughtered (-${casualties}).`);
+        return { casualties, ended: true, prophetDied };
+    }
+
+    if (hazardRoll < 0.25) {
+        const casualties = Math.max(1, Math.floor(alive * 0.5));
+        expedition.followersAlive = Math.max(0, alive - casualties);
+        const prophetDied = Boolean(expedition.includesProphet && Math.random() < 0.5);
+        addLog(`Followers encountered a bear and half were slaughtered (-${casualties}).`);
+        return { casualties, ended: expedition.followersAlive <= 0, prophetDied };
+    }
+
+    if (hazardRoll < 0.45) {
+        const lossPercent = Math.floor(Math.random() * 41) + 20;
+        const casualties = Math.max(1, Math.floor(alive * (lossPercent / 100)));
+        expedition.followersAlive = Math.max(0, alive - casualties);
+        const prophetDied = Boolean(expedition.includesProphet && Math.random() < (lossPercent / 100));
+        addLog(`Followers were ambushed and lost ${lossPercent}% of their party (-${casualties}).`);
+        return { casualties, ended: expedition.followersAlive <= 0, prophetDied };
+    }
+
+    return { casualties: 0, ended: false, prophetDied: false };
+}
+
+function getNextUndiscoveredVillage(exploration) {
+    const sortedVillages = exploration.villages
+        .slice()
+        .sort((left, right) => left.distanceFromCamp - right.distanceFromCamp);
+    return sortedVillages.find((village) => !village.discovered) || null;
+}
+
+function finishExpedition(expedition, reason) {
+    addLog(reason);
+    if (expedition.includesProphet && expedition.prophetAlive && getRoleCount('prophet') > 0) {
+        addLog('Your Prophet returns safely to camp.');
+    }
+    game.exploration.activeExpedition = null;
 }
 
 export function gatherWood() {
@@ -284,6 +449,149 @@ export function unlockAltar() {
 
     game.altarUnlocked = true;
     addLog('Altar unlocked. Build it in the Build tab to activate its effects.');
+
+    updateUI();
+    saveGame();
+}
+
+export function startExpedition() {
+    const { exploration, limit } = getExpeditionConfig();
+    if (exploration.activeExpedition) return;
+
+    const inputEl = document.getElementById('expeditionFollowersInput');
+    const includeProphetEl = document.getElementById('includeProphetCheckbox');
+    const hasProphet = hasProphetAssigned();
+    const includeProphet = Boolean(hasProphet && includeProphetEl?.checked);
+
+    let followersToSend = inputEl ? parseInt(inputEl.value, 10) : 1;
+    if (!Number.isFinite(followersToSend)) followersToSend = 1;
+
+    const maxSelectable = Math.min(limit, gameState.progression.followers);
+    followersToSend = Math.max(1, Math.min(maxSelectable, followersToSend));
+
+    const minimumRequired = includeProphet ? 1 : 1;
+    if (followersToSend < minimumRequired) return;
+
+    const nextVillage = getNextUndiscoveredVillage(exploration);
+    if (!nextVillage) {
+        addLog('No undiscovered villages remain at this time.');
+        return;
+    }
+
+    exploration.activeExpedition = {
+        followersSent: followersToSend,
+        followersAlive: followersToSend,
+        includesProphet: includeProphet,
+        prophetAlive: includeProphet,
+        distanceCovered: 0,
+        targetVillageId: nextVillage.id
+    };
+
+    addLog(`Expedition started with ${followersToSend} follower${followersToSend > 1 ? 's' : ''}${includeProphet ? ' and your Prophet' : ''}.`);
+    addLog(`Target: ${nextVillage.name} at ${nextVillage.distanceFromCamp}m from camp.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function rollExpedition() {
+    const { exploration, rollFaithCost } = getExpeditionConfig();
+    const expedition = exploration.activeExpedition;
+    if (!expedition) return;
+    if (expedition.followersAlive <= 0) return;
+
+    if (gameState.progression.faith < rollFaithCost) {
+        addLog(`Need ${rollFaithCost} faith to push the expedition forward.`);
+        return;
+    }
+
+    gameState.progression.faith -= rollFaithCost;
+
+    const hazard = processExpeditionHazard(expedition);
+    if (hazard.casualties > 0) {
+        removeFollowersFromSettlement(hazard.casualties, hazard.prophetDied);
+        if (hazard.prophetDied) expedition.prophetAlive = false;
+    }
+
+    if (hazard.ended || expedition.followersAlive <= 0) {
+        finishExpedition(expedition, 'The expedition was wiped out before reaching its destination.');
+        updateUI();
+        saveGame();
+        return;
+    }
+
+    const result = rollDice('1d6', { bonus: expedition.followersAlive });
+    const moved = Math.max(1, result.total);
+    expedition.distanceCovered += moved;
+
+    if (hazard.casualties === 0) {
+        addLog(`Expedition roll ${result.notation} + followers: ${result.baseTotal} + ${expedition.followersAlive} = ${result.total}. Progress: +${moved}m.`);
+    }
+
+    maybeDiscoverArea(exploration, result.total);
+
+    const targetVillage = exploration.villages.find((village) => village.id === expedition.targetVillageId);
+    if (targetVillage && expedition.distanceCovered >= targetVillage.distanceFromCamp) {
+        targetVillage.discovered = true;
+        targetVillage.prophetPresent = Boolean(expedition.includesProphet && expedition.prophetAlive);
+        const metersGained = targetVillage.distanceFromCamp;
+        exploration.totalMetersExplored = Math.max(exploration.totalMetersExplored, metersGained);
+        addLog(`The expedition has reached ${targetVillage.name}. It now appears in Discovered Areas.`);
+        maybeCreateNewVillage(exploration);
+        finishExpedition(expedition, `Expedition complete. ${Math.max(1, expedition.followersAlive)} followers arrived at ${targetVillage.name}.`);
+    } else {
+        exploration.totalMetersExplored = Math.max(
+            exploration.totalMetersExplored,
+            Math.floor(expedition.distanceCovered)
+        );
+        addLog(`Expedition is now ${Math.floor(expedition.distanceCovered)}m from camp.`);
+    }
+
+    updateUI();
+    saveGame();
+}
+
+export function cancelExpedition() {
+    const exploration = getExplorationState();
+    if (!exploration.activeExpedition) return;
+    exploration.activeExpedition = null;
+    addLog('Expedition recalled to camp.');
+    updateUI();
+    saveGame();
+}
+
+export function holdVillageSermon(villageId) {
+    const exploration = getExplorationState();
+    const village = exploration.villages.find((candidate) => candidate.id === villageId && candidate.discovered);
+    if (!village) return;
+
+    if (!village.prophetPresent) {
+        addLog('A Prophet must arrive with the expedition before sermons can be held in this village.');
+        return;
+    }
+
+    if (village.convertedPercent >= 100) {
+        addLog(`${village.name} is already fully converted.`);
+        return;
+    }
+
+    const prophetSway = Number.isFinite(gameState.progression.prophetSway)
+        ? gameState.progression.prophetSway
+        : 12;
+    const resistance = Number.isFinite(village.resistance) ? village.resistance : 50;
+    const swayBonus = Math.max(0, Math.floor((prophetSway - resistance) / 8));
+    const roll = rollDice('1d20', { bonus: swayBonus });
+    const conversionPercent = Math.max(0, Math.min(100, Math.floor((roll.total / 20) * 100)));
+
+    const totalRemaining = 100 - village.convertedPercent;
+    const gainPercent = Math.min(totalRemaining, Math.max(1, Math.floor(conversionPercent * 0.35)));
+    village.convertedPercent = Math.min(100, village.convertedPercent + gainPercent);
+    village.sermonsHeld = (village.sermonsHeld || 0) + 1;
+
+    const convertedPeople = Math.floor(village.population * (gainPercent / 100));
+    addLog(
+        `Sermon at ${village.name}: roll ${roll.baseTotal}${roll.bonus > 0 ? ` + ${roll.bonus}` : ''} = ${roll.total}. Converted ${gainPercent}% (${convertedPeople} followers).`
+    );
 
     updateUI();
     saveGame();

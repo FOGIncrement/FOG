@@ -246,3 +246,46 @@ button { position: relative; }
     color: #9e9e9e;
     font-size: 0.9em;
 }
+
+.prophet-line {
+    color: #6ea8ff;
+}
+
+#discoveredAreasList {
+    display: grid;
+    gap: 10px;
+}
+
+.area-card {
+    border: 1px solid #444;
+    background: #141414;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.area-card h4 {
+    margin: 0 0 6px;
+}
+
+.area-card p {
+    margin: 2px 0;
+    color: #bcbcbc;
+}
+
+.village-card {
+    border-color: #5f6a7a;
+}
+
+.area-empty {
+    color: #8a8a8a;
+}
+
+#discoveredSidebar {
+    width: 280px;
+    margin-left: auto;
+}
+
+#discoveredSidebar h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}

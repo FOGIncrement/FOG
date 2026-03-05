@@ -40,6 +40,39 @@ export function getUnassignedFollowers() {
     return Math.max(0, gameState.progression.followers - getAssignedFollowers());
 }
 
+export function hasProphetAssigned() {
+    return getRoleCount('prophet') > 0;
+}
+
+export function getExpeditionFollowerLimit() {
+    const configured = game?.exploration?.followerSendLimit;
+    if (!Number.isFinite(configured) || configured < 1) return 10;
+    return Math.floor(configured);
+}
+
+export function getNextVillageDistance() {
+    const exploration = game?.exploration;
+    if (!exploration) return 500;
+
+    const villages = Array.isArray(exploration.villages) ? exploration.villages : [];
+    const furthest = villages.reduce((maxDistance, village) => {
+        const distance = Number.isFinite(village?.distanceFromCamp) ? village.distanceFromCamp : 0;
+        return Math.max(maxDistance, distance);
+    }, 0);
+
+    const minRange = Number.isFinite(exploration.villageDistanceRange?.min)
+        ? exploration.villageDistanceRange.min
+        : 350;
+    const maxRange = Number.isFinite(exploration.villageDistanceRange?.max)
+        ? exploration.villageDistanceRange.max
+        : 900;
+
+    const minStep = Math.max(200, Math.floor(minRange));
+    const maxStep = Math.max(minStep + 1, Math.floor(maxRange));
+    const step = Math.floor(Math.random() * (maxStep - minStep + 1)) + minStep;
+    return furthest + step;
+}
+
 export function getRoleTrainingCost(baseCost) {
     const untrained = getUnassignedFollowers();
     if (untrained <= 0) return Infinity;

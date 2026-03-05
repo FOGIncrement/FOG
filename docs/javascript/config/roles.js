@@ -49,6 +49,22 @@ export const ROLE_DEFINITIONS = [
         }
     },
     {
+        id: 'prophet',
+        label: 'Prophet',
+        trainCostKey: 'prophetBaseCost',
+        unlockCostKey: 'unlockProphetFaithCost',
+        trainButtonId: 'trainProphetBtn',
+        unlockButtonId: 'unlockProphetBtn',
+        roleValueId: 'prophetRoleValue',
+        maxAssignable: 1,
+        swayStatKey: 'prophetSway',
+        simulation: {
+            tickRate: 1,
+            scaling: (count) => count,
+            outputs: []
+        }
+    },
+    {
         id: 'cooks',
         label: 'Cooks',
         trainCostKey: 'cookBaseCost',

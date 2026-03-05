@@ -59,6 +59,9 @@
                 Cooks: <span id="cookValue">0</span>
                 <span id="cookBonus" style="color: #888; margin-left: 1em;"></span>
             </p>
+            <p id="prophetContainer" class="prophet-line" style="display: none;">
+                Prophet: <span id="prophetValue">0</span>
+            </p>
         </div>
 
         <!-- CENTER COLUMN -->
@@ -92,10 +95,12 @@
 
                     <div class="tab-headers">
                         <button class="tab-btn active" data-tab="actions">Actions<span class="tab-badge" style="display:none;"></span></button>
+                        <button class="tab-btn" data-tab="explore" style="display:none;">Explore<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="build">Build<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="food" style="display:none;">Food<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="unlocks" style="display:none;">Unlocks<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="followerManager" style="display:none;">Followers<span class="tab-badge" style="display:none;"></span></button>
+                        <button class="tab-btn" data-tab="discovered" style="display:none;">Discovered Areas<span class="tab-badge" style="display:none;"></span></button>
                     </div>
 
                     <div class="tab-contents">
@@ -122,6 +127,24 @@
                             <button id="buildAltarBtn" style="display: none;">Build Altar</button>
                         </div>
 
+                        <div id="tab-explore" class="tab-content" style="display: none;">
+                            <p>Explored Distance: <span id="exploredMetersValue">0</span>m</p>
+                            <p>
+                                Followers to send (max 10):
+                                <input type="number" id="expeditionFollowersInput" min="1" max="10" value="1" style="width: 90px; margin-left: 8px;">
+                            </p>
+                            <p>
+                                <label>
+                                    <input type="checkbox" id="includeProphetCheckbox">
+                                    Include Prophet
+                                </label>
+                            </p>
+                            <p id="expeditionStatus">No active expedition.</p>
+                            <button id="startExpeditionBtn" style="display: none;">Start Expedition</button>
+                            <button id="rollExpeditionBtn" style="display: none;">Roll Expedition</button>
+                            <button id="cancelExpeditionBtn" style="display: none;">Recall Expedition</button>
+                        </div>
+
                         <div id="tab-unlocks" class="tab-content" style="display: none;">
                             <button id="trainingTechBtn" data-tab="unlocks" style="display: none;">
                                 Unlock Training<span class="btn-badge" style="display:none;"></span>
@@ -137,6 +160,9 @@
                             </button>
                             <button id="unlockCooksBtn" data-tab="unlocks" style="display: none;">
                                 Unlock Cooks<span class="btn-badge" style="display:none;"></span>
+                            </button>
+                            <button id="unlockProphetBtn" data-tab="unlocks" style="display: none;">
+                                Unlock Prophet<span class="btn-badge" style="display:none;"></span>
                             </button>
                             <button id="unlockShelterUpgradeBtn" data-tab="unlocks" style="display: none;">
                                 Upgrade Shelter to Shack<span class="btn-badge" style="display:none;"></span>
@@ -179,6 +205,15 @@
                                 <strong>Cooks:</strong> <span id="cooksRoleValue">0</span>
                                 <button id="trainCooksBtn" style="display: none;">Train Cooks</button>
                             </div>
+
+                            <div class="prophet-line">
+                                <strong>Prophet:</strong> <span id="prophetRoleValue">0</span>
+                                <button id="trainProphetBtn" style="display: none;">Assign Prophet</button>
+                            </div>
+                        </div>
+
+                        <div id="tab-discovered" class="tab-content" style="display: none;">
+                            <p>Discovered villages are listed in the right-side panel.</p>
                         </div>
 
                     </div>
@@ -187,6 +222,13 @@
 
         </div>
         <!-- END CENTER COLUMN -->
+
+        <div id="discoveredSidebar">
+            <h3>Discovered Areas</h3>
+            <div id="discoveredAreasList">
+                <p class="area-empty">No discovered areas yet.</p>
+            </div>
+        </div>
 
     </div>
 

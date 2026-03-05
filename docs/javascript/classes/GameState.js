@@ -12,7 +12,8 @@ export const gameState = {
         roles: createRoleCountMap(0),
         faith: 0,
         faithPerFollower: 0.02,
-        prophet: 0
+        prophet: 0,
+        prophetSway: 12
     },
     resources: {
         wood: new Resource('wood', 0, 8, 5,() => {
@@ -41,12 +42,15 @@ export const gameState = {
         ritualistBaseCost: 30,
         gathererBaseCost: 25,
         cookBaseCost: 28,
+        prophetBaseCost: 0,
         ritualBtnCost: 10,
         preachFaithCost: 1,
+        expeditionRollFaithCost: 50,
         unlockHuntersFaithCost: 40,
         unlockRitualistsFaithCost: 75,
         unlockGatherersFaithCost: 60,
         unlockCooksFaithCost: 85,
+        unlockProphetFaithCost: 500,
         unlockShelterUpgradeFaithCost: 180,
         unlockAltarFaithCost: 0,
         altarBuildWoodCost: 150,
@@ -97,6 +101,33 @@ export const game = {
     preachOutcomeWeights: [45, 30, 18, 7], // converts 1..4
     diceBonuses: {
         preach: 0
+    },
+    prophetUnlocked: false,
+    prophetUnlockCapacityRequirement: 150,
+    exploration: {
+        followerSendLimit: 10,
+        activeExpedition: null,
+        totalMetersExplored: 0,
+        discoveredAreas: [],
+        villages: [
+            {
+                id: 'village-1',
+                name: 'First Village',
+                distanceFromCamp: 500,
+                population: 1500,
+                resistance: 42,
+                convertedPercent: 0,
+                discovered: false,
+                sermonsHeld: 0,
+                prophetPresent: false
+            }
+        ],
+        villageDistanceRange: {
+            min: Math.floor(Math.random() * 201) + 350,
+            max: Math.floor(Math.random() * 251) + 700
+        },
+        nextVillageIndex: 2,
+        nextAreaIndex: 1
     },
     seenItems: {},
     newItems: {actions:0,build:0,food:0,unlocks:0,followerManager:0},

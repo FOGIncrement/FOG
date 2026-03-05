@@ -42,6 +42,21 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    const discoveredAreasList = document.getElementById('discoveredAreasList');
+    if (discoveredAreasList) {
+        discoveredAreasList.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const sermonBtn = target.closest('.village-sermon-btn');
+            if (!sermonBtn) return;
+            const villageId = sermonBtn.dataset.villageId;
+            if (!villageId) return;
+            if (typeof gameApi.holdVillageSermon === 'function') {
+                gameApi.holdVillageSermon(villageId);
+            }
+        });
+    }
+
     const resetSaveBtn = document.getElementById('resetSaveBtn');
     if (resetSaveBtn) {
         setTooltipContent(

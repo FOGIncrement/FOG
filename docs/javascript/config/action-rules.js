@@ -36,6 +36,33 @@ export function getActionUiRules(context) {
         explore(el) {
             applyTooltip(el, 'Explore\nSearch nearby lands for opportunities.', 'Cost: none');
         },
+        startExpedition(el) {
+            setVisible(el, true);
+            const hasParty = gameState.progression.followers > 0;
+            const idle = !game.exploration?.activeExpedition;
+            setAffordability(el, hasParty && idle);
+            applyTooltip(
+                el,
+                'Start Expedition\nSend followers out to map the wild and find villages.',
+                `Party limit: ${Math.floor(game.exploration?.followerSendLimit || 10)} followers\nRoll cost: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith`
+            );
+        },
+        rollExpedition(el) {
+            setVisible(el, true);
+            const active = Boolean(game.exploration?.activeExpedition);
+            const canAfford = gameState.progression.faith >= (gameState.costs.expeditionRollFaithCost || 50);
+            setAffordability(el, active && canAfford);
+            applyTooltip(
+                el,
+                'Roll Expedition\nAdvance current expedition with 1d6 + current expedition followers alive.',
+                `Cost per roll: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith`
+            );
+        },
+        cancelExpedition(el) {
+            setVisible(el, true);
+            setAffordability(el, Boolean(game.exploration?.activeExpedition));
+            applyTooltip(el, 'Recall Expedition\nCall your expedition back to camp immediately.', 'Cost: none');
+        },
         buildRitualCircle(el) {
             if (gameState.progression.faith >= gameState.costs[ritualCostKey] && el.dataset.unlocked !== 'true') {
                 el.dataset.unlocked = 'true';
@@ -232,9 +259,11 @@ export function getActionUiRules(context) {
         },
         getTabHeaderVisibility(roleDefinitions) {
             return {
+                explore: Boolean(ritualBuilt),
                 unlocks: Boolean(game.unlocksTabUnlocked),
                 food: Boolean(game.hasGatheredFood),
-                followerManager: roleDefinitions.some((role) => game.roleUnlocks[role.id])
+                followerManager: roleDefinitions.some((role) => game.roleUnlocks[role.id]),
+                discovered: Boolean((game.exploration?.villages || []).some((village) => village.discovered))
             };
         },
         hasAnyRoleUnlocked(roleDefinitions) {
@@ -256,11 +285,38 @@ export function getActionUiRules(context) {
                 return;
             }
 
+            if (roleDefinition.id === 'prophet') {
+                const neededCapacity = Number.isFinite(game.prophetUnlockCapacityRequirement)
+                    ? game.prophetUnlockCapacityRequirement
+                    : 150;
+                const currentCapacity = getMaxFollowers();
+                if (currentCapacity < neededCapacity) {
+                    setAffordability(el, false);
+                    setButtonLabel(el, `Unlock ${roleDefinition.label}`);
+                    el.classList.add('purchased');
+                    applyTooltip(
+                        el,
+                        `Unlock ${roleDefinition.label}\nOnly one Prophet can be assigned.`,
+                        `Requirement: ${neededCapacity} follower capacity\nCurrent: ${currentCapacity}`
+                    );
+                    return;
+                }
+            }
+
             const cost = gameState.costs[roleDefinition.unlockCostKey];
             const canAfford = gameState.progression.faith >= cost;
             setAffordability(el, canAfford);
             setButtonLabel(el, `Unlock ${roleDefinition.label}`);
             el.classList.toggle('purchased', !canAfford);
+            if (roleDefinition.id === 'prophet') {
+                applyTooltip(
+                    el,
+                    `Unlock ${roleDefinition.label}\nAwaken a single high-sway converter.`,
+                    `Cost: ${cost} faith\nLimit: 1 Prophet`
+                );
+                return;
+            }
+
             applyTooltip(el, `Unlock ${roleDefinition.label}\nMake this role trainable.`, `Cost: ${cost} faith`);
         },
         applyTrainRoleButton(el, roleDefinition, untrainedFollowers) {
@@ -279,13 +335,33 @@ export function getActionUiRules(context) {
                 return;
             }
 
+            const currentCount = Number.isFinite(gameState.progression.roles?.[roleDefinition.id])
+                ? gameState.progression.roles[roleDefinition.id]
+                : 0;
+            const maxAssignable = Number.isFinite(roleDefinition.maxAssignable)
+                ? Math.floor(roleDefinition.maxAssignable)
+                : Infinity;
+            const atRoleLimit = maxAssignable !== Infinity && currentCount >= maxAssignable;
+            if (atRoleLimit) {
+                el.disabled = true;
+                setButtonLabel(el, `Train ${roleDefinition.label}`);
+                el.classList.add('purchased');
+                applyTooltip(
+                    el,
+                    `Train ${roleDefinition.label}\nAssign untrained followers to this role.`,
+                    `Role cap reached (${currentCount}/${maxAssignable})`
+                );
+                return;
+            }
+
             const baseCost = gameState.costs[roleDefinition.trainCostKey];
             const cost = getRoleTrainingCost(baseCost);
             const canAfford = gameState.progression.faith >= cost;
             setAffordability(el, canAfford);
             setButtonLabel(el, `Train ${roleDefinition.label}`);
             el.classList.toggle('purchased', !canAfford);
-            applyTooltip(el, `Train ${roleDefinition.label}\nAssign untrained followers to this role.`, `Cost: ${cost} faith\nBatch uses training input amount`);
+            const capText = maxAssignable === Infinity ? 'no role cap' : `${currentCount}/${maxAssignable} assigned`;
+            applyTooltip(el, `Train ${roleDefinition.label}\nAssign untrained followers to this role.`, `Cost: ${cost} faith\nBatch uses training input amount\nCap: ${capText}`);
         },
 
         unlockAltar(el) {

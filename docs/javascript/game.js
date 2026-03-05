@@ -12,7 +12,11 @@ export {
     buildRitualCircle,
     buildAltar,
     unlockShelterUpgrade,
-    unlockAltar
+    unlockAltar,
+    startExpedition,
+    rollExpedition,
+    cancelExpedition,
+    holdVillageSermon
 } from './actions.js';
 
 export {
@@ -21,10 +25,12 @@ export {
     trainRitualists,
     trainGatherers,
     trainCooks,
+    trainProphet,
     unlockHuntersRole,
     unlockRitualistsRole,
     unlockGatherersRole,
-    unlockCooksRole
+    unlockCooksRole,
+    unlockProphetRole
 } from './roles.js';
 
 export { gameTick } from './tick.js';
