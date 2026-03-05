@@ -70,6 +70,7 @@ function getExplorationState() {
     }
 
     ensureWildAreaSeeds(game.exploration);
+    syncDiscoveredAreasByDistance(game.exploration, { logDiscoveries: false });
 
     return game.exploration;
 }
@@ -315,21 +316,27 @@ function maybeCreateNewVillage(exploration) {
     addLog(`Scouts charted rumors of another settlement around ${distanceFromCamp}m from camp.`);
 }
 
-function maybeDiscoverArea(exploration, rollTotal) {
-    const chance = exploration.wildAreaDiscoveryChance;
-    if (Math.random() > chance) return;
+function syncDiscoveredAreasByDistance(exploration, { logDiscoveries = false } = {}) {
+    const meters = Number.isFinite(exploration?.totalMetersExplored)
+        ? Math.floor(exploration.totalMetersExplored)
+        : 0;
 
-    const meters = Number.isFinite(exploration.totalMetersExplored) ? Math.floor(exploration.totalMetersExplored) : 0;
-    const candidate = (exploration.discoveredAreas || [])
+    const areas = Array.isArray(exploration?.discoveredAreas)
+        ? exploration.discoveredAreas
+        : [];
+
+    areas
         .filter((area) => !area.discovered && Number.isFinite(area.distanceFromCamp) && area.distanceFromCamp > 0 && area.distanceFromCamp <= meters)
-        .sort((left, right) => left.distanceFromCamp - right.distanceFromCamp)[0];
+        .sort((left, right) => left.distanceFromCamp - right.distanceFromCamp)
+        .forEach((area) => {
+            area.discovered = true;
+            area.discoveredAtMeters = Math.floor(area.distanceFromCamp);
+            applyWildAreaPassiveEffect(area);
 
-    if (!candidate) return;
-
-    candidate.discovered = true;
-    candidate.discoveredAtMeters = meters;
-    applyWildAreaPassiveEffect(candidate);
-    addLog(`The expedition discovered ${candidate.name} at ${Math.floor(candidate.distanceFromCamp)}m from camp.`);
+            if (logDiscoveries) {
+                addLog(`The expedition discovered ${area.name} at ${Math.floor(area.distanceFromCamp)}m from camp.`);
+            }
+        });
 }
 
 function processExpeditionHazard(expedition) {
@@ -423,14 +430,13 @@ function resolveExpeditionRoll(baseRoll) {
 
     addLog(`Expedition roll 1d6 + followers: ${baseRoll} + ${bonusFollowers} = ${totalRoll}. Progress: +${moved}m.`);
 
-    maybeDiscoverArea(exploration, totalRoll);
-
     const targetVillage = exploration.villages.find((village) => village.id === expedition.targetVillageId);
     if (targetVillage && expedition.distanceCovered >= targetVillage.distanceFromCamp) {
         targetVillage.discovered = true;
         targetVillage.prophetPresent = Boolean(expedition.includesProphet && expedition.prophetAlive);
-        const metersGained = targetVillage.distanceFromCamp;
+        const metersGained = Math.floor(expedition.distanceCovered);
         exploration.totalMetersExplored = Math.max(exploration.totalMetersExplored, metersGained);
+        syncDiscoveredAreasByDistance(exploration, { logDiscoveries: true });
         addLog(`The expedition has reached ${targetVillage.name}. It now appears in Discovered Areas.`);
         maybeCreateNewVillage(exploration);
         finishExpedition(expedition, `Expedition complete. ${Math.max(1, expedition.followersAlive)} followers arrived at ${targetVillage.name}.`);
@@ -439,6 +445,7 @@ function resolveExpeditionRoll(baseRoll) {
             exploration.totalMetersExplored,
             Math.floor(expedition.distanceCovered)
         );
+        syncDiscoveredAreasByDistance(exploration, { logDiscoveries: true });
         addLog(`Expedition is now ${Math.floor(expedition.distanceCovered)}m from camp.`);
     }
 

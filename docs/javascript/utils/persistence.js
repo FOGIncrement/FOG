@@ -9,6 +9,45 @@ import {
 
 let resetInProgress = false;
 
+function syncDiscoveredAreasByDistance(exploration) {
+    if (!exploration || !Array.isArray(exploration.discoveredAreas)) return;
+
+    const meters = Number.isFinite(exploration.totalMetersExplored)
+        ? Math.floor(exploration.totalMetersExplored)
+        : 0;
+
+    exploration.discoveredAreas.forEach((area) => {
+        if (area.discovered) return;
+        if (!Number.isFinite(area.distanceFromCamp) || area.distanceFromCamp <= 0) return;
+        if (area.distanceFromCamp > meters) return;
+
+        area.discovered = true;
+        area.discoveredAtMeters = Math.floor(area.distanceFromCamp);
+    });
+}
+
+function applyDiscoveredAreaPassiveEffects(exploration) {
+    if (!exploration || !Array.isArray(exploration.discoveredAreas)) return;
+
+    exploration.discoveredAreas.forEach((area) => {
+        if (!area?.discovered) return;
+
+        const effect = area?.passiveEffect;
+        if (!effect || effect.applied) return;
+
+        if (effect.type === 'faithPerFollowerBonus' && Number.isFinite(effect.amount) && effect.amount > 0) {
+            gameState.progression.faithPerFollower += effect.amount;
+            effect.applied = true;
+            return;
+        }
+
+        if (effect.type === 'hungerDrainPenalty' && Number.isFinite(effect.amount) && effect.amount > 0) {
+            game.followerHungerDrain += effect.amount;
+            effect.applied = true;
+        }
+    });
+}
+
 function ensureResourceInstance(key, fallbackAmount, fallbackCost, fallbackGatherAmount) {
     const current = gameState.resources[key];
     if (current instanceof Resource && typeof current.gather === 'function') return current;
@@ -369,6 +408,8 @@ export function loadGame() {
                 }
                 game.exploration.discoveredAreas = seededAreas;
             }
+            syncDiscoveredAreasByDistance(game.exploration);
+            applyDiscoveredAreaPassiveEffects(game.exploration);
             if (!Array.isArray(game.exploration.villages) || game.exploration.villages.length === 0) {
                 game.exploration.villages = [{
                     id: 'village-1',
