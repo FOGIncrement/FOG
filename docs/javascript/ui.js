@@ -145,7 +145,7 @@ export function updateUI() {
         const cookEfficiency = Math.min(0.5, getRoleCount('cooks') * gameState.rates.cookHungerDrainReductionPerCook);
         const drain = gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency);
         const sustainConsumption = Math.min(drain, Math.max(0, gameState.resources.food.amount));
-        const starvationDrain = Math.max(0, drain - sustainConsumption);
+        const starvationDrain = gameState.resources.food.amount > 0 ? 0 : drain;
         const autoFeeding = game.hungerVisible && game.hungerPercent < 100;
         const foodAfterSustain = Math.max(0, gameState.resources.food.amount - sustainConsumption);
         const autoFeedAmount = autoFeeding ? Math.min(game.autoFeedFoodPerSecond, foodAfterSustain) : 0;

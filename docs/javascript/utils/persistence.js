@@ -7,6 +7,8 @@ import {
     createRoleAccumulatorMap
 } from '../config/roles.js';
 
+let resetInProgress = false;
+
 function ensureResourceInstance(key, fallbackAmount, fallbackCost, fallbackGatherAmount) {
     const current = gameState.resources[key];
     if (current instanceof Resource && typeof current.gather === 'function') return current;
@@ -16,6 +18,8 @@ function ensureResourceInstance(key, fallbackAmount, fallbackCost, fallbackGathe
 }
 
 export function saveGame() {
+    if (resetInProgress) return;
+
     const saveData = {
         gameState,
         game
@@ -336,11 +340,23 @@ export function loadGame() {
 }
 
 export function clearSave() {
+    resetInProgress = true;
+
     localStorage.removeItem('fogGameSave');
     // legacy/fallback keys from previous structures
     localStorage.removeItem('fogSave');
     localStorage.removeItem('fog-save');
     localStorage.removeItem('FOG_SAVE');
+
+    // A second pass catches any write attempts that may race this call.
+    setTimeout(() => {
+        localStorage.removeItem('fogGameSave');
+        localStorage.removeItem('fogSave');
+        localStorage.removeItem('fog-save');
+        localStorage.removeItem('FOG_SAVE');
+        console.log('Save cleared. Reloading...');
+        location.reload();
+    }, 0);
+
     console.log('Save cleared. Reloading...');
-    location.reload();
 }

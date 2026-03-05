@@ -151,8 +151,7 @@ export function initTooltips() {
         if (activeEl === target && nextTarget !== target) hideTooltip();
     }, true);
 
-    document.addEventListener('pointerdown', (event) => {
-        if (!getTooltipTarget(event.target)) return;
+    document.addEventListener('pointerdown', () => {
         mouseDown = true;
         hideTooltip();
     }, true);
@@ -160,7 +159,11 @@ export function initTooltips() {
     document.addEventListener('pointerup', () => {
         mouseDown = false;
         const hovered = document.querySelector(`${TOOLTIP_TARGET_SELECTOR}:hover`);
-        if (hovered) scheduleShow(hovered);
+        if (hovered) {
+            scheduleShow(hovered);
+            return;
+        }
+        hideTooltip();
     }, true);
 
     window.addEventListener('mouseout', (event) => {

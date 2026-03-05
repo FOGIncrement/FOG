@@ -406,7 +406,7 @@ async function copyTextToClipboard(text) {
     if (typeof text !== 'string' || !text) return false;
 
     try {
-        if (navigator?.clipboard?.writeText) {
+        if (window.isSecureContext && navigator?.clipboard?.writeText) {
             await navigator.clipboard.writeText(text);
             return true;
         }
@@ -426,10 +426,18 @@ async function copyTextToClipboard(text) {
         fallbackInput.select();
         const copied = document.execCommand('copy');
         document.body.removeChild(fallbackInput);
-        return Boolean(copied);
+        if (copied) return true;
     } catch (_error) {
-        return false;
+        // Fall through to manual copy prompt.
     }
+
+    try {
+        window.prompt('Clipboard unavailable. Copy manually:', text);
+    } catch (_error) {
+        // Ignore prompt failures.
+    }
+
+    return false;
 }
 
 function applyEntryValue(entry, rawValue) {
