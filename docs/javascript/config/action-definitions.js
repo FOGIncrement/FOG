@@ -12,6 +12,8 @@ export const ACTION_GROUPS = {
     explore: [
         { id: 'startExpedition', buttonId: 'startExpeditionBtn', handlerExport: 'startExpedition', tab: 'explore', category: 'expedition' },
         { id: 'rollExpedition', buttonId: 'rollExpeditionBtn', handlerExport: 'rollExpedition', tab: 'explore', category: 'expedition' },
+        { id: 'rollExpeditionD6', buttonId: 'expeditionRollNowBtn', handlerExport: 'rollExpeditionD6', tab: 'explore', category: 'expedition' },
+        { id: 'cancelExpeditionRoll', buttonId: 'expeditionCancelRollBtn', handlerExport: 'cancelExpeditionRoll', tab: 'explore', category: 'expedition' },
         { id: 'cancelExpedition', buttonId: 'cancelExpeditionBtn', handlerExport: 'cancelExpedition', tab: 'explore', category: 'expedition' }
     ],
     build: [

@@ -8,6 +8,8 @@ import { buildingRegistry } from './registries/index.js';
 
 let preachRollReady = false;
 let preachRollInProgress = false;
+let expeditionRollReady = false;
+let expeditionRollInProgress = false;
 
 function canPreachNow() {
     const max = getMaxFollowers();
@@ -19,6 +21,11 @@ function canPreachNow() {
 
 function setPreachDiceVisible(visible) {
     const panel = document.getElementById('preachDicePanel');
+    if (panel) panel.style.display = visible ? 'block' : 'none';
+}
+
+function setExpeditionDiceVisible(visible) {
+    const panel = document.getElementById('expeditionDicePanel');
     if (panel) panel.style.display = visible ? 'block' : 'none';
 }
 
@@ -201,6 +208,67 @@ function finishExpedition(expedition, reason) {
         addLog('Your Prophet returns safely to camp.');
     }
     game.exploration.activeExpedition = null;
+    expeditionRollReady = false;
+    expeditionRollInProgress = false;
+    setExpeditionDiceVisible(false);
+}
+
+function canRollExpeditionNow() {
+    const { exploration, rollFaithCost } = getExpeditionConfig();
+    const expedition = exploration.activeExpedition;
+    if (!expedition) return false;
+    if (expedition.followersAlive <= 0) return false;
+    return gameState.progression.faith >= rollFaithCost;
+}
+
+function resolveExpeditionRoll(baseRoll) {
+    const { exploration, rollFaithCost } = getExpeditionConfig();
+    const expedition = exploration.activeExpedition;
+    if (!expedition) return;
+
+    gameState.progression.faith -= rollFaithCost;
+
+    const hazard = processExpeditionHazard(expedition);
+    if (hazard.casualties > 0) {
+        removeFollowersFromSettlement(hazard.casualties, hazard.prophetDied);
+        if (hazard.prophetDied) expedition.prophetAlive = false;
+    }
+
+    if (hazard.ended || expedition.followersAlive <= 0) {
+        finishExpedition(expedition, 'The expedition was wiped out before reaching its destination.');
+        updateUI();
+        saveGame();
+        return;
+    }
+
+    const bonusFollowers = Math.max(0, Math.floor(expedition.followersSent));
+    const totalRoll = Math.max(1, Math.floor(baseRoll) + bonusFollowers);
+    const moved = totalRoll;
+    expedition.distanceCovered += moved;
+
+    addLog(`Expedition roll 1d6 + followers: ${baseRoll} + ${bonusFollowers} = ${totalRoll}. Progress: +${moved}m.`);
+
+    maybeDiscoverArea(exploration, totalRoll);
+
+    const targetVillage = exploration.villages.find((village) => village.id === expedition.targetVillageId);
+    if (targetVillage && expedition.distanceCovered >= targetVillage.distanceFromCamp) {
+        targetVillage.discovered = true;
+        targetVillage.prophetPresent = Boolean(expedition.includesProphet && expedition.prophetAlive);
+        const metersGained = targetVillage.distanceFromCamp;
+        exploration.totalMetersExplored = Math.max(exploration.totalMetersExplored, metersGained);
+        addLog(`The expedition has reached ${targetVillage.name}. It now appears in Discovered Areas.`);
+        maybeCreateNewVillage(exploration);
+        finishExpedition(expedition, `Expedition complete. ${Math.max(1, expedition.followersAlive)} followers arrived at ${targetVillage.name}.`);
+    } else {
+        exploration.totalMetersExplored = Math.max(
+            exploration.totalMetersExplored,
+            Math.floor(expedition.distanceCovered)
+        );
+        addLog(`Expedition is now ${Math.floor(expedition.distanceCovered)}m from camp.`);
+    }
+
+    updateUI();
+    saveGame();
 }
 
 export function gatherWood() {
@@ -490,71 +558,100 @@ export function startExpedition() {
     addLog(`Expedition started with ${followersToSend} follower${followersToSend > 1 ? 's' : ''}${includeProphet ? ' and your Prophet' : ''}.`);
     addLog(`Target: ${nextVillage.name} at ${nextVillage.distanceFromCamp}m from camp.`);
 
+    expeditionRollReady = false;
+    expeditionRollInProgress = false;
+    setExpeditionDiceVisible(false);
+
     updateUI();
     saveGame();
 }
 
 export function rollExpedition() {
+    if (expeditionRollInProgress) return;
+
     const { exploration, rollFaithCost } = getExpeditionConfig();
     const expedition = exploration.activeExpedition;
-    if (!expedition) return;
-    if (expedition.followersAlive <= 0) return;
-
-    if (gameState.progression.faith < rollFaithCost) {
+    if (!expedition) {
+        addLog('Start an expedition before rolling.');
+        return;
+    }
+    if (!canRollExpeditionNow()) {
         addLog(`Need ${rollFaithCost} faith to push the expedition forward.`);
-        return;
-    }
-
-    gameState.progression.faith -= rollFaithCost;
-
-    const hazard = processExpeditionHazard(expedition);
-    if (hazard.casualties > 0) {
-        removeFollowersFromSettlement(hazard.casualties, hazard.prophetDied);
-        if (hazard.prophetDied) expedition.prophetAlive = false;
-    }
-
-    if (hazard.ended || expedition.followersAlive <= 0) {
-        finishExpedition(expedition, 'The expedition was wiped out before reaching its destination.');
         updateUI();
-        saveGame();
         return;
     }
 
-    const result = rollDice('1d6', { bonus: expedition.followersAlive });
-    const moved = Math.max(1, result.total);
-    expedition.distanceCovered += moved;
+    expeditionRollReady = true;
+    const text = document.getElementById('expeditionDiceText');
+    const die = document.getElementById('expeditionDieFace');
+    const bonusFollowers = Math.max(0, Math.floor(expedition.followersSent));
+    if (text) {
+        text.innerText = `Roll 1d6 + ${bonusFollowers} to explore (${rollFaithCost} faith):`;
+    }
+    if (die) die.innerText = '?';
+    setExpeditionDiceVisible(true);
+}
 
-    if (hazard.casualties === 0) {
-        addLog(`Expedition roll ${result.notation} + followers: ${result.baseTotal} + ${expedition.followersAlive} = ${result.total}. Progress: +${moved}m.`);
+export function cancelExpeditionRoll() {
+    if (expeditionRollInProgress) return;
+    expeditionRollReady = false;
+    setExpeditionDiceVisible(false);
+}
+
+export function rollExpeditionD6() {
+    if (!expeditionRollReady || expeditionRollInProgress) return;
+    if (!canRollExpeditionNow()) {
+        expeditionRollReady = false;
+        setExpeditionDiceVisible(false);
+        updateUI();
+        return;
     }
 
-    maybeDiscoverArea(exploration, result.total);
+    expeditionRollInProgress = true;
 
-    const targetVillage = exploration.villages.find((village) => village.id === expedition.targetVillageId);
-    if (targetVillage && expedition.distanceCovered >= targetVillage.distanceFromCamp) {
-        targetVillage.discovered = true;
-        targetVillage.prophetPresent = Boolean(expedition.includesProphet && expedition.prophetAlive);
-        const metersGained = targetVillage.distanceFromCamp;
-        exploration.totalMetersExplored = Math.max(exploration.totalMetersExplored, metersGained);
-        addLog(`The expedition has reached ${targetVillage.name}. It now appears in Discovered Areas.`);
-        maybeCreateNewVillage(exploration);
-        finishExpedition(expedition, `Expedition complete. ${Math.max(1, expedition.followersAlive)} followers arrived at ${targetVillage.name}.`);
-    } else {
-        exploration.totalMetersExplored = Math.max(
-            exploration.totalMetersExplored,
-            Math.floor(expedition.distanceCovered)
-        );
-        addLog(`Expedition is now ${Math.floor(expedition.distanceCovered)}m from camp.`);
-    }
+    const die = document.getElementById('expeditionDieFace');
+    const text = document.getElementById('expeditionDiceText');
+    const rollBtn = document.getElementById('expeditionRollNowBtn');
+    if (rollBtn) rollBtn.disabled = true;
 
-    updateUI();
-    saveGame();
+    const animationTicks = 10;
+    let tick = 0;
+    const timer = setInterval(() => {
+        tick += 1;
+        const preview = Math.floor(Math.random() * 6) + 1;
+        if (die) die.innerText = `${preview}`;
+
+        if (tick >= animationTicks) {
+            clearInterval(timer);
+
+            const baseRoll = Math.floor(Math.random() * 6) + 1;
+            const expedition = game.exploration?.activeExpedition;
+            const bonusFollowers = Math.max(0, Math.floor(expedition?.followersSent || 0));
+            const totalRoll = baseRoll + bonusFollowers;
+
+            if (die) die.innerText = `${totalRoll}`;
+            if (text) text.innerText = `Rolled ${baseRoll} + ${bonusFollowers} = ${totalRoll}.`;
+
+            resolveExpeditionRoll(baseRoll);
+
+            expeditionRollInProgress = false;
+            expeditionRollReady = false;
+            if (rollBtn) rollBtn.disabled = false;
+
+            setTimeout(() => {
+                if (!expeditionRollInProgress) setExpeditionDiceVisible(false);
+            }, 500);
+        }
+    }, 80);
 }
 
 export function cancelExpedition() {
+    if (expeditionRollInProgress) return;
     const exploration = getExplorationState();
     if (!exploration.activeExpedition) return;
     exploration.activeExpedition = null;
+    expeditionRollReady = false;
+    setExpeditionDiceVisible(false);
     addLog('Expedition recalled to camp.');
     updateUI();
     saveGame();

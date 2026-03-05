@@ -166,6 +166,17 @@ export function loadGame() {
             }
             game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent));
 
+            // Guard against legacy/corrupted saves that can make hunger impossible to manage.
+            if (!Number.isFinite(game.followerHungerDrain) || game.followerHungerDrain <= 0 || game.followerHungerDrain > 1) {
+                game.followerHungerDrain = 0.25;
+            }
+            if (!Number.isFinite(game.autoFeedFoodPerSecond) || game.autoFeedFoodPerSecond <= 0 || game.autoFeedFoodPerSecond > 2) {
+                game.autoFeedFoodPerSecond = 0.15;
+            }
+            if (!Number.isFinite(game.foodHungerGain) || game.foodHungerGain <= 0 || game.foodHungerGain > 2) {
+                game.foodHungerGain = 0.15;
+            }
+
             if (!Number.isFinite(game.shelterCapacityPerShelter) || game.shelterCapacityPerShelter < 1) {
                 game.shelterCapacityPerShelter = 3;
             }

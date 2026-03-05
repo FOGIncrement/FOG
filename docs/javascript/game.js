@@ -15,6 +15,8 @@ export {
     unlockAltar,
     startExpedition,
     rollExpedition,
+    rollExpeditionD6,
+    cancelExpeditionRoll,
     cancelExpedition,
     holdVillageSermon
 } from './actions.js';

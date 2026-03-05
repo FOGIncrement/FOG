@@ -54,9 +54,25 @@ export function getActionUiRules(context) {
             setAffordability(el, active && canAfford);
             applyTooltip(
                 el,
-                'Roll Expedition\nAdvance current expedition with 1d6 + current expedition followers alive.',
-                `Cost per roll: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith`
+                'Roll Expedition\nOpen the dice panel for the next expedition roll.',
+                `Roll: 1d6 + followers sent\nCost per roll: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith`
             );
+        },
+        rollExpeditionD6(el) {
+            setVisible(el, true);
+            const active = Boolean(game.exploration?.activeExpedition);
+            const canAfford = gameState.progression.faith >= (gameState.costs.expeditionRollFaithCost || 50);
+            setAffordability(el, active && canAfford);
+            applyTooltip(
+                el,
+                'Roll d6\nExecute the expedition roll with visual dice animation.',
+                `Roll: 1d6 + followers sent\nCost: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith`
+            );
+        },
+        cancelExpeditionRoll(el) {
+            setVisible(el, true);
+            setAffordability(el, true);
+            applyTooltip(el, 'Cancel Roll\nClose the expedition dice panel without spending faith.', 'Cost: none');
         },
         cancelExpedition(el) {
             setVisible(el, true);

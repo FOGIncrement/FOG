@@ -34,12 +34,7 @@
         </div>
     </details>
 
-    <h1 id="gameHeader">FFFFFFFF  OOOOO   GGGGG
-F        O     O G
-FFFF     O     O G  GGG
-F        O     O G    G
-F         OOOOO   GGGGG
-Faith. Obedience. Growth.</h1>
+    <h1>F.O.G Prototype</h1>
 
     <div id="appContainer">
 
@@ -148,6 +143,13 @@ Faith. Obedience. Growth.</h1>
                             <button id="startExpeditionBtn" style="display: none;">Start Expedition</button>
                             <button id="rollExpeditionBtn" style="display: none;">Roll Expedition</button>
                             <button id="cancelExpeditionBtn" style="display: none;">Recall Expedition</button>
+
+                            <div id="expeditionDicePanel" class="dice-panel" style="display: none;">
+                                <p id="expeditionDiceText">Roll 1d6 + followers for expedition:</p>
+                                <div id="expeditionDieFace" class="die-face">?</div>
+                                <button id="expeditionRollNowBtn">Roll d6</button>
+                                <button id="expeditionCancelRollBtn">Cancel</button>
+                            </div>
                         </div>
 
                         <div id="tab-unlocks" class="tab-content" style="display: none;">
