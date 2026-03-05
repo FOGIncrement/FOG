@@ -81,6 +81,7 @@ export const game = {
     shelter: 0,
     shelterCapacityPerShelter: 3,
     shelterCapacityMultiplier: 1,
+    shelterCostScalePerBuilt: 0.1,
     shelterUpgradeUnlocked: false,
     altarUnlocked: false,
     altarBuilt: false,

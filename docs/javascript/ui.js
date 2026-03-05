@@ -1,6 +1,6 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts } from './utils/helpers.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
 import { getActionUiRules } from './config/action-rules.js';
@@ -302,6 +302,7 @@ function updateButtons() {
         ritualDefinition,
         shelterDefinition,
         getMaxFollowers,
+        getShelterBuildCosts,
         getRoleTrainingCost,
         setVisible,
         setAffordability,

@@ -187,6 +187,9 @@ export function loadGame() {
             if (!Number.isFinite(game.shelterCapacityMultiplier) || game.shelterCapacityMultiplier < 1) {
                 game.shelterCapacityMultiplier = 1;
             }
+            if (!Number.isFinite(game.shelterCostScalePerBuilt) || game.shelterCostScalePerBuilt < 0) {
+                game.shelterCostScalePerBuilt = 0.1;
+            }
 
             if (!Number.isFinite(gameState.costs.unlockAltarFaithCost) || gameState.costs.unlockAltarFaithCost < 0) {
                 gameState.costs.unlockAltarFaithCost = 0;
