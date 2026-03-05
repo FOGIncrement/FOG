@@ -229,6 +229,7 @@ function initCheatBalanceEditor() {
 
     const applyAllBtn = document.getElementById('cheatApplyAllBtn');
     const resetInputsBtn = document.getElementById('cheatResetInputsBtn');
+    const copySettingsBtn = document.getElementById('cheatCopySettingsBtn');
 
     const bindings = CHEAT_BALANCE_FIELD_SECTIONS
         .flatMap((section) => section.entries)
@@ -342,9 +343,92 @@ function initCheatBalanceEditor() {
                 });
             });
         }
+
+        if (copySettingsBtn) {
+            copySettingsBtn.addEventListener('click', async () => {
+                const snapshotText = buildCheatSettingsSnapshot(bindings);
+                const copied = await copyTextToClipboard(snapshotText);
+
+                if (copied) {
+                    addLog('Cheat settings copied to clipboard.');
+                } else {
+                    addLog('Could not copy cheat settings automatically.');
+                }
+            });
+        }
     } catch (error) {
         console.error('Failed to build cheat balance editor:', error);
         container.innerHTML = '<p style="margin:6px;color:#c66;">Could not render balance controls. Check console for details.</p>';
+    }
+}
+
+function buildCheatSettingsSnapshot(bindings) {
+    const now = new Date().toISOString();
+    const sections = [];
+
+    CHEAT_BALANCE_FIELD_SECTIONS.forEach((section) => {
+        const lines = [];
+        section.entries.forEach((entry) => {
+            if (!entry || !entry.target || typeof entry.key !== 'string') return;
+            const value = Number(entry.target[entry.key]);
+            const normalizedValue = Number.isFinite(value) ? value : 0;
+            lines.push(`${entry.label}: ${normalizedValue}`);
+        });
+        if (lines.length > 0) {
+            sections.push(`[${section.title}]\n${lines.join('\n')}`);
+        }
+    });
+
+    const resourceLines = [
+        `Followers: ${Number.isFinite(gameState.progression.followers) ? gameState.progression.followers : 0}`,
+        `Faith: ${Number.isFinite(gameState.progression.faith) ? gameState.progression.faith : 0}`,
+        `Wood: ${Number.isFinite(gameState.resources.wood?.amount) ? gameState.resources.wood.amount : 0}`,
+        `Stone: ${Number.isFinite(gameState.resources.stone?.amount) ? gameState.resources.stone.amount : 0}`,
+        `Food: ${Number.isFinite(gameState.resources.food?.amount) ? gameState.resources.food.amount : 0}`,
+        `HungerPercent: ${Number.isFinite(game.hungerPercent) ? game.hungerPercent : 0}`,
+        `ShelterCount: ${Number.isFinite(game.shelter) ? game.shelter : 0}`
+    ];
+
+    return [
+        'FOG Cheat Settings Snapshot',
+        `Timestamp: ${now}`,
+        '',
+        sections.join('\n\n'),
+        '',
+        '[Current Item Amounts]',
+        resourceLines.join('\n'),
+        '',
+        `Total Tunables Exported: ${bindings.length}`
+    ].join('\n');
+}
+
+async function copyTextToClipboard(text) {
+    if (typeof text !== 'string' || !text) return false;
+
+    try {
+        if (navigator?.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch (_error) {
+        // Fall through to legacy copy path.
+    }
+
+    try {
+        const fallbackInput = document.createElement('textarea');
+        fallbackInput.value = text;
+        fallbackInput.setAttribute('readonly', 'true');
+        fallbackInput.style.position = 'fixed';
+        fallbackInput.style.opacity = '0';
+        fallbackInput.style.pointerEvents = 'none';
+        document.body.appendChild(fallbackInput);
+        fallbackInput.focus();
+        fallbackInput.select();
+        const copied = document.execCommand('copy');
+        document.body.removeChild(fallbackInput);
+        return Boolean(copied);
+    } catch (_error) {
+        return false;
     }
 }
 

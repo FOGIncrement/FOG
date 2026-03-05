@@ -104,16 +104,25 @@ export function gameTick(dtSeconds = 1) {
 
         const cookEfficiency = Math.min(0.5, cookCount * gameState.rates.cookHungerDrainReductionPerCook);
         const drain = gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency) * clampedDt;
+        const foodAmount = Math.max(0, gameState.resources.food.amount);
+        const sustainFoodUsed = Math.min(drain, foodAmount);
+        const starvationDrain = Math.max(0, drain - sustainFoodUsed);
 
-        if (gameState.resources.food.amount > 0 && game.hungerPercent < 100) {
-            const autoFeedAmount = Math.min(game.autoFeedFoodPerSecond * clampedDt, gameState.resources.food.amount);
-            gameState.resources.food.spend(autoFeedAmount);
-            const hungerGain = autoFeedAmount * game.foodHungerGain * (1 + cookCount * gameState.rates.cookHungerGainBonusPerCook);
-            const netEffect = hungerGain + cookFlatGain - drain;
-            game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent + netEffect));
-        } else {
-            game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent + cookFlatGain - drain));
+        if (sustainFoodUsed > 0) {
+            gameState.resources.food.spend(sustainFoodUsed);
         }
+
+        let autoFeedAmount = 0;
+        if (gameState.resources.food.amount > 0 && game.hungerPercent < 100) {
+            autoFeedAmount = Math.min(game.autoFeedFoodPerSecond * clampedDt, gameState.resources.food.amount);
+            if (autoFeedAmount > 0) {
+                gameState.resources.food.spend(autoFeedAmount);
+            }
+        }
+
+        const hungerGain = autoFeedAmount * game.foodHungerGain * (1 + cookCount * gameState.rates.cookHungerGainBonusPerCook);
+        const netEffect = hungerGain + cookFlatGain - starvationDrain;
+        game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent + netEffect));
 
         if (game.hungerPercent < 5 && game.lastHungerWarning !== 'critical') {
             addLog('The faithful are starving.');

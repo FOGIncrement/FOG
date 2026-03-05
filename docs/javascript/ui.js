@@ -112,10 +112,15 @@ export function updateUI() {
             const rateEl = document.getElementById('foodRate');
             if (rateEl) {
                 const hunterRate = getRoleCount('hunters') * gameState.rates.hunterFoodPerSecond;
-                const autoFeedCost = (game.hungerVisible && game.hungerPercent < 100)
-                    ? Math.min(game.autoFeedFoodPerSecond, gameState.resources.food.amount)
+                const cookEfficiency = Math.min(0.5, getRoleCount('cooks') * gameState.rates.cookHungerDrainReductionPerCook);
+                const sustainCost = game.hungerVisible
+                    ? Math.min(gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency), Math.max(0, gameState.resources.food.amount))
                     : 0;
-                const netFoodRate = hunterRate - autoFeedCost;
+                const remainingFoodForAutoFeed = Math.max(0, gameState.resources.food.amount - sustainCost);
+                const autoFeedCost = (game.hungerVisible && game.hungerPercent < 100)
+                    ? Math.min(game.autoFeedFoodPerSecond, remainingFoodForAutoFeed)
+                    : 0;
+                const netFoodRate = hunterRate - sustainCost - autoFeedCost;
                 rateEl.innerText = netFoodRate >= 0
                     ? `(+${netFoodRate.toFixed(3)}/s)`
                     : `(${netFoodRate.toFixed(3)}/s)`;
@@ -137,14 +142,18 @@ export function updateUI() {
         hungerContainer.style.display = game.hungerVisible ? 'block' : 'none';
         hungerValue.innerText = game.hungerPercent.toFixed(2) + '%';
 
-        const drain = gameState.progression.followers * game.followerHungerDrain;
-        const autoFeeding = game.hungerVisible && gameState.resources.food.amount > 0 && game.hungerPercent < 100;
-        const autoFeedAmount = autoFeeding ? Math.min(game.autoFeedFoodPerSecond, gameState.resources.food.amount) : 0;
+        const cookEfficiency = Math.min(0.5, getRoleCount('cooks') * gameState.rates.cookHungerDrainReductionPerCook);
+        const drain = gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency);
+        const sustainConsumption = Math.min(drain, Math.max(0, gameState.resources.food.amount));
+        const starvationDrain = Math.max(0, drain - sustainConsumption);
+        const autoFeeding = game.hungerVisible && game.hungerPercent < 100;
+        const foodAfterSustain = Math.max(0, gameState.resources.food.amount - sustainConsumption);
+        const autoFeedAmount = autoFeeding ? Math.min(game.autoFeedFoodPerSecond, foodAfterSustain) : 0;
         const cookFlatGain = getRoleCount('cooks') * gameState.rates.cookFlatHungerGainPerSecond;
         const cookBonusMultiplier = 1 + getRoleCount('cooks') * gameState.rates.cookHungerGainBonusPerCook;
         const netRate = autoFeeding
-            ? ((autoFeedAmount * game.foodHungerGain * cookBonusMultiplier) + cookFlatGain - drain)
-            : (cookFlatGain - drain);
+            ? ((autoFeedAmount * game.foodHungerGain * cookBonusMultiplier) + cookFlatGain - starvationDrain)
+            : (cookFlatGain - starvationDrain);
         hungerRate.innerText = netRate >= 0 ? `(+${netRate.toFixed(2)}/s)` : `(${netRate.toFixed(2)}/s)`;
     }
 
