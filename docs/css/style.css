@@ -5,6 +5,13 @@ body {
     padding: 20px;
 }
 
+#gameHeader {
+    white-space: pre;
+    line-height: 1.1;
+    margin: 18px 0 22px;
+    font-size: 20px;
+}
+
 .cheat-menu {
     position: fixed;
     top: 10px;

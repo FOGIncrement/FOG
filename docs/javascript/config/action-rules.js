@@ -270,12 +270,24 @@ export function getActionUiRules(context) {
             return roleDefinitions.some((role) => game.roleUnlocks[role.id]);
         },
         applyUnlockRoleButton(el, roleDefinition) {
-            if (!game.unlocksTabUnlocked || !game.trainingUnlocked) {
+            if (!game.unlocksTabUnlocked) {
                 setVisible(el, false);
                 return;
             }
 
             setVisible(el, true);
+
+            if (!game.trainingUnlocked) {
+                setAffordability(el, false);
+                setButtonLabel(el, `Unlock ${roleDefinition.label}`);
+                el.classList.add('purchased');
+                applyTooltip(
+                    el,
+                    `Unlock ${roleDefinition.label}\nTraining must be unlocked first.`,
+                    'Requirement: Unlock Training'
+                );
+                return;
+            }
 
             if (game.roleUnlocks[roleDefinition.id]) {
                 el.disabled = true;
