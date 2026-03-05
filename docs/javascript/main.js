@@ -2,7 +2,7 @@ import { loadGame, clearSave, saveGame } from './utils/persistence.js';
 import { clearNew } from './utils/ui-helpers.js';
 import { initTooltips, setTooltipContent } from './utils/tooltip.js';
 import { addLog } from './utils/logging.js';
-import { gameState } from './classes/GameState.js';
+import { gameState, game } from './classes/GameState.js';
 import * as gameApi from './game.js';
 import { actionRegistry } from './registries/index.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
@@ -103,6 +103,51 @@ function initTabs() {
 function initCheatMenu() {
     const MILLION = 1_000_000;
 
+    function setInputValue(inputId, value) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        if (!Number.isFinite(value)) return;
+        input.value = `${value}`;
+    }
+
+    function parseNumberFromInput(inputId, fallback, minValue = 0, integerOnly = false) {
+        const input = document.getElementById(inputId);
+        if (!input) return fallback;
+
+        const parsed = Number.parseFloat(input.value);
+        if (!Number.isFinite(parsed)) return fallback;
+
+        const normalized = Math.max(minValue, parsed);
+        return integerOnly ? Math.floor(normalized) : normalized;
+    }
+
+    function bindNumericSettingButton(config) {
+        const button = document.getElementById(config.buttonId);
+        if (!button) return;
+
+        button.addEventListener('click', () => {
+            const nextValue = parseNumberFromInput(
+                config.inputId,
+                config.fallback,
+                config.min,
+                Boolean(config.integerOnly)
+            );
+
+            config.apply(nextValue);
+            addLog(`Cheat used: ${config.logLabel} set to ${nextValue}.`);
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
+
+    setInputValue('cheatExpeditionRollFaithCostInput', gameState.costs.expeditionRollFaithCost);
+    setInputValue('cheatFollowerSendLimitInput', game.exploration?.followerSendLimit);
+    setInputValue('cheatProphetUnlockCostInput', gameState.costs.unlockProphetFaithCost);
+    setInputValue('cheatProphetSwayInput', gameState.progression.prophetSway);
+    setInputValue('cheatFollowerHungerDrainInput', game.followerHungerDrain);
+    setInputValue('cheatAutoFeedFoodPerSecondInput', game.autoFeedFoodPerSecond);
+    setInputValue('cheatFoodHungerGainInput', game.foodHungerGain);
+
     const cheatFaithBtn = document.getElementById('cheatFaithBtn');
     if (cheatFaithBtn) {
         cheatFaithBtn.addEventListener('click', () => {
@@ -142,4 +187,91 @@ function initCheatMenu() {
             saveGame();
         });
     }
+
+    bindNumericSettingButton({
+        buttonId: 'cheatSetExpeditionRollFaithCostBtn',
+        inputId: 'cheatExpeditionRollFaithCostInput',
+        fallback: 50,
+        min: 1,
+        integerOnly: true,
+        logLabel: 'expedition roll faith cost',
+        apply: (value) => {
+            gameState.costs.expeditionRollFaithCost = value;
+        }
+    });
+
+    bindNumericSettingButton({
+        buttonId: 'cheatSetFollowerSendLimitBtn',
+        inputId: 'cheatFollowerSendLimitInput',
+        fallback: 10,
+        min: 1,
+        integerOnly: true,
+        logLabel: 'expedition follower limit',
+        apply: (value) => {
+            if (!game.exploration || typeof game.exploration !== 'object') {
+                game.exploration = {};
+            }
+            game.exploration.followerSendLimit = value;
+        }
+    });
+
+    bindNumericSettingButton({
+        buttonId: 'cheatSetProphetUnlockCostBtn',
+        inputId: 'cheatProphetUnlockCostInput',
+        fallback: 500,
+        min: 1,
+        integerOnly: true,
+        logLabel: 'prophet unlock faith cost',
+        apply: (value) => {
+            gameState.costs.unlockProphetFaithCost = value;
+        }
+    });
+
+    bindNumericSettingButton({
+        buttonId: 'cheatSetProphetSwayBtn',
+        inputId: 'cheatProphetSwayInput',
+        fallback: 12,
+        min: 1,
+        integerOnly: true,
+        logLabel: 'prophet sway',
+        apply: (value) => {
+            gameState.progression.prophetSway = value;
+        }
+    });
+
+    bindNumericSettingButton({
+        buttonId: 'cheatSetFollowerHungerDrainBtn',
+        inputId: 'cheatFollowerHungerDrainInput',
+        fallback: 0.25,
+        min: 0.01,
+        integerOnly: false,
+        logLabel: 'follower hunger drain',
+        apply: (value) => {
+            game.followerHungerDrain = value;
+        }
+    });
+
+    bindNumericSettingButton({
+        buttonId: 'cheatSetAutoFeedFoodPerSecondBtn',
+        inputId: 'cheatAutoFeedFoodPerSecondInput',
+        fallback: 0.15,
+        min: 0.01,
+        integerOnly: false,
+        logLabel: 'auto feed food per second',
+        apply: (value) => {
+            game.autoFeedFoodPerSecond = value;
+        }
+    });
+
+    bindNumericSettingButton({
+        buttonId: 'cheatSetFoodHungerGainBtn',
+        inputId: 'cheatFoodHungerGainInput',
+        fallback: 0.15,
+        min: 0.01,
+        integerOnly: false,
+        logLabel: 'food hunger gain',
+        apply: (value) => {
+            game.foodHungerGain = value;
+        }
+    });
 }
