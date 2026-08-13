@@ -14,7 +14,9 @@ export const ACTION_GROUPS = {
         { id: 'rollExpedition', buttonId: 'rollExpeditionBtn', handlerExport: 'rollExpedition', tab: 'explore', category: 'expedition' },
         { id: 'rollExpeditionD6', buttonId: 'expeditionRollNowBtn', handlerExport: 'rollExpeditionD6', tab: 'explore', category: 'expedition' },
         { id: 'cancelExpeditionRoll', buttonId: 'expeditionCancelRollBtn', handlerExport: 'cancelExpeditionRoll', tab: 'explore', category: 'expedition' },
-        { id: 'cancelExpedition', buttonId: 'cancelExpeditionBtn', handlerExport: 'cancelExpedition', tab: 'explore', category: 'expedition' }
+        { id: 'cancelExpedition', buttonId: 'cancelExpeditionBtn', handlerExport: 'cancelExpedition', tab: 'explore', category: 'expedition' },
+        { id: 'expandExpeditionParty', buttonId: 'expandPartyBtn', handlerExport: 'expandExpeditionParty', tab: 'explore', category: 'upgrade' },
+        { id: 'trainExpeditionScouts', buttonId: 'expeditionTrainingBtn', handlerExport: 'trainExpeditionScouts', tab: 'explore', category: 'upgrade' }
     ],
     build: [
         { id: 'buildRitualCircle', buttonId: 'buildRitualCircleBtn', handlerExport: 'buildRitualCircle', tab: 'build', category: 'building' },
@@ -33,7 +35,8 @@ export const ACTION_GROUPS = {
         { id: 'unlockProphetRole', buttonId: 'unlockProphetBtn', handlerExport: 'unlockProphetRole', tab: 'unlocks', category: 'roles' },
         { id: 'unlockExploration', buttonId: 'unlockExplorationBtn', handlerExport: 'unlockExploration', tab: 'unlocks', category: 'progression' },
         { id: 'unlockShelterUpgrade', buttonId: 'unlockShelterUpgradeBtn', handlerExport: 'unlockShelterUpgrade', tab: 'unlocks', category: 'buildingUpgrade' },
-        { id: 'unlockAltar', buttonId: 'unlockAltarBtn', handlerExport: 'unlockAltar', tab: 'unlocks', category: 'buildingUpgrade' }
+        { id: 'unlockAltar', buttonId: 'unlockAltarBtn', handlerExport: 'unlockAltar', tab: 'unlocks', category: 'buildingUpgrade' },
+        { id: 'trainZealousPreaching', buttonId: 'zealousPreachingBtn', handlerExport: 'trainZealousPreaching', tab: 'unlocks', category: 'upgrade' }
     ],
     followerManager: [
         { id: 'trainHunters', buttonId: 'trainHuntersBtn', handlerExport: 'trainHunters', tab: 'followerManager', category: 'roles' },
@@ -44,6 +47,6 @@ export const ACTION_GROUPS = {
     ]
 };
 
-export const ACTION_TAB_ORDER = ['actions', 'explore', 'build', 'food', 'unlocks', 'followerManager', 'discovered'];
+export const ACTION_TAB_ORDER = ['actions', 'explore', 'build', 'food', 'unlocks', 'followerManager'];
 
 export const ACTION_DEFINITIONS = Object.values(ACTION_GROUPS).flat();

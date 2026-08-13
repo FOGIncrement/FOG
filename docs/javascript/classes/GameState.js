@@ -59,7 +59,10 @@ export const gameState = {
         unlockAltarFaithCost: 0,
         altarBuildWoodCost: 150,
         altarBuildStoneCost: 150,
-        altarBuildFaithCost: 200
+        altarBuildFaithCost: 200,
+        expandPartyBaseCost: 100,
+        expeditionTrainingBaseCost: 80,
+        zealousPreachingBaseCost: 60
     },
     rates: {
         hunterFoodPerSecond: 0.8,
@@ -86,6 +89,11 @@ export const game = {
     shelterCapacityMultiplier: 1,
     shelterCostScalePerBuilt: 0.1,
     roleCostGrowthRate: 1.05,
+    upgradeCostGrowthRate: 1.3,
+    upgradeMaxPurchases: 10,
+    expandPartyFollowerIncrease: 5,
+    expeditionTrainingHazardMultiplier: 0.9,
+    zealousPreachingPurchases: 0,
     shelterUpgradeUnlocked: false,
     altarUnlocked: false,
     altarBuilt: false,
@@ -125,6 +133,8 @@ export const game = {
     explorationUnlocked: false,
     exploration: {
         followerSendLimit: 10,
+        partyExpansionPurchases: 0,
+        expeditionTrainingPurchases: 0,
         activeExpedition: null,
         totalMetersExplored: 0,
         wildAreaSeedInitialized: false,

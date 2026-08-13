@@ -81,7 +81,22 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
         entries: [
             { label: 'Current Followers', target: gameState.progression, key: 'followers', step: 1, min: 0 },
             { label: 'Current Faith', target: gameState.progression, key: 'faith', step: 1, min: 0 },
-            { label: 'Shelter Count', target: game, key: 'shelter', step: 1, min: 0 }
+            { label: 'Shelter Count', target: game, key: 'shelter', step: 1, min: 0 },
+            { label: 'Party Expansion Purchases', target: game.exploration, key: 'partyExpansionPurchases', step: 1, min: 0 },
+            { label: 'Expedition Training Purchases', target: game.exploration, key: 'expeditionTrainingPurchases', step: 1, min: 0 },
+            { label: 'Zealous Preaching Purchases', target: game, key: 'zealousPreachingPurchases', step: 1, min: 0 }
+        ]
+    },
+    {
+        title: 'Repeatable Upgrades',
+        entries: [
+            { label: 'Expand Party Base Cost (Faith)', target: gameState.costs, key: 'expandPartyBaseCost', step: 5, min: 0 },
+            { label: 'Expedition Training Base Cost (Faith)', target: gameState.costs, key: 'expeditionTrainingBaseCost', step: 5, min: 0 },
+            { label: 'Zealous Preaching Base Cost (Faith)', target: gameState.costs, key: 'zealousPreachingBaseCost', step: 5, min: 0 },
+            { label: 'Upgrade Cost Growth Rate', target: game, key: 'upgradeCostGrowthRate', step: 0.05, min: 1 },
+            { label: 'Upgrade Max Purchases', target: game, key: 'upgradeMaxPurchases', step: 1, min: 1 },
+            { label: 'Expand Party Follower Increase', target: game, key: 'expandPartyFollowerIncrease', step: 1, min: 0 },
+            { label: 'Expedition Training Hazard Multiplier', target: game, key: 'expeditionTrainingHazardMultiplier', step: 0.01, min: 0.01 }
         ]
     },
     {

@@ -1,7 +1,27 @@
 import { setTooltipContent } from '../utils/tooltip.js';
+import { getUpgradeCost } from '../utils/helpers.js';
 
 function applyTooltip(el, summary, stats = '') {
     setTooltipContent(el, summary, stats);
+}
+
+function applyRepeatableUpgradeButton(el, { purchases, maxPurchases, baseCost, label, summary, effectLine, gameState, setVisible, setAffordability, setButtonLabel }) {
+    setVisible(el, true);
+
+    if (purchases >= maxPurchases) {
+        el.disabled = true;
+        setButtonLabel(el, `${label} (Max)`);
+        el.classList.add('purchased');
+        applyTooltip(el, `${label}\n${summary}`, `Status: maxed out (${purchases}/${maxPurchases})\n${effectLine}`);
+        return;
+    }
+
+    const cost = getUpgradeCost(baseCost, purchases);
+    const canAfford = gameState.progression.faith >= cost;
+    setAffordability(el, canAfford);
+    setButtonLabel(el, `${label} (${purchases}/${maxPurchases})`);
+    el.classList.toggle('purchased', !canAfford);
+    applyTooltip(el, `${label}\n${summary}`, `Cost: ${cost} faith\nRank: ${purchases}/${maxPurchases}\n${effectLine}`);
 }
 
 export function getActionUiRules(context) {
@@ -83,6 +103,53 @@ export function getActionUiRules(context) {
             setVisible(el, true);
             setAffordability(el, Boolean(game.exploration?.activeExpedition));
             applyTooltip(el, 'Recall Expedition\nCall your expedition back to camp immediately.', 'Cost: none');
+        },
+        expandExpeditionParty(el) {
+            if (!hasExplorationAccess) {
+                setVisible(el, false);
+                return;
+            }
+            const exploration = game.exploration || {};
+            const purchases = Number.isFinite(exploration.partyExpansionPurchases) ? exploration.partyExpansionPurchases : 0;
+            const maxPurchases = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+            const limit = Number.isFinite(exploration.followerSendLimit) ? exploration.followerSendLimit : 10;
+            const increase = Number.isFinite(game.expandPartyFollowerIncrease) ? game.expandPartyFollowerIncrease : 5;
+            applyRepeatableUpgradeButton(el, {
+                purchases,
+                maxPurchases,
+                baseCost: gameState.costs.expandPartyBaseCost,
+                label: 'Expand Expedition Party',
+                summary: 'Send more followers on each expedition.',
+                effectLine: `Current limit: ${limit}\nNext purchase: +${increase}`,
+                gameState,
+                setVisible,
+                setAffordability,
+                setButtonLabel
+            });
+        },
+        trainExpeditionScouts(el) {
+            if (!hasExplorationAccess) {
+                setVisible(el, false);
+                return;
+            }
+            const exploration = game.exploration || {};
+            const purchases = Number.isFinite(exploration.expeditionTrainingPurchases) ? exploration.expeditionTrainingPurchases : 0;
+            const maxPurchases = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+            const wipeout = Number.isFinite(exploration.hazardWipeoutChance) ? exploration.hazardWipeoutChance : 0;
+            const heavyLoss = Number.isFinite(exploration.hazardHeavyLossChance) ? exploration.hazardHeavyLossChance : 0;
+            const ambush = Number.isFinite(exploration.hazardAmbushChance) ? exploration.hazardAmbushChance : 0;
+            applyRepeatableUpgradeButton(el, {
+                purchases,
+                maxPurchases,
+                baseCost: gameState.costs.expeditionTrainingBaseCost,
+                label: 'Train Expedition Scouts',
+                summary: 'Reduce the chance of expedition hazards.',
+                effectLine: `Current hazard chances: ${(wipeout * 100).toFixed(1)}% wipeout, ${(heavyLoss * 100).toFixed(1)}% heavy loss, ${(ambush * 100).toFixed(1)}% ambush`,
+                gameState,
+                setVisible,
+                setAffordability,
+                setButtonLabel
+            });
         },
         buildRitualCircle(el) {
             if (gameState.progression.faith >= gameState.costs[ritualCostKey] && el.dataset.unlocked !== 'true') {
@@ -302,6 +369,27 @@ export function getActionUiRules(context) {
                     applyTooltip(el, 'Unlock Training\nEnable follower role specialization.', `Cost: ${gameState.costs.trainingTechCost} faith`);
                 }
             }
+        },
+        trainZealousPreaching(el) {
+            if (!game.unlocksTabUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+            const purchases = Number.isFinite(game.zealousPreachingPurchases) ? game.zealousPreachingPurchases : 0;
+            const maxPurchases = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+            const currentBonus = Number.isFinite(game.diceBonuses?.preach) ? Math.trunc(game.diceBonuses.preach) : 0;
+            applyRepeatableUpgradeButton(el, {
+                purchases,
+                maxPurchases,
+                baseCost: gameState.costs.zealousPreachingBaseCost,
+                label: 'Zealous Preaching',
+                summary: 'Sway more followers with every sermon.',
+                effectLine: `Current Preach bonus: +${currentBonus}\nNext purchase: +1`,
+                gameState,
+                setVisible,
+                setAffordability,
+                setButtonLabel
+            });
         },
         feedFollowers(el) {
             if (ritualBuilt) {

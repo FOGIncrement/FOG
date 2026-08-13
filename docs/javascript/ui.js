@@ -360,6 +360,9 @@ function renderExplorationPanel(hasExplorationAccess) {
     const includeProphetEl = document.getElementById('includeProphetCheckbox');
     const expeditionStatusEl = document.getElementById('expeditionStatus');
     const metersEl = document.getElementById('exploredMetersValue');
+    const partySizeLimitEl = document.getElementById('partySizeLimitValue');
+
+    if (partySizeLimitEl) partySizeLimitEl.innerText = `${limit}`;
 
     if (inputEl) {
         const maxValue = Math.max(1, Math.min(limit, getUnassignedFollowers()));

@@ -615,7 +615,44 @@ export function loadGame() {
             const savedPreachBonus = Number.isFinite(game.diceBonuses.preach)
                 ? Math.trunc(game.diceBonuses.preach)
                 : 0;
-            game.diceBonuses.preach = game.altarBuilt ? Math.max(1, savedPreachBonus) : 0;
+            // Preserve the saved bonus regardless of Altar status - Zealous Preaching can
+            // raise this independently of the Altar, which only guarantees a floor of 1.
+            game.diceBonuses.preach = game.altarBuilt ? Math.max(1, savedPreachBonus) : savedPreachBonus;
+
+            if (!Number.isFinite(gameState.costs.expandPartyBaseCost) || gameState.costs.expandPartyBaseCost < 0) {
+                gameState.costs.expandPartyBaseCost = 100;
+            }
+            if (!Number.isFinite(gameState.costs.expeditionTrainingBaseCost) || gameState.costs.expeditionTrainingBaseCost < 0) {
+                gameState.costs.expeditionTrainingBaseCost = 80;
+            }
+            if (!Number.isFinite(gameState.costs.zealousPreachingBaseCost) || gameState.costs.zealousPreachingBaseCost < 0) {
+                gameState.costs.zealousPreachingBaseCost = 60;
+            }
+            if (!Number.isFinite(game.upgradeCostGrowthRate) || game.upgradeCostGrowthRate <= 1) {
+                game.upgradeCostGrowthRate = 1.3;
+            }
+            if (!Number.isFinite(game.upgradeMaxPurchases) || game.upgradeMaxPurchases < 1) {
+                game.upgradeMaxPurchases = 10;
+            }
+            if (!Number.isFinite(game.expandPartyFollowerIncrease) || game.expandPartyFollowerIncrease < 0) {
+                game.expandPartyFollowerIncrease = 5;
+            }
+            if (!Number.isFinite(game.expeditionTrainingHazardMultiplier) || game.expeditionTrainingHazardMultiplier <= 0 || game.expeditionTrainingHazardMultiplier > 1) {
+                game.expeditionTrainingHazardMultiplier = 0.9;
+            }
+            if (!Number.isFinite(game.zealousPreachingPurchases) || game.zealousPreachingPurchases < 0) {
+                game.zealousPreachingPurchases = 0;
+            }
+            game.zealousPreachingPurchases = Math.min(game.upgradeMaxPurchases, Math.floor(game.zealousPreachingPurchases));
+
+            if (!Number.isFinite(game.exploration.partyExpansionPurchases) || game.exploration.partyExpansionPurchases < 0) {
+                game.exploration.partyExpansionPurchases = 0;
+            }
+            game.exploration.partyExpansionPurchases = Math.min(game.upgradeMaxPurchases, Math.floor(game.exploration.partyExpansionPurchases));
+            if (!Number.isFinite(game.exploration.expeditionTrainingPurchases) || game.exploration.expeditionTrainingPurchases < 0) {
+                game.exploration.expeditionTrainingPurchases = 0;
+            }
+            game.exploration.expeditionTrainingPurchases = Math.min(game.upgradeMaxPurchases, Math.floor(game.exploration.expeditionTrainingPurchases));
 
             if (!Number.isFinite(game.offlineProgressMaxHours) || game.offlineProgressMaxHours <= 0) {
                 game.offlineProgressMaxHours = 8;

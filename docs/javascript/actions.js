@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, hasProphetAssigned, setRoleCount } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 
@@ -586,6 +586,65 @@ export function unlockExploration() {
     game.explorationUnlocked = true;
     addLog('Exploration unlocked. Expeditions are now available from the Explore tab.');
 
+    updateUI();
+    saveGame();
+}
+
+export function expandExpeditionParty() {
+    const exploration = getExplorationState();
+    const maxPurchases = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+    const purchases = Number.isFinite(exploration.partyExpansionPurchases) ? exploration.partyExpansionPurchases : 0;
+    if (purchases >= maxPurchases) return;
+
+    const cost = getUpgradeCost(gameState.costs.expandPartyBaseCost, purchases);
+    if (gameState.progression.faith < cost) return;
+
+    gameState.progression.faith -= cost;
+    exploration.partyExpansionPurchases = purchases + 1;
+
+    const increase = Number.isFinite(game.expandPartyFollowerIncrease) ? game.expandPartyFollowerIncrease : 5;
+    exploration.followerSendLimit = (Number.isFinite(exploration.followerSendLimit) ? exploration.followerSendLimit : 10) + increase;
+
+    addLog(`Expedition party capacity increased to ${exploration.followerSendLimit}.`);
+    updateUI();
+    saveGame();
+}
+
+export function trainExpeditionScouts() {
+    const exploration = getExplorationState();
+    const maxPurchases = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+    const purchases = Number.isFinite(exploration.expeditionTrainingPurchases) ? exploration.expeditionTrainingPurchases : 0;
+    if (purchases >= maxPurchases) return;
+
+    const cost = getUpgradeCost(gameState.costs.expeditionTrainingBaseCost, purchases);
+    if (gameState.progression.faith < cost) return;
+
+    gameState.progression.faith -= cost;
+    exploration.expeditionTrainingPurchases = purchases + 1;
+
+    const multiplier = Number.isFinite(game.expeditionTrainingHazardMultiplier) ? game.expeditionTrainingHazardMultiplier : 0.9;
+    exploration.hazardWipeoutChance = Math.max(0, exploration.hazardWipeoutChance * multiplier);
+    exploration.hazardHeavyLossChance = Math.max(0, exploration.hazardHeavyLossChance * multiplier);
+    exploration.hazardAmbushChance = Math.max(0, exploration.hazardAmbushChance * multiplier);
+
+    addLog('Your scouts are better trained. Expedition hazards are less likely.');
+    updateUI();
+    saveGame();
+}
+
+export function trainZealousPreaching() {
+    const maxPurchases = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+    const purchases = Number.isFinite(game.zealousPreachingPurchases) ? game.zealousPreachingPurchases : 0;
+    if (purchases >= maxPurchases) return;
+
+    const cost = getUpgradeCost(gameState.costs.zealousPreachingBaseCost, purchases);
+    if (gameState.progression.faith < cost) return;
+
+    gameState.progression.faith -= cost;
+    game.zealousPreachingPurchases = purchases + 1;
+    game.diceBonuses.preach = (Number.isFinite(game.diceBonuses.preach) ? game.diceBonuses.preach : 0) + 1;
+
+    addLog(`Your sermons grow more persuasive. Preach rolls now gain +${game.diceBonuses.preach}.`);
     updateUI();
     saveGame();
 }

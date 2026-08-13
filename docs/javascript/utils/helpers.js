@@ -6,6 +6,12 @@ function normalizeRoleCount(value) {
     return Math.floor(value);
 }
 
+export function getUpgradeCost(baseCost, purchases, growthRate = game.upgradeCostGrowthRate) {
+    const owned = Number.isFinite(purchases) && purchases > 0 ? purchases : 0;
+    const rate = Number.isFinite(growthRate) && growthRate > 1 ? growthRate : 1.3;
+    return Math.ceil(baseCost * Math.pow(rate, owned));
+}
+
 export function getRoleCount(roleId) {
     const roleMapValue = gameState.progression.roles?.[roleId];
     if (Number.isFinite(roleMapValue)) return normalizeRoleCount(roleMapValue);

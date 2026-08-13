@@ -177,7 +177,7 @@
                         <div id="tab-explore" class="tab-content" style="display: none;">
                             <p>Explored Distance: <span id="exploredMetersValue">0</span>m</p>
                             <p>
-                                Followers to send (max 10):
+                                Followers to send (max <span id="partySizeLimitValue">10</span>):
                                 <input type="number" id="expeditionFollowersInput" min="1" max="10" value="1" style="width: 90px; margin-left: 8px;">
                             </p>
                             <p>
@@ -197,6 +197,10 @@
                                 <button id="expeditionRollNowBtn">Roll d6</button>
                                 <button id="expeditionCancelRollBtn">Cancel</button>
                             </div>
+
+                            <h3>Expedition Upgrades</h3>
+                            <button id="expandPartyBtn" style="display: none;">Expand Expedition Party</button>
+                            <button id="expeditionTrainingBtn" style="display: none;">Train Expedition Scouts</button>
 
                             <h3>Discovered Areas</h3>
                             <div id="discoveredAreasList">
@@ -231,6 +235,9 @@
                             </button>
                             <button id="unlockAltarBtn" data-tab="unlocks" style="display: none;">
                                 Altar<span class="btn-badge" style="display:none;"></span>
+                            </button>
+                            <button id="zealousPreachingBtn" data-tab="unlocks" style="display: none;">
+                                Zealous Preaching<span class="btn-badge" style="display:none;"></span>
                             </button>
                         </div>
 

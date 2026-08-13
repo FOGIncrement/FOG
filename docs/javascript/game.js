@@ -19,6 +19,9 @@ export {
     rollExpeditionD6,
     cancelExpeditionRoll,
     cancelExpedition,
+    expandExpeditionParty,
+    trainExpeditionScouts,
+    trainZealousPreaching,
     holdVillageSermon,
     conquerVillage,
     collectWildAreaResources
