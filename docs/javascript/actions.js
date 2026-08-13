@@ -284,9 +284,9 @@ function applyWildAreaPassiveEffect(area) {
     }
 
     if (effect.type === 'hungerDrainPenalty') {
-        game.followerHungerDrain += effect.amount;
+        game.followerFoodConsumptionPerSecond += effect.amount;
         effect.applied = true;
-        addLog(`${area.name} is harsh terrain: +${effect.amount.toFixed(4)} hunger drain per follower/s.`);
+        addLog(`${area.name} is harsh terrain: +${effect.amount.toFixed(4)} food consumption per follower/s.`);
     }
 }
 
@@ -556,8 +556,12 @@ export function unlockShelterUpgrade() {
     game.shelterUpgradeUnlocked = true;
     game.shelterCapacityMultiplier = 2;
 
-    applyGlobalCostReduction(0.5);
-    addLog('Shelter upgraded to Shack. Capacity doubled and costs reduced by 50%.');
+    const costMultiplier = Number.isFinite(game.shelterUpgradeCostMultiplier) && game.shelterUpgradeCostMultiplier > 0 && game.shelterUpgradeCostMultiplier <= 1
+        ? game.shelterUpgradeCostMultiplier
+        : 0.7;
+    applyGlobalCostReduction(costMultiplier);
+    const reductionPercent = Math.round((1 - costMultiplier) * 100);
+    addLog(`Shelter upgraded to Shack. Capacity doubled and costs reduced by ${reductionPercent}%.`);
 
     updateUI();
     saveGame();

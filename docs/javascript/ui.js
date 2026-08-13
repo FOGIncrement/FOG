@@ -1,6 +1,6 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal } from './utils/helpers.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
@@ -163,7 +163,7 @@ export function updateUI() {
                 const hunterRate = getRoleCount('hunters') * gameState.rates.hunterFoodPerSecond;
                 const cookEfficiency = Math.min(0.5, getRoleCount('cooks') * gameState.rates.cookHungerDrainReductionPerCook);
                 const sustainCost = game.hungerVisible
-                    ? Math.min(gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency), Math.max(0, gameState.resources.food.amount))
+                    ? Math.min(gameState.progression.followers * game.followerFoodConsumptionPerSecond * (1 - cookEfficiency), Math.max(0, gameState.resources.food.amount))
                     : 0;
                 const remainingFoodForAutoFeed = Math.max(0, gameState.resources.food.amount - sustainCost);
                 const autoFeedCost = (game.hungerVisible && game.hungerPercent < 100)
@@ -197,9 +197,9 @@ export function updateUI() {
         hungerValue.innerText = game.hungerPercent.toFixed(2) + '%';
 
         const cookEfficiency = Math.min(0.5, getRoleCount('cooks') * gameState.rates.cookHungerDrainReductionPerCook);
-        const drain = gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency);
-        const sustainConsumption = Math.min(drain, Math.max(0, gameState.resources.food.amount));
-        const starvationDrain = gameState.resources.food.amount > 0 ? 0 : drain;
+        const consumption = gameState.progression.followers * game.followerFoodConsumptionPerSecond * (1 - cookEfficiency);
+        const sustainConsumption = Math.min(consumption, Math.max(0, gameState.resources.food.amount));
+        const starvationDrain = gameState.resources.food.amount > 0 ? 0 : game.hungerStarvationDrainPerSecond * (1 - cookEfficiency);
         const autoFeeding = game.hungerVisible && game.hungerPercent < 100;
         const foodAfterSustain = Math.max(0, gameState.resources.food.amount - sustainConsumption);
         const autoFeedAmount = autoFeeding ? Math.min(game.autoFeedFoodPerSecond, foodAfterSustain) : 0;
@@ -209,11 +209,20 @@ export function updateUI() {
             ? ((autoFeedAmount * game.foodHungerGain * cookBonusMultiplier) + cookFlatGain - starvationDrain)
             : (cookFlatGain - starvationDrain);
         hungerRate.innerText = netRate >= 0 ? `(+${netRate.toFixed(2)}/s)` : `(${netRate.toFixed(2)}/s)`;
+        const timeToCrisisSeconds = starvationDrain > 0 ? Math.max(0, game.hungerPercent / starvationDrain) : null;
+        const timeToCrisisLine = timeToCrisisSeconds != null ? `\nTime to crisis: ${timeToCrisisSeconds.toFixed(0)}s` : '';
         setTooltipContent(
             hungerRate,
             'Hunger Rate\nCurrent hunger percent change per second.',
-            `Passive (cooks): +${cookFlatGain.toFixed(3)}/s\nAuto feed recovery: +${(autoFeedAmount * game.foodHungerGain * cookBonusMultiplier).toFixed(3)}/s\nStarvation drain: -${starvationDrain.toFixed(3)}/s\nNet: ${netRate >= 0 ? '+' : ''}${netRate.toFixed(3)}/s`
+            `Passive (cooks): +${cookFlatGain.toFixed(3)}/s\nAuto feed recovery: +${(autoFeedAmount * game.foodHungerGain * cookBonusMultiplier).toFixed(3)}/s\nStarvation drain: -${starvationDrain.toFixed(3)}/s\nNet: ${netRate >= 0 ? '+' : ''}${netRate.toFixed(3)}/s${timeToCrisisLine}`
         );
+    }
+
+    const nextGoalEl = document.getElementById('nextGoalHint');
+    if (nextGoalEl) {
+        const nextGoal = getNextGoal();
+        nextGoalEl.style.display = nextGoal ? 'block' : 'none';
+        nextGoalEl.innerText = nextGoal ? `Next: ${nextGoal.label} — ${nextGoal.detail}` : '';
     }
 
     const alignmentContainer = document.getElementById('alignmentContainer');
@@ -382,7 +391,7 @@ function renderDiscoveredAreas(hasExplorationAccess) {
             if (area.passiveEffect?.type === 'faithPerFollowerBonus') {
                 effectLine = `<p>Effect: +${Number(area.passiveEffect.amount || 0).toFixed(4)} faith/follower/s ${area.passiveEffect.applied ? '(active)' : ''}</p>`;
             } else if (area.passiveEffect?.type === 'hungerDrainPenalty') {
-                effectLine = `<p>Effect: +${Number(area.passiveEffect.amount || 0).toFixed(4)} hunger drain/follower/s ${area.passiveEffect.applied ? '(active)' : ''}</p>`;
+                effectLine = `<p>Effect: +${Number(area.passiveEffect.amount || 0).toFixed(4)} food consumption/follower/s ${area.passiveEffect.applied ? '(active)' : ''}</p>`;
             }
 
             return `

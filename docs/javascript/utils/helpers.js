@@ -40,6 +40,61 @@ export function getUnassignedFollowers() {
     return Math.max(0, gameState.progression.followers - getAssignedFollowers());
 }
 
+export function getNextGoal() {
+    if (game.ritualCircleBuilt < 1) {
+        return { label: 'Build the Ritual Circle', detail: `Costs ${gameState.costs.ritualBtnCost} faith and unlocks the rest of the settlement.` };
+    }
+
+    if (game.shelter < 1) {
+        return { label: 'Build a Shelter', detail: 'Costs wood/stone (Build tab); raises follower capacity and reveals Hunger.' };
+    }
+
+    if (!game.unlocksTabUnlocked) {
+        return { label: 'Preach to your followers', detail: 'A successful sermon unlocks Training, roles, and further upgrades.' };
+    }
+
+    if (!game.trainingUnlocked) {
+        return { label: 'Unlock Training', detail: `Costs ${gameState.costs.trainingTechCost} faith; enables role specialization.` };
+    }
+
+    if (!ROLE_DEFINITIONS.some((role) => game.roleUnlocks[role.id])) {
+        return { label: 'Unlock a role', detail: 'Hunters, Ritualists, Gatherers, or Cooks — pick one to start specializing followers.' };
+    }
+
+    if (getAssignedFollowers() === 0 && getUnassignedFollowers() > 0) {
+        return { label: 'Train your followers into a role', detail: "You've unlocked a role but haven't assigned anyone to it yet." };
+    }
+
+    if (gameState.progression.followers < game.shelterUpgradeFollowerRequirement) {
+        return { label: 'Grow your settlement', detail: `Preach/convert followers toward ${game.shelterUpgradeFollowerRequirement} to unlock the Shack upgrade.` };
+    }
+
+    if (!game.shelterUpgradeUnlocked) {
+        return { label: 'Unlock the Shelter Upgrade', detail: `Costs ${gameState.costs.unlockShelterUpgradeFaithCost} faith; doubles capacity and reduces costs.` };
+    }
+
+    if (!game.altarUnlocked) {
+        return { label: 'Unlock the Altar', detail: 'Improves Preach rolls once built.' };
+    }
+
+    if (game.altarUnlocked && !game.altarBuilt) {
+        return { label: 'Build the Altar', detail: 'Costs wood/stone/faith; grants +1 to Preach rolls.' };
+    }
+
+    const explorationCapacityRequirement = Number.isFinite(game.prophetUnlockCapacityRequirement)
+        ? Math.floor(game.prophetUnlockCapacityRequirement)
+        : 150;
+    if (getMaxFollowers() < explorationCapacityRequirement) {
+        return { label: 'Keep growing capacity', detail: `Reach ${explorationCapacityRequirement} max followers to unlock Exploration.` };
+    }
+
+    if (!game.explorationUnlocked) {
+        return { label: 'Unlock Exploration', detail: `Costs ${gameState.costs.unlockExplorationFaithCost} faith.` };
+    }
+
+    return null;
+}
+
 export function hasProphetAssigned() {
     return getRoleCount('prophet') > 0;
 }
@@ -73,7 +128,20 @@ export function getNextVillageDistance() {
     return furthest + step;
 }
 
-export function getRoleTrainingCost(baseCost) {
+export function getRoleBulkCost(baseCost, currentlyOwned, quantity, growthRate = game.roleCostGrowthRate) {
+    if (!Number.isFinite(quantity) || quantity <= 0) return 0;
+
+    const owned = Number.isFinite(currentlyOwned) && currentlyOwned > 0 ? currentlyOwned : 0;
+    const rate = Number.isFinite(growthRate) && growthRate > 1 ? growthRate : 1;
+
+    if (rate === 1) return Math.ceil(baseCost * quantity);
+
+    const scaleToOwned = Math.pow(rate, owned);
+    const seriesSum = (Math.pow(rate, quantity) - 1) / (rate - 1);
+    return Math.ceil(baseCost * scaleToOwned * seriesSum);
+}
+
+export function getRoleTrainingCost(baseCost, currentlyOwned) {
     const untrained = getUnassignedFollowers();
     if (untrained <= 0) return Infinity;
 
@@ -82,7 +150,7 @@ export function getRoleTrainingCost(baseCost) {
     if (isNaN(toTrain) || toTrain <= 0) toTrain = untrained;
     toTrain = Math.min(toTrain, untrained);
 
-    return toTrain * baseCost;
+    return getRoleBulkCost(baseCost, currentlyOwned, toTrain);
 }
 
 export function getShelterBuildCosts() {

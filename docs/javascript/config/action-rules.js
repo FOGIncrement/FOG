@@ -226,7 +226,10 @@ export function getActionUiRules(context) {
             setAffordability(el, canAfford);
             setButtonLabel(el, 'Upgrade Shelter to Shack');
             el.classList.toggle('purchased', !canAfford);
-            applyTooltip(el, 'Upgrade Shelter to Shack\nBoost shelter effectiveness and reduce costs.', `Requirement: ${game.shelterUpgradeFollowerRequirement} followers\nCost: ${cost} faith\nEffect: x2 shelter capacity, 50% global cost reduction`);
+            const shackReductionPercent = Number.isFinite(game.shelterUpgradeCostMultiplier)
+                ? Math.round((1 - game.shelterUpgradeCostMultiplier) * 100)
+                : 30;
+            applyTooltip(el, 'Upgrade Shelter to Shack\nBoost shelter effectiveness and reduce costs.', `Requirement: ${game.shelterUpgradeFollowerRequirement} followers\nCost: ${cost} faith\nEffect: x2 shelter capacity, ${shackReductionPercent}% global cost reduction`);
         },
         unlockExploration(el) {
             if (!game.unlocksTabUnlocked) {
@@ -427,13 +430,13 @@ export function getActionUiRules(context) {
             }
 
             const baseCost = gameState.costs[roleDefinition.trainCostKey];
-            const cost = getRoleTrainingCost(baseCost);
+            const cost = getRoleTrainingCost(baseCost, currentCount);
             const canAfford = gameState.progression.faith >= cost;
             setAffordability(el, canAfford);
             setButtonLabel(el, `Train ${roleDefinition.label}`);
             el.classList.toggle('purchased', !canAfford);
             const capText = maxAssignable === Infinity ? 'no role cap' : `${currentCount}/${maxAssignable} assigned`;
-            applyTooltip(el, `Train ${roleDefinition.label}\nAssign untrained followers to this role.`, `Cost: ${cost} faith\nBatch uses training input amount\nCap: ${capText}`);
+            applyTooltip(el, `Train ${roleDefinition.label}\nAssign untrained followers to this role. Cost rises with how many you already own.`, `Cost: ${cost} faith\nBatch uses training input amount\nCap: ${capText}`);
         },
 
         unlockAltar(el) {

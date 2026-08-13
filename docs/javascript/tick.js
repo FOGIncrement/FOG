@@ -114,10 +114,10 @@ export function gameTick(dtSeconds = 1) {
         const cookFlatGain = cookCount * gameState.rates.cookFlatHungerGainPerSecond * clampedDt;
 
         const cookEfficiency = Math.min(0.5, cookCount * gameState.rates.cookHungerDrainReductionPerCook);
-        const drain = gameState.progression.followers * game.followerHungerDrain * (1 - cookEfficiency) * clampedDt;
+        const consumption = gameState.progression.followers * game.followerFoodConsumptionPerSecond * (1 - cookEfficiency) * clampedDt;
         const foodAmount = Math.max(0, gameState.resources.food.amount);
-        const sustainFoodUsed = Math.min(drain, foodAmount);
-        const starvationDrain = foodAmount > 0 ? 0 : drain;
+        const sustainFoodUsed = Math.min(consumption, foodAmount);
+        const starvationDrain = foodAmount > 0 ? 0 : game.hungerStarvationDrainPerSecond * (1 - cookEfficiency) * clampedDt;
 
         if (sustainFoodUsed > 0) {
             gameState.resources.food.spend(sustainFoodUsed);

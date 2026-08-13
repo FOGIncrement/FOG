@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getMaxFollowers, getUnassignedFollowers, getRoleCount, setRoleCount } from './utils/helpers.js';
+import { getMaxFollowers, getUnassignedFollowers, getRoleCount, setRoleCount, getRoleBulkCost } from './utils/helpers.js';
 import { ROLE_DEFINITION_BY_ID } from './config/roles.js';
 
 export function training() {
@@ -37,7 +37,7 @@ function trainRole(roleKey, baseCost, label) {
     toTrain = Math.min(toTrain, remainingSlots);
     if (toTrain <= 0) return;
 
-    const cost = toTrain * baseCost;
+    const cost = getRoleBulkCost(baseCost, currentCount, toTrain);
     if (gameState.progression.faith < cost) return;
 
     gameState.progression.faith -= cost;

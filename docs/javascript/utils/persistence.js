@@ -43,7 +43,7 @@ function applyDiscoveredAreaPassiveEffects(exploration) {
         }
 
         if (effect.type === 'hungerDrainPenalty' && Number.isFinite(effect.amount) && effect.amount > 0) {
-            game.followerHungerDrain += effect.amount;
+            game.followerFoodConsumptionPerSecond += effect.amount;
             effect.applied = true;
         }
     });
@@ -233,8 +233,11 @@ export function loadGame() {
             game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent));
 
             // Guard against legacy/corrupted saves that can make hunger impossible to manage.
-            if (!Number.isFinite(game.followerHungerDrain) || game.followerHungerDrain <= 0 || game.followerHungerDrain > 1) {
-                game.followerHungerDrain = 0.25;
+            if (!Number.isFinite(game.followerFoodConsumptionPerSecond) || game.followerFoodConsumptionPerSecond <= 0 || game.followerFoodConsumptionPerSecond > 1) {
+                game.followerFoodConsumptionPerSecond = 0.25;
+            }
+            if (!Number.isFinite(game.hungerStarvationDrainPerSecond) || game.hungerStarvationDrainPerSecond <= 0) {
+                game.hungerStarvationDrainPerSecond = 3;
             }
             if (!Number.isFinite(game.autoFeedFoodPerSecond) || game.autoFeedFoodPerSecond <= 0 || game.autoFeedFoodPerSecond > 2) {
                 game.autoFeedFoodPerSecond = 0.15;
@@ -251,6 +254,9 @@ export function loadGame() {
             }
             if (!Number.isFinite(game.shelterCostScalePerBuilt) || game.shelterCostScalePerBuilt < 0) {
                 game.shelterCostScalePerBuilt = 0.1;
+            }
+            if (!Number.isFinite(game.roleCostGrowthRate) || game.roleCostGrowthRate < 1) {
+                game.roleCostGrowthRate = 1.05;
             }
 
             if (!Number.isFinite(game.alignment)) {
@@ -293,6 +299,10 @@ export function loadGame() {
 
             if (!Number.isFinite(gameState.costs.unlockAltarFaithCost) || gameState.costs.unlockAltarFaithCost < 0) {
                 gameState.costs.unlockAltarFaithCost = 0;
+            }
+            // One-time upgrade guard: pre-rebalance saves carried the old, badly undercosted default of 1.
+            if (!Number.isFinite(gameState.costs.preachFaithCost) || gameState.costs.preachFaithCost < 5) {
+                gameState.costs.preachFaithCost = 20;
             }
             if (!Number.isFinite(gameState.costs.unlockProphetFaithCost) || gameState.costs.unlockProphetFaithCost < 1) {
                 gameState.costs.unlockProphetFaithCost = 500;
@@ -339,6 +349,9 @@ export function loadGame() {
             }
             if (!Number.isFinite(game.shelterUpgradeFollowerRequirement) || game.shelterUpgradeFollowerRequirement < 1) {
                 game.shelterUpgradeFollowerRequirement = 30;
+            }
+            if (!Number.isFinite(game.shelterUpgradeCostMultiplier) || game.shelterUpgradeCostMultiplier <= 0 || game.shelterUpgradeCostMultiplier > 1) {
+                game.shelterUpgradeCostMultiplier = 0.7;
             }
 
             if (!game.exploration || typeof game.exploration !== 'object') {
