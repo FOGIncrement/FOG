@@ -69,7 +69,7 @@ export const gameState = {
         helOfferingFaithCost: 20
     },
     rates: {
-        hunterFoodPerSecond: 0.8,
+        hunterFoodPerSecond: 2.0,
         ritualistFaithPerSecond: 0.1,
         gathererWoodPerSecond: 0.25,
         gathererStonePerSecond: 0.20,

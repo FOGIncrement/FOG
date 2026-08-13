@@ -120,6 +120,14 @@ export function loadGame() {
             Object.assign(gameState.gathering, savedGathering);
             Object.assign(gameState.rates, savedRates);
 
+            // One-time upgrade guard: pre-rebalance saves carried the old, badly undercosted
+            // default of 0.8, which required 31.25% of the population to be Hunters just to
+            // break even on food. Only bump saves still sitting at (approximately) that old
+            // default - don't stomp a value the player has since deliberately tuned higher.
+            if (!Number.isFinite(gameState.rates.hunterFoodPerSecond) || gameState.rates.hunterFoodPerSecond < 0.9) {
+                gameState.rates.hunterFoodPerSecond = 2.0;
+            }
+
             const savedRoleMap = savedProg.roles && typeof savedProg.roles === 'object'
                 ? savedProg.roles
                 : {};
