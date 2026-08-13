@@ -828,6 +828,65 @@ export function unlockAltar() {
     saveGame();
 }
 
+export function blessTheHarvest() {
+    if (game.danuBlessingUnlocked) return;
+    if (!game.unlocksTabUnlocked) return;
+
+    const faithCost = gameState.costs.blessHarvestFaithCost;
+    const woodCost = gameState.costs.blessHarvestWoodCost;
+    const stoneCost = gameState.costs.blessHarvestStoneCost;
+
+    const canAfford =
+        gameState.progression.faith >= faithCost &&
+        gameState.resources.wood.amount >= woodCost &&
+        gameState.resources.stone.amount >= stoneCost;
+
+    if (!canAfford) return;
+
+    gameState.progression.faith -= faithCost;
+    gameState.resources.wood.spend(woodCost);
+    gameState.resources.stone.spend(stoneCost);
+
+    game.danuBlessingUnlocked = true;
+    game.alignment = Math.max(-100, Math.min(100, game.alignment + game.alignmentBlessHarvestGain));
+    game.factionFavor.danu += game.danuFavorBlessHarvestGain;
+    if (!game.alignmentVisible) game.alignmentVisible = true;
+
+    addLog(`The Earth Mother blesses your harvest. Hunters and Gatherers now produce ${Math.round((game.danuBlessingMultiplier - 1) * 100)}% more.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function offerToTheVeil() {
+    if (!game.unlocksTabUnlocked) return;
+
+    const followerCost = Number.isFinite(game.helOfferingFollowerCost) ? game.helOfferingFollowerCost : 3;
+    const faithCost = Number.isFinite(gameState.costs.helOfferingFaithCost) ? gameState.costs.helOfferingFaithCost : 20;
+
+    if (gameState.progression.followers <= followerCost) return;
+    if (gameState.progression.faith < faithCost) return;
+
+    const confirmed = window.confirm(`Sacrifice ${followerCost} followers to Hel's veil? This cannot be undone.`);
+    if (!confirmed) return;
+
+    gameState.progression.faith -= faithCost;
+    const sacrificed = removeFollowersFromSettlement(followerCost);
+    if (sacrificed <= 0) return;
+
+    const refund = Number.isFinite(game.helOfferingFaithRefund) ? game.helOfferingFaithRefund : 30;
+    gameState.progression.faith += refund;
+
+    game.alignment = Math.max(-100, Math.min(100, game.alignment - game.alignmentHelOfferingLoss));
+    game.factionFavor.hel += game.helFavorOfferingGain;
+    if (!game.alignmentVisible) game.alignmentVisible = true;
+
+    addLog(`${sacrificed} followers are given to the veil. Hel takes notice.`);
+
+    updateUI();
+    saveGame();
+}
+
 export function startExpedition() {
     const { exploration, limit } = getExpeditionConfig();
     if (exploration.activeExpedition) return;

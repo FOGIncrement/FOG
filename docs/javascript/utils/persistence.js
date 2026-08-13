@@ -287,6 +287,42 @@ export function loadGame() {
             if (!Number.isFinite(game.sekhmetFavorConquerGain) || game.sekhmetFavorConquerGain < 0) {
                 game.sekhmetFavorConquerGain = 1;
             }
+            if (typeof game.danuBlessingUnlocked !== 'boolean') {
+                game.danuBlessingUnlocked = false;
+            }
+            if (!Number.isFinite(game.danuBlessingMultiplier) || game.danuBlessingMultiplier < 1) {
+                game.danuBlessingMultiplier = 1.2;
+            }
+            if (!Number.isFinite(game.alignmentBlessHarvestGain) || game.alignmentBlessHarvestGain < 0) {
+                game.alignmentBlessHarvestGain = 5;
+            }
+            if (!Number.isFinite(game.danuFavorBlessHarvestGain) || game.danuFavorBlessHarvestGain < 0) {
+                game.danuFavorBlessHarvestGain = 10;
+            }
+            if (!Number.isFinite(game.helOfferingFollowerCost) || game.helOfferingFollowerCost < 0) {
+                game.helOfferingFollowerCost = 3;
+            }
+            if (!Number.isFinite(game.helOfferingFaithRefund) || game.helOfferingFaithRefund < 0) {
+                game.helOfferingFaithRefund = 30;
+            }
+            if (!Number.isFinite(game.alignmentHelOfferingLoss) || game.alignmentHelOfferingLoss < 0) {
+                game.alignmentHelOfferingLoss = 5;
+            }
+            if (!Number.isFinite(game.helFavorOfferingGain) || game.helFavorOfferingGain < 0) {
+                game.helFavorOfferingGain = 10;
+            }
+            if (!Number.isFinite(gameState.costs.blessHarvestFaithCost) || gameState.costs.blessHarvestFaithCost < 0) {
+                gameState.costs.blessHarvestFaithCost = 150;
+            }
+            if (!Number.isFinite(gameState.costs.blessHarvestWoodCost) || gameState.costs.blessHarvestWoodCost < 0) {
+                gameState.costs.blessHarvestWoodCost = 100;
+            }
+            if (!Number.isFinite(gameState.costs.blessHarvestStoneCost) || gameState.costs.blessHarvestStoneCost < 0) {
+                gameState.costs.blessHarvestStoneCost = 100;
+            }
+            if (!Number.isFinite(gameState.costs.helOfferingFaithCost) || gameState.costs.helOfferingFaithCost < 0) {
+                gameState.costs.helOfferingFaithCost = 20;
+            }
 
             if (!game.factionFavor || typeof game.factionFavor !== 'object') {
                 game.factionFavor = {};

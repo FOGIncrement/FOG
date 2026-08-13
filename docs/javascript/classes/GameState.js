@@ -62,7 +62,11 @@ export const gameState = {
         altarBuildFaithCost: 200,
         expandPartyBaseCost: 100,
         expeditionTrainingBaseCost: 80,
-        zealousPreachingBaseCost: 60
+        zealousPreachingBaseCost: 60,
+        blessHarvestFaithCost: 150,
+        blessHarvestWoodCost: 100,
+        blessHarvestStoneCost: 100,
+        helOfferingFaithCost: 20
     },
     rates: {
         hunterFoodPerSecond: 0.8,
@@ -118,6 +122,14 @@ export const game = {
     heliosFavorConvertGain: 1,
     alignmentConquerLoss: 1,
     sekhmetFavorConquerGain: 1,
+    danuBlessingUnlocked: false,
+    danuBlessingMultiplier: 1.2,
+    alignmentBlessHarvestGain: 5,
+    danuFavorBlessHarvestGain: 10,
+    helOfferingFollowerCost: 3,
+    helOfferingFaithRefund: 30,
+    alignmentHelOfferingLoss: 5,
+    helFavorOfferingGain: 10,
     factionFavor: createFactionFavorMap(0),
     trainingUnlocked: false,
     roleUnlocks: createRoleUnlockMap(false),

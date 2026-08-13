@@ -7,7 +7,8 @@ export const ACTION_GROUPS = {
         { id: 'preach', buttonId: 'preachBtn', handlerExport: 'preach', tab: 'actions', category: 'conversion' },
         { id: 'rollPreachD4', buttonId: 'preachRollBtn', handlerExport: 'rollPreachD4', tab: 'actions', category: 'conversion' },
         { id: 'cancelPreachRoll', buttonId: 'preachCancelBtn', handlerExport: 'cancelPreachRoll', tab: 'actions', category: 'conversion' },
-        { id: 'convertFollower', buttonId: 'convertBtn', handlerExport: 'convertFollower', tab: 'actions', category: 'conversion' }
+        { id: 'convertFollower', buttonId: 'convertBtn', handlerExport: 'convertFollower', tab: 'actions', category: 'conversion' },
+        { id: 'offerToTheVeil', buttonId: 'helOfferingBtn', handlerExport: 'offerToTheVeil', tab: 'actions', category: 'sacrifice' }
     ],
     explore: [
         { id: 'startExpedition', buttonId: 'startExpeditionBtn', handlerExport: 'startExpedition', tab: 'explore', category: 'expedition' },
@@ -36,7 +37,8 @@ export const ACTION_GROUPS = {
         { id: 'unlockExploration', buttonId: 'unlockExplorationBtn', handlerExport: 'unlockExploration', tab: 'unlocks', category: 'progression' },
         { id: 'unlockShelterUpgrade', buttonId: 'unlockShelterUpgradeBtn', handlerExport: 'unlockShelterUpgrade', tab: 'unlocks', category: 'buildingUpgrade' },
         { id: 'unlockAltar', buttonId: 'unlockAltarBtn', handlerExport: 'unlockAltar', tab: 'unlocks', category: 'buildingUpgrade' },
-        { id: 'trainZealousPreaching', buttonId: 'zealousPreachingBtn', handlerExport: 'trainZealousPreaching', tab: 'unlocks', category: 'upgrade' }
+        { id: 'trainZealousPreaching', buttonId: 'zealousPreachingBtn', handlerExport: 'trainZealousPreaching', tab: 'unlocks', category: 'upgrade' },
+        { id: 'blessTheHarvest', buttonId: 'blessHarvestBtn', handlerExport: 'blessTheHarvest', tab: 'unlocks', category: 'buildingUpgrade' }
     ],
     followerManager: [
         { id: 'trainHunters', buttonId: 'trainHuntersBtn', handlerExport: 'trainHunters', tab: 'followerManager', category: 'roles' },

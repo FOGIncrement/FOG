@@ -145,7 +145,23 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Convert Alignment Gain', target: game, key: 'alignmentConvertGain', step: 0.5, min: 0 },
             { label: 'Convert Helios Favor Gain', target: game, key: 'heliosFavorConvertGain', step: 0.5, min: 0 },
             { label: 'Conquer Alignment Loss', target: game, key: 'alignmentConquerLoss', step: 0.5, min: 0 },
-            { label: 'Conquer Sekhmet Favor Gain', target: game, key: 'sekhmetFavorConquerGain', step: 0.5, min: 0 }
+            { label: 'Conquer Sekhmet Favor Gain', target: game, key: 'sekhmetFavorConquerGain', step: 0.5, min: 0 },
+            { label: 'Bless Harvest Alignment Gain', target: game, key: 'alignmentBlessHarvestGain', step: 0.5, min: 0 },
+            { label: 'Bless Harvest Danu Favor Gain', target: game, key: 'danuFavorBlessHarvestGain', step: 0.5, min: 0 },
+            { label: 'Hel Offering Alignment Loss', target: game, key: 'alignmentHelOfferingLoss', step: 0.5, min: 0 },
+            { label: 'Hel Offering Favor Gain', target: game, key: 'helFavorOfferingGain', step: 0.5, min: 0 }
+        ]
+    },
+    {
+        title: 'Danu & Hel',
+        entries: [
+            { label: 'Bless Harvest Faith Cost', target: gameState.costs, key: 'blessHarvestFaithCost', step: 5, min: 0 },
+            { label: 'Bless Harvest Wood Cost', target: gameState.costs, key: 'blessHarvestWoodCost', step: 5, min: 0 },
+            { label: 'Bless Harvest Stone Cost', target: gameState.costs, key: 'blessHarvestStoneCost', step: 5, min: 0 },
+            { label: 'Danu Blessing Multiplier', target: game, key: 'danuBlessingMultiplier', step: 0.05, min: 1 },
+            { label: 'Hel Offering Faith Cost', target: gameState.costs, key: 'helOfferingFaithCost', step: 5, min: 0 },
+            { label: 'Hel Offering Follower Cost', target: game, key: 'helOfferingFollowerCost', step: 1, min: 0 },
+            { label: 'Hel Offering Faith Refund', target: game, key: 'helOfferingFaithRefund', step: 5, min: 0 }
         ]
     }
 ];

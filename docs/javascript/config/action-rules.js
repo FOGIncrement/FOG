@@ -58,6 +58,25 @@ export function getActionUiRules(context) {
         convertFollower(el) {
             applyTooltip(el, 'Convert Follower\nSpend faith to convert one follower instantly.', `Cost: ${game.convertCost} faith\nOutput: +1 follower`);
         },
+        offerToTheVeil(el) {
+            if (!game.unlocksTabUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+
+            const followerCost = Number.isFinite(game.helOfferingFollowerCost) ? game.helOfferingFollowerCost : 3;
+            const faithCost = Number.isFinite(gameState.costs.helOfferingFaithCost) ? gameState.costs.helOfferingFaithCost : 20;
+            const refund = Number.isFinite(game.helOfferingFaithRefund) ? game.helOfferingFaithRefund : 30;
+            const canAfford = gameState.progression.followers > followerCost && gameState.progression.faith >= faithCost;
+            setAffordability(el, canAfford);
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Offering to the Veil\nSacrifice followers to Hel in exchange for her favor.',
+                `Cost: ${followerCost} followers, ${faithCost} faith\nRefund: +${refund} faith\nEffect: Alignment toward Evil, Hel favor +${game.helFavorOfferingGain}`
+            );
+        },
         explore(el) {
             applyTooltip(el, 'Explore\nSearch nearby lands for opportunities.', 'Cost: none');
         },
@@ -551,6 +570,38 @@ export function getActionUiRules(context) {
             setButtonLabel(el, 'Unlock Altar');
             el.classList.toggle('purchased', !canAfford);
             applyTooltip(el, 'Unlock Altar\nUnlock the altar blueprint.', `Requirement: ${game.shelterUpgradeFollowerRequirement} followers\nCost: ${cost} faith\nEffect: Enables Build Altar action`);
+        },
+        blessTheHarvest(el) {
+            if (!game.unlocksTabUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+
+            setVisible(el, true);
+
+            if (game.danuBlessingUnlocked) {
+                el.disabled = true;
+                setButtonLabel(el, 'Bless the Harvest (Unlocked)');
+                el.classList.add('purchased');
+                applyTooltip(el, 'Bless the Harvest\nThe Earth Mother\'s abundance already flows.', 'Status: unlocked');
+                return;
+            }
+
+            const faithCost = gameState.costs.blessHarvestFaithCost;
+            const woodCost = gameState.costs.blessHarvestWoodCost;
+            const stoneCost = gameState.costs.blessHarvestStoneCost;
+            const canAfford =
+                gameState.progression.faith >= faithCost &&
+                gameState.resources.wood.amount >= woodCost &&
+                gameState.resources.stone.amount >= stoneCost;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, 'Bless the Harvest');
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Bless the Harvest\nCall on Danu to make the land generous.',
+                `Cost: ${faithCost} faith, ${woodCost} wood, ${stoneCost} stone\nEffect: Hunters and Gatherers produce +${Math.round((game.danuBlessingMultiplier - 1) * 100)}% permanently`
+            );
         }
     };
 }

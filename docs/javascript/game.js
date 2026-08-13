@@ -22,6 +22,8 @@ export {
     expandExpeditionParty,
     trainExpeditionScouts,
     trainZealousPreaching,
+    blessTheHarvest,
+    offerToTheVeil,
     holdVillageSermon,
     conquerVillage,
     collectWildAreaResources

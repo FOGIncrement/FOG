@@ -9,7 +9,7 @@ export const ROLE_DEFINITIONS = [
         roleValueId: 'huntersRoleValue',
         simulation: {
             tickRate: 1,
-            scaling: (count) => count,
+            scaling: (count, gameState, game) => count * (game.danuBlessingUnlocked ? game.danuBlessingMultiplier : 1),
             outputs: [
                 { target: 'resource', key: 'food', rateKey: 'hunterFoodPerSecond' }
             ]
@@ -41,7 +41,7 @@ export const ROLE_DEFINITIONS = [
         roleValueId: 'gatherersRoleValue',
         simulation: {
             tickRate: 1,
-            scaling: (count) => count,
+            scaling: (count, gameState, game) => count * (game.danuBlessingUnlocked ? game.danuBlessingMultiplier : 1),
             outputs: [
                 { target: 'resource', key: 'wood', rateKey: 'gathererWoodPerSecond' },
                 { target: 'resource', key: 'stone', rateKey: 'gathererStonePerSecond' }
