@@ -1,5 +1,6 @@
 import { Resource } from './Resource.js';
 import { createRoleCountMap, createRoleUnlockMap, createRoleAccumulatorMap } from '../config/roles.js';
+import { createFactionFavorMap } from '../config/factions.js';
 
 // ===== GAME STATE =====
 export const gameState = {
@@ -95,6 +96,11 @@ export const game = {
     feedAmount: 10,     // manual feed amount per click
     logMessageLifetime: 6,  // log message lifetime in seconds; messages fade after this
     logFadeDuration: 500,   // fade duration in milliseconds
+    alignment: 0,
+    alignmentVisible: false,
+    alignmentPreachGain: 1,
+    heliosFavorPreachGain: 1,
+    factionFavor: createFactionFavorMap(0),
     trainingUnlocked: false,
     roleUnlocks: createRoleUnlockMap(false),
     roleBulkAssignAmount: 1,

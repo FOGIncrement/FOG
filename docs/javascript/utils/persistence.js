@@ -6,6 +6,7 @@ import {
     createRoleUnlockMap,
     createRoleAccumulatorMap
 } from '../config/roles.js';
+import { FACTION_DEFINITIONS, createFactionFavorMap } from '../config/factions.js';
 
 let resetInProgress = false;
 
@@ -251,6 +252,32 @@ export function loadGame() {
             if (!Number.isFinite(game.shelterCostScalePerBuilt) || game.shelterCostScalePerBuilt < 0) {
                 game.shelterCostScalePerBuilt = 0.1;
             }
+
+            if (!Number.isFinite(game.alignment)) {
+                game.alignment = 0;
+            }
+            game.alignment = Math.max(-100, Math.min(100, game.alignment));
+
+            if (typeof game.alignmentVisible !== 'boolean') {
+                game.alignmentVisible = false;
+            }
+
+            if (!Number.isFinite(game.alignmentPreachGain) || game.alignmentPreachGain < 0) {
+                game.alignmentPreachGain = 1;
+            }
+            if (!Number.isFinite(game.heliosFavorPreachGain) || game.heliosFavorPreachGain < 0) {
+                game.heliosFavorPreachGain = 1;
+            }
+
+            if (!game.factionFavor || typeof game.factionFavor !== 'object') {
+                game.factionFavor = {};
+            }
+            const mergedFactionFavor = createFactionFavorMap(0);
+            FACTION_DEFINITIONS.forEach((factionDefinition) => {
+                const value = game.factionFavor[factionDefinition.id];
+                mergedFactionFavor[factionDefinition.id] = Number.isFinite(value) && value >= 0 ? value : 0;
+            });
+            game.factionFavor = mergedFactionFavor;
 
             if (!Number.isFinite(gameState.costs.unlockAltarFaithCost) || gameState.costs.unlockAltarFaithCost < 0) {
                 gameState.costs.unlockAltarFaithCost = 0;

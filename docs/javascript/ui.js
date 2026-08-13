@@ -2,6 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
 import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts } from './utils/helpers.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
+import { FACTION_DEFINITIONS } from './config/factions.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
 import { getActionUiRules } from './config/action-rules.js';
 import { buildingRegistry, actionRegistry } from './registries/index.js';
@@ -15,6 +16,13 @@ function getExplorationCapacityRequirement() {
 
 function hasExplorationSystemAccess() {
     return getMaxFollowers() >= getExplorationCapacityRequirement() && Boolean(game.explorationUnlocked);
+}
+
+function describeAlignment(value) {
+    if (!Number.isFinite(value)) return 'Neutral';
+    if (value > 10) return 'Good';
+    if (value < -10) return 'Evil';
+    return 'Neutral';
 }
 
 export function updateUI() {
@@ -207,6 +215,22 @@ export function updateUI() {
             `Passive (cooks): +${cookFlatGain.toFixed(3)}/s\nAuto feed recovery: +${(autoFeedAmount * game.foodHungerGain * cookBonusMultiplier).toFixed(3)}/s\nStarvation drain: -${starvationDrain.toFixed(3)}/s\nNet: ${netRate >= 0 ? '+' : ''}${netRate.toFixed(3)}/s`
         );
     }
+
+    const alignmentContainer = document.getElementById('alignmentContainer');
+    const alignmentValue = document.getElementById('alignmentValue');
+    if (alignmentContainer && alignmentValue) {
+        alignmentContainer.style.display = game.alignmentVisible ? 'block' : 'none';
+        alignmentValue.innerText = `${game.alignment.toFixed(0)} (${describeAlignment(game.alignment)})`;
+    }
+
+    const factionFavorContainer = document.getElementById('factionFavorContainer');
+    if (factionFavorContainer) {
+        factionFavorContainer.style.display = game.alignmentVisible ? 'block' : 'none';
+    }
+    FACTION_DEFINITIONS.forEach((faction) => {
+        const el = document.getElementById(`${faction.id}FavorValue`);
+        if (el) el.innerText = `${game.factionFavor[faction.id].toFixed(0)}`;
+    });
 
     const trainedSummaryContainer = document.getElementById('trainedSummaryContainer');
     const trainedSummaryValue = document.getElementById('trainedSummaryValue');

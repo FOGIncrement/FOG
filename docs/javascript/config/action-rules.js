@@ -276,7 +276,7 @@ export function getActionUiRules(context) {
                 el.classList.toggle('purchased', !canAfford);
                 const preachRollText = preachBonus > 0 ? `1d4 + ${preachBonus}` : '1d4';
                 const altarStatus = game.altarBuilt ? 'Altar bonus active: +1' : (game.altarUnlocked ? 'Altar unlocked: build required for +1' : 'Altar bonus: none');
-                applyTooltip(el, 'Preach\nDeliver a sermon to convert followers.', `Cost: ${gameState.costs.preachFaithCost} faith, 10% hunger, 10 food\nRoll: ${preachRollText} followers (capped by capacity)\n${altarStatus}`);
+                applyTooltip(el, 'Preach\nDeliver a sermon to convert followers.', `Cost: ${gameState.costs.preachFaithCost} faith, 10% hunger, 10 food\nRoll: ${preachRollText} followers (capped by capacity)\n${altarStatus}\nAlso nudges Alignment toward Good and Helios favor.`);
             } else {
                 setVisible(el, false);
             }

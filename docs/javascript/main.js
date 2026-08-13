@@ -6,6 +6,7 @@ import { gameState, game } from './classes/GameState.js';
 import * as gameApi from './game.js';
 import { actionRegistry } from './registries/index.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
+import { FACTION_DEFINITIONS } from './config/factions.js';
 
 const CHEAT_BALANCE_FIELD_SECTIONS = [
     {
@@ -101,6 +102,13 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Wild Area Hunger Penalty Max', target: game.exploration, key: 'wildAreaHungerDrainPenaltyMax', step: 0.0001, min: 0 },
             { label: 'Prophet Sway', target: gameState.progression, key: 'prophetSway', step: 1, min: 1 },
             { label: 'Prophet Unlock Capacity Requirement', target: game, key: 'prophetUnlockCapacityRequirement', step: 1, min: 1 }
+        ]
+    },
+    {
+        title: 'Alignment & Favor',
+        entries: [
+            { label: 'Preach Alignment Gain', target: game, key: 'alignmentPreachGain', step: 0.5, min: 0 },
+            { label: 'Preach Helios Favor Gain', target: game, key: 'heliosFavorPreachGain', step: 0.5, min: 0 }
         ]
     }
 ];
@@ -250,6 +258,42 @@ function initCheatMenu() {
             saveGame();
         });
     }
+
+    const cheatAlignmentGoodBtn = document.getElementById('cheatAlignmentGoodBtn');
+    if (cheatAlignmentGoodBtn) {
+        cheatAlignmentGoodBtn.addEventListener('click', () => {
+            game.alignment = Math.min(100, game.alignment + 10);
+            game.alignmentVisible = true;
+            addLog('Cheat used: +10 alignment (toward Good).');
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
+
+    const cheatAlignmentEvilBtn = document.getElementById('cheatAlignmentEvilBtn');
+    if (cheatAlignmentEvilBtn) {
+        cheatAlignmentEvilBtn.addEventListener('click', () => {
+            game.alignment = Math.max(-100, game.alignment - 10);
+            game.alignmentVisible = true;
+            addLog('Cheat used: -10 alignment (toward Evil).');
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
+
+    FACTION_DEFINITIONS.forEach((faction) => {
+        const btnId = `cheatFavor${faction.id.charAt(0).toUpperCase()}${faction.id.slice(1)}Btn`;
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                game.factionFavor[faction.id] += 100;
+                game.alignmentVisible = true;
+                addLog(`Cheat used: +100 ${faction.label} favor.`);
+                gameApi.updateUI();
+                saveGame();
+            });
+        }
+    });
 
     initCheatBalanceEditor();
 }

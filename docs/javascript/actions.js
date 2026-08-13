@@ -654,6 +654,10 @@ export function rollPreachD4() {
             game.hungerPercent = Math.max(0, game.hungerPercent - 10);
             gameState.resources.food.spend(10);
 
+            game.alignment = Math.max(-100, Math.min(100, game.alignment + game.alignmentPreachGain));
+            game.factionFavor.helios += game.heliosFavorPreachGain;
+            if (!game.alignmentVisible) game.alignmentVisible = true;
+
             const capacity = Math.max(0, max - gameState.progression.followers);
             const converted = Math.min(finalRoll, capacity);
             if (converted > 0) {

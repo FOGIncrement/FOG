@@ -31,6 +31,12 @@
             <button id="cheatFoodBtn" type="button">+1,000,000 Food</button>
             <button id="cheatWoodBtn" type="button">+1,000,000 Wood</button>
             <button id="cheatStoneBtn" type="button">+1,000,000 Stone</button>
+            <button id="cheatAlignmentGoodBtn" type="button">+10 Alignment (Good)</button>
+            <button id="cheatAlignmentEvilBtn" type="button">-10 Alignment (Evil)</button>
+            <button id="cheatFavorHeliosBtn" type="button">+100 Favor: Helios</button>
+            <button id="cheatFavorHelBtn" type="button">+100 Favor: Hel</button>
+            <button id="cheatFavorDanuBtn" type="button">+100 Favor: Danu</button>
+            <button id="cheatFavorSekhmetBtn" type="button">+100 Favor: Sekhmet</button>
             <div class="cheat-balance-panel">
                 <p class="cheat-balance-title">Balance Tuning</p>
                 <div class="cheat-balance-actions">
@@ -103,6 +109,17 @@
                     Hunger: <span id="hungerValue">100.00%</span>
                     <span id="hungerRate" style="color: #888; margin-left: 1em;"></span>
                 </p>
+                <p id="alignmentContainer" style="display: none;">
+                    Alignment: <span id="alignmentValue">0 (Neutral)</span>
+                </p>
+            </div>
+
+            <div id="factionFavorContainer" style="display: none;">
+                <p class="faction-favor-title">Faction Favor</p>
+                <p>Helios: <span id="heliosFavorValue">0</span></p>
+                <p>Hel: <span id="helFavorValue">0</span></p>
+                <p>Danu: <span id="danuFavorValue">0</span></p>
+                <p>Sekhmet: <span id="sekhmetFavorValue">0</span></p>
             </div>
 
             <!-- Main Content -->
