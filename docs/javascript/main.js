@@ -287,7 +287,31 @@ document.addEventListener("DOMContentLoaded", () => {
         gameApi.gameTick(dtSeconds);
     }, 100);
     gameApi.updateUI();
+
+    dismissLoadingScreen();
 });
+
+// ===== LOADING SCREEN =====
+const LOADING_SCREEN_MIN_MS = 1800;
+const LOADING_SCREEN_FADE_MS = 700;
+
+function dismissLoadingScreen() {
+    const screen = document.getElementById('loadingScreen');
+    if (!screen) return;
+
+    let dismissed = false;
+    const hide = () => {
+        if (dismissed) return;
+        dismissed = true;
+        screen.classList.add('loading-hidden');
+        setTimeout(() => {
+            if (screen.parentNode) screen.parentNode.removeChild(screen);
+        }, LOADING_SCREEN_FADE_MS);
+    };
+
+    screen.addEventListener('click', hide);
+    setTimeout(hide, LOADING_SCREEN_MIN_MS);
+}
 
 // ===== TABS =====
 function initTabs() {

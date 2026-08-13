@@ -276,7 +276,14 @@ export function updateUI() {
     }
     FACTION_DEFINITIONS.forEach((faction) => {
         const el = document.getElementById(`${faction.id}FavorValue`);
-        if (el) el.innerText = `${game.factionFavor[faction.id].toFixed(0)}`;
+        if (!el) return;
+        const favorValue = game.factionFavor[faction.id];
+        el.innerText = `${favorValue.toFixed(0)}`;
+        const row = el.closest('p');
+        if (row) {
+            const fillPercent = Math.max(0, Math.min(100, (favorValue / 500) * 100));
+            row.style.setProperty('--favor-fill', `${fillPercent}%`);
+        }
     });
 
     const trainedSummaryContainer = document.getElementById('trainedSummaryContainer');

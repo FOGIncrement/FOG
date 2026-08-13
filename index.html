@@ -24,6 +24,26 @@
 </head>
 <body>
 
+    <div id="loadingScreen" role="status" aria-label="Loading Faith of Glory">
+        <div class="loading-glow"></div>
+        <pre id="siteTitleArt" class="site-title-art" aria-hidden="true">════════════════════════════════════════════════════════════════════════════════════════════════════════════
+              ▲                      ✠                      ▲
+             ╱╲╱╲                                            ╱╲╱╲
+            ╱__╲__╲                                          ╱__╲__╲
+
+        ███████╗ █████╗ ██╗████████╗██╗  ██╗    ██████╗ ██████╗    ██████╗ ██╗      ██████╗ ██████╗ ██╗   ██╗
+        ██╔════╝██╔══██╗██║╚══██╔══╝██║  ██║   ██╔═══██╗██╔══██╗  ██╔════╝ ██║     ██╔═══██╗██╔══██╗╚██╗ ██╔╝
+        █████╗  ███████║██║   ██║   ███████║   ██║   ██║██████╔╝  ██║  ███╗██║     ██║   ██║██████╔╝ ╚████╔╝
+        ██╔══╝  ██╔══██║██║   ██║   ██╔══██║   ██║   ██║██╔══██╗  ██║   ██║██║     ██║   ██║██╔══██╗  ╚██╔╝
+        ██║     ██║  ██║██║   ██║   ██║  ██║   ╚██████╔╝██║  ██║  ╚██████╔╝███████╗╚██████╔╝██║  ██║   ██║
+        ╚═╝     ╚═╝  ╚═╝╚═╝   ╚═╝   ╚═╝  ╚═╝    ╚═════╝ ╚═╝  ╚═╝   ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝
+
+════════════════════════════════════════════════════════════════════════════════════════════════════════════</pre>
+        <p id="loadingTagline" class="loading-tagline">Kindling the first flame&hellip;</p>
+        <div class="loading-sigil" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="loading-skip">click to enter</p>
+    </div>
+
     <details id="cheatMenu" class="cheat-menu">
         <summary>Cheats</summary>
         <div class="cheat-menu-content">
@@ -50,44 +70,33 @@
         </div>
     </details>
 
-    <!--
-    <pre id="siteTitleArt" class="site-title-art" aria-label="Faith of Glory title art">════════════════════════════════════════════════════════════════════════════════════════════════════════════
-              ▲                      ✠                      ▲
-             ╱╲╱╲                                            ╱╲╱╲
-            ╱__╲__╲                                          ╱__╲__╲
-
-        ███████╗ █████╗ ██╗████████╗██╗  ██╗    ██████╗ ██████╗    ██████╗ ██╗      ██████╗ ██████╗ ██╗   ██╗
-        ██╔════╝██╔══██╗██║╚══██╔══╝██║  ██║   ██╔═══██╗██╔══██╗  ██╔════╝ ██║     ██╔═══██╗██╔══██╗╚██╗ ██╔╝
-        █████╗  ███████║██║   ██║   ███████║   ██║   ██║██████╔╝  ██║  ███╗██║     ██║   ██║██████╔╝ ╚████╔╝
-        ██╔══╝  ██╔══██║██║   ██║   ██╔══██║   ██║   ██║██╔══██╗  ██║   ██║██║     ██║   ██║██╔══██╗  ╚██╔╝
-        ██║     ██║  ██║██║   ██║   ██║  ██║   ╚██████╔╝██║  ██║  ╚██████╔╝███████╗╚██████╔╝██║  ██║   ██║
-        ╚═╝     ╚═╝  ╚═╝╚═╝   ╚═╝   ╚═╝  ╚═╝    ╚═════╝ ╚═╝  ╚═╝   ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝
-
-════════════════════════════════════════════════════════════════════════════════════════════════════════════</pre>
-    -->
+    <header id="gameHeader">
+        <h1 id="gameTitle">Faith <span class="glyph">✠</span> of Glory</h1>
+        <p id="gameTagline">A cult grows in the dark. Feed it.</p>
+    </header>
 
     <div id="appContainer">
 
         <!-- LEFT COLUMN (Trained Units) -->
         <div id="trainedContainer">
-            <p id="trainedSummaryContainer" style="display: none; color: #888; font-size: 0.9em;">
+            <p id="trainedSummaryContainer" style="display: none; color: var(--ink-faint); font-size: 0.9em;">
                 <span id="trainedSummaryValue">0/0 trained</span>
             </p>
             <p id="hunterContainer" style="display: none;">
                 Hunters: <span id="hunterValue">0</span>
-                <span id="hunterBonus" style="color: #888; margin-left: 1em;"></span>
+                <span id="hunterBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
             </p>
             <p id="ritualistContainer" style="display: none;">
                 Ritualists: <span id="ritualistValue">0</span>
-                <span id="ritualistBonus" style="color: #888; margin-left: 1em;"></span>
+                <span id="ritualistBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
             </p>
             <p id="gathererContainer" style="display: none;">
                 Gatherers: <span id="gathererValue">0</span>
-                <span id="gathererBonus" style="color: #888; margin-left: 1em;"></span>
+                <span id="gathererBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
             </p>
             <p id="cookContainer" style="display: none;">
                 Cooks: <span id="cookValue">0</span>
-                <span id="cookBonus" style="color: #888; margin-left: 1em;"></span>
+                <span id="cookBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
             </p>
             <p id="prophetContainer" class="prophet-line" style="display: none;">
                 Prophet: <span id="prophetValue">0</span>
@@ -368,7 +377,7 @@
 
                             <div>
                                 <strong>Gatherers:</strong> <span id="gatherersRoleValue">0</span>
-                                <span id="gatherersRoleBonus" style="color: #888; margin-left: 1em;"></span>
+                                <span id="gatherersRoleBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
                                 <button id="trainGatherersBtn" style="display: none;">Train Gatherers</button>
                             </div>
 
