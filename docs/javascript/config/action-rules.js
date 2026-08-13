@@ -5,6 +5,14 @@ function applyTooltip(el, summary, stats = '') {
     setTooltipContent(el, summary, stats);
 }
 
+function applyUnlockExtras(el, { isPurchased, description }) {
+    const container = el.closest('.unlock-item');
+    if (!container) return;
+    container.dataset.purchased = isPurchased ? 'true' : 'false';
+    const descEl = container.querySelector('.unlock-desc');
+    if (descEl) descEl.textContent = description || '';
+}
+
 function applyRepeatableUpgradeButton(el, { purchases, maxPurchases, baseCost, label, summary, effectLine, gameState, setVisible, setAffordability, setButtonLabel }) {
     setVisible(el, true);
 
@@ -304,6 +312,7 @@ export function getActionUiRules(context) {
                 setButtonLabel(el, 'Upgrade Shelter to Shack (Unlocked)');
                 el.classList.add('purchased');
                 applyTooltip(el, 'Upgrade Shelter to Shack\nHousing upgrade complete.', 'Status: unlocked');
+                applyUnlockExtras(el, { isPurchased: true, description: 'Shelter capacity doubled and costs reduced, permanently.' });
                 return;
             }
 
@@ -316,6 +325,7 @@ export function getActionUiRules(context) {
                 ? Math.round((1 - game.shelterUpgradeCostMultiplier) * 100)
                 : 30;
             applyTooltip(el, 'Upgrade Shelter to Shack\nBoost shelter effectiveness and reduce costs.', `Requirement: ${game.shelterUpgradeFollowerRequirement} followers\nCost: ${cost} faith\nEffect: x2 shelter capacity, ${shackReductionPercent}% global cost reduction`);
+            applyUnlockExtras(el, { isPurchased: false, description: `Requires ${game.shelterUpgradeFollowerRequirement} followers. Costs ${cost} faith. Doubles shelter capacity and cuts costs ${shackReductionPercent}%.` });
         },
         unlockExploration(el) {
             if (!game.unlocksTabUnlocked) {
@@ -335,6 +345,7 @@ export function getActionUiRules(context) {
                 setButtonLabel(el, 'Unlock Exploration (Unlocked)');
                 el.classList.add('purchased');
                 applyTooltip(el, 'Unlock Exploration\nExploration systems are fully unlocked.', 'Status: unlocked');
+                applyUnlockExtras(el, { isPurchased: true, description: 'Exploration systems are fully unlocked.' });
                 return;
             }
 
@@ -351,6 +362,7 @@ export function getActionUiRules(context) {
                 'Unlock Exploration\nOpen expeditions and discovered-area tracking.',
                 `Requirement: ${explorationCapacityRequirement} follower capacity\nCost: ${cost} faith`
             );
+            applyUnlockExtras(el, { isPurchased: false, description: `Requires ${explorationCapacityRequirement} follower capacity. Costs ${cost} faith. Opens expeditions and discovered-area tracking.` });
         },
         preach(el) {
             const max = getMaxFollowers();
@@ -380,12 +392,14 @@ export function getActionUiRules(context) {
                     setButtonLabel(el, 'Training Unlocked');
                     el.classList.add('purchased');
                     applyTooltip(el, 'Unlock Training\nTraining program already unlocked.', 'Status: unlocked');
+                    applyUnlockExtras(el, { isPurchased: true, description: 'Training program active. Role specialization enabled.' });
                 } else {
                     const canAfford = gameState.progression.faith >= gameState.costs.trainingTechCost;
                     setAffordability(el, canAfford);
                     setButtonLabel(el, 'Unlock Training');
                     el.classList.toggle('purchased', !canAfford);
                     applyTooltip(el, 'Unlock Training\nEnable follower role specialization.', `Cost: ${gameState.costs.trainingTechCost} faith`);
+                    applyUnlockExtras(el, { isPurchased: false, description: `Costs ${gameState.costs.trainingTechCost} faith. Enables follower role specialization.` });
                 }
             }
         },
@@ -408,6 +422,13 @@ export function getActionUiRules(context) {
                 setVisible,
                 setAffordability,
                 setButtonLabel
+            });
+            const maxed = purchases >= maxPurchases;
+            applyUnlockExtras(el, {
+                isPurchased: maxed,
+                description: maxed
+                    ? `Preach bonus maxed at +${currentBonus}.`
+                    : `Costs ${getUpgradeCost(gameState.costs.zealousPreachingBaseCost, purchases)} faith (rises each purchase). Rank ${purchases}/${maxPurchases}. +1 to Preach rolls per purchase. Current bonus: +${currentBonus}.`
             });
         },
         feedFollowers(el) {
@@ -452,6 +473,7 @@ export function getActionUiRules(context) {
                     `Unlock ${roleDefinition.label}\nTraining must be unlocked first.`,
                     'Requirement: Unlock Training'
                 );
+                applyUnlockExtras(el, { isPurchased: false, description: 'Requires Training to be unlocked first.' });
                 return;
             }
 
@@ -460,6 +482,7 @@ export function getActionUiRules(context) {
                 setButtonLabel(el, `Unlock ${roleDefinition.label} (Unlocked)`);
                 el.classList.add('purchased');
                 applyTooltip(el, `Unlock ${roleDefinition.label}\nRole already available.`, 'Status: unlocked');
+                applyUnlockExtras(el, { isPurchased: true, description: `${roleDefinition.label} role is available for training.` });
                 return;
             }
 
@@ -477,6 +500,7 @@ export function getActionUiRules(context) {
                         `Unlock ${roleDefinition.label}\nOnly one Prophet can be assigned.`,
                         `Requirement: ${neededCapacity} follower capacity\nCurrent: ${currentCapacity}`
                     );
+                    applyUnlockExtras(el, { isPurchased: false, description: `Requires ${neededCapacity} follower capacity (current: ${currentCapacity}).` });
                     return;
                 }
             }
@@ -492,10 +516,12 @@ export function getActionUiRules(context) {
                     `Unlock ${roleDefinition.label}\nAwaken a single high-sway converter.`,
                     `Cost: ${cost} faith\nLimit: 1 Prophet`
                 );
+                applyUnlockExtras(el, { isPurchased: false, description: `Costs ${cost} faith. Awakens a single high-sway converter (limit 1).` });
                 return;
             }
 
             applyTooltip(el, `Unlock ${roleDefinition.label}\nMake this role trainable.`, `Cost: ${cost} faith`);
+            applyUnlockExtras(el, { isPurchased: false, description: `Costs ${cost} faith. Makes ${roleDefinition.label} trainable.` });
         },
         applyTrainRoleButton(el, roleDefinition, untrainedFollowers) {
             if (!game.roleUnlocks[roleDefinition.id]) {
@@ -561,6 +587,7 @@ export function getActionUiRules(context) {
                 setButtonLabel(el, 'Unlock Altar (Unlocked)');
                 el.classList.add('purchased');
                 applyTooltip(el, 'Unlock Altar\nAltar blueprint already unlocked.', 'Status: unlocked\nNext: Build Altar in Build tab');
+                applyUnlockExtras(el, { isPurchased: true, description: 'Altar blueprint unlocked — build it in the Build tab.' });
                 return;
             }
 
@@ -570,6 +597,7 @@ export function getActionUiRules(context) {
             setButtonLabel(el, 'Unlock Altar');
             el.classList.toggle('purchased', !canAfford);
             applyTooltip(el, 'Unlock Altar\nUnlock the altar blueprint.', `Requirement: ${game.shelterUpgradeFollowerRequirement} followers\nCost: ${cost} faith\nEffect: Enables Build Altar action`);
+            applyUnlockExtras(el, { isPurchased: false, description: `Requires ${game.shelterUpgradeFollowerRequirement} followers. Costs ${cost} faith. Enables building the Altar.` });
         },
         blessTheHarvest(el) {
             if (!game.unlocksTabUnlocked) {
@@ -584,6 +612,7 @@ export function getActionUiRules(context) {
                 setButtonLabel(el, 'Bless the Harvest (Unlocked)');
                 el.classList.add('purchased');
                 applyTooltip(el, 'Bless the Harvest\nThe Earth Mother\'s abundance already flows.', 'Status: unlocked');
+                applyUnlockExtras(el, { isPurchased: true, description: `Hunters and Gatherers produce +${Math.round((game.danuBlessingMultiplier - 1) * 100)}% forever.` });
                 return;
             }
 
@@ -597,11 +626,13 @@ export function getActionUiRules(context) {
             setAffordability(el, canAfford);
             setButtonLabel(el, 'Bless the Harvest');
             el.classList.toggle('purchased', !canAfford);
+            const blessPercent = Math.round((game.danuBlessingMultiplier - 1) * 100);
             applyTooltip(
                 el,
                 'Bless the Harvest\nCall on Danu to make the land generous.',
-                `Cost: ${faithCost} faith, ${woodCost} wood, ${stoneCost} stone\nEffect: Hunters and Gatherers produce +${Math.round((game.danuBlessingMultiplier - 1) * 100)}% permanently`
+                `Cost: ${faithCost} faith, ${woodCost} wood, ${stoneCost} stone\nEffect: Hunters and Gatherers produce +${blessPercent}% permanently`
             );
+            applyUnlockExtras(el, { isPurchased: false, description: `Costs ${faithCost} faith, ${woodCost} wood, ${stoneCost} stone. Permanently boosts Hunter and Gatherer output +${blessPercent}%.` });
         }
     };
 }

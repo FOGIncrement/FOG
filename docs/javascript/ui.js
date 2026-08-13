@@ -569,4 +569,16 @@ function updateButtons() {
         if (!trainButton) return;
         actionUiRules.applyTrainRoleButton(trainButton, roleDefinition, untrained);
     });
+
+    applyUnlockItemVisibility();
+}
+
+function applyUnlockItemVisibility() {
+    const showPurchased = Boolean(document.getElementById('showPurchasedUpgradesCheckbox')?.checked);
+    document.querySelectorAll('#tab-unlocks .unlock-item').forEach((item) => {
+        const btn = item.querySelector('button');
+        const buttonVisible = Boolean(btn) && btn.style.display !== 'none';
+        const isPurchased = item.dataset.purchased === 'true';
+        item.style.display = (!buttonVisible || (isPurchased && !showPurchased)) ? 'none' : '';
+    });
 }
