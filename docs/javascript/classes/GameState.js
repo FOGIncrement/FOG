@@ -1,6 +1,7 @@
 import { Resource } from './Resource.js';
 import { createRoleCountMap, createRoleUnlockMap, createRoleAccumulatorMap } from '../config/roles.js';
 import { createFactionFavorMap } from '../config/factions.js';
+import { createDoctrineChoiceMap } from '../config/doctrines.js';
 
 // ===== GAME STATE =====
 export const gameState = {
@@ -66,7 +67,8 @@ export const gameState = {
         blessHarvestFaithCost: 150,
         blessHarvestWoodCost: 100,
         blessHarvestStoneCost: 100,
-        helOfferingFaithCost: 20
+        helOfferingFaithCost: 20,
+        councilFaithCost: 100
     },
     rates: {
         hunterFoodPerSecond: 2.0,
@@ -131,6 +133,18 @@ export const game = {
     alignmentHelOfferingLoss: 5,
     helFavorOfferingGain: 10,
     factionFavor: createFactionFavorMap(0),
+    doctrinesUnlocked: false,
+    doctrineChoices: createDoctrineChoiceMap(null),
+    councilFollowerRequirement: 10,
+    shepherdsCreedCostMultiplier: 0.85,
+    ironFistYieldMultiplier: 1.25,
+    ironFistCostMultiplier: 0.9,
+    homesteadOutputMultiplier: 1.2,
+    wanderlustRollBonus: 2,
+    wanderlustCostMultiplier: 0.9,
+    abundantTableConsumptionMultiplier: 0.75,
+    leanYearsConsumptionMultiplier: 0.5,
+    leanYearsStarvationMultiplier: 2.5,
     trainingUnlocked: false,
     roleUnlocks: createRoleUnlockMap(false),
     roleBulkAssignAmount: 1,

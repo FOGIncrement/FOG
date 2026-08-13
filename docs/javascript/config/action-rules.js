@@ -1,5 +1,6 @@
 import { setTooltipContent } from '../utils/tooltip.js';
-import { getUpgradeCost } from '../utils/helpers.js';
+import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus } from '../utils/helpers.js';
+import { DOCTRINE_GROUP_BY_ID } from './doctrines.js';
 
 function applyTooltip(el, summary, stats = '') {
     setTooltipContent(el, summary, stats);
@@ -30,6 +31,40 @@ function applyRepeatableUpgradeButton(el, { purchases, maxPurchases, baseCost, l
     setButtonLabel(el, `${label} (${purchases}/${maxPurchases})`);
     el.classList.toggle('purchased', !canAfford);
     applyTooltip(el, `${label}\n${summary}`, `Cost: ${cost} faith\nRank: ${purchases}/${maxPurchases}\n${effectLine}`);
+}
+
+function applyDoctrineOptionButton(el, { groupId, optionId, label, summary, effectLine, game, setVisible, setButtonLabel }) {
+    if (!game.doctrinesUnlocked) {
+        setVisible(el, false);
+        return;
+    }
+    setVisible(el, true);
+    el.classList.remove('doctrine-selected', 'doctrine-foreclosed');
+
+    const chosen = game.doctrineChoices?.[groupId] || null;
+
+    if (chosen === optionId) {
+        el.disabled = true;
+        setButtonLabel(el, `${label} (Chosen)`);
+        el.classList.add('doctrine-selected');
+        applyTooltip(el, `${label}\n${summary}`, `Status: chosen, permanent.\n${effectLine}`);
+        applyUnlockExtras(el, { isPurchased: true, description: `${summary} Chosen — permanent.` });
+        return;
+    }
+
+    if (chosen) {
+        el.disabled = true;
+        setButtonLabel(el, `${label} (Foreclosed)`);
+        el.classList.add('doctrine-foreclosed');
+        applyTooltip(el, `${label}\n${summary}`, 'Status: foreclosed. A different doctrine was chosen in this group.');
+        applyUnlockExtras(el, { isPurchased: true, description: 'Foreclosed — a different doctrine was chosen in this group.' });
+        return;
+    }
+
+    el.disabled = false;
+    setButtonLabel(el, label);
+    applyTooltip(el, `${label}\n${summary}`, `${effectLine}\nPermanent — forecloses the other option in this group.`);
+    applyUnlockExtras(el, { isPurchased: false, description: `${summary} Permanent — the other option in this group will be foreclosed forever.` });
 }
 
 export function getActionUiRules(context) {
@@ -64,7 +99,9 @@ export function getActionUiRules(context) {
             applyTooltip(el, 'Pray\nOffer devotion for divine favor.', `Gain ${game.prayAmt} faith per click`);
         },
         convertFollower(el) {
-            applyTooltip(el, 'Convert Follower\nSpend faith to convert one follower instantly.', `Cost: ${game.convertCost} faith\nOutput: +1 follower`);
+            const cost = getConvertFollowerCost();
+            const shepherdsCreedNote = game.doctrineChoices?.flock === 'shepherdsCreed' ? " (Shepherd's Creed discount applied)" : '';
+            applyTooltip(el, 'Convert Follower\nSpend faith to convert one follower instantly.', `Cost: ${cost} faith${shepherdsCreedNote}\nOutput: +1 follower`);
         },
         offerToTheVeil(el) {
             if (!game.unlocksTabUnlocked) {
@@ -93,32 +130,38 @@ export function getActionUiRules(context) {
             const hasParty = getUnassignedFollowers() > 0;
             const idle = !game.exploration?.activeExpedition;
             setAffordability(el, hasParty && idle);
+            const rollCost = getExpeditionRollFaithCost();
+            const rollBonus = getExpeditionRollBonus();
             applyTooltip(
                 el,
                 'Start Expedition\nSend followers out to map the wild and find villages.',
-                `Party limit: ${Math.floor(game.exploration?.followerSendLimit || 10)} followers\nRoll cost: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith`
+                `Party limit: ${Math.floor(game.exploration?.followerSendLimit || 10)} followers\nRoll cost: ${rollCost} faith${rollBonus > 0 ? ` (Wanderlust: +${rollBonus} roll, discounted cost)` : ''}`
             );
         },
         rollExpedition(el) {
             setVisible(el, true);
             const active = Boolean(game.exploration?.activeExpedition);
-            const canAfford = gameState.progression.faith >= (gameState.costs.expeditionRollFaithCost || 50);
+            const rollCost = getExpeditionRollFaithCost();
+            const rollBonus = getExpeditionRollBonus();
+            const canAfford = gameState.progression.faith >= rollCost;
             setAffordability(el, active && canAfford);
             applyTooltip(
                 el,
                 'Roll Expedition\nOpen the dice panel for the next expedition roll.',
-                `Roll: 1d6 + followers sent\nCost per roll: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith`
+                `Roll: 1d6 + followers sent${rollBonus > 0 ? ` + ${rollBonus} (Wanderlust)` : ''}\nCost per roll: ${rollCost} faith`
             );
         },
         rollExpeditionD6(el) {
             setVisible(el, true);
             const active = Boolean(game.exploration?.activeExpedition);
-            const canAfford = gameState.progression.faith >= (gameState.costs.expeditionRollFaithCost || 50);
+            const rollCost = getExpeditionRollFaithCost();
+            const rollBonus = getExpeditionRollBonus();
+            const canAfford = gameState.progression.faith >= rollCost;
             setAffordability(el, active && canAfford);
             applyTooltip(
                 el,
                 'Roll d6\nExecute the expedition roll with visual dice animation.',
-                `Roll: 1d6 + followers sent\nCost: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith`
+                `Roll: 1d6 + followers sent${rollBonus > 0 ? ` + ${rollBonus} (Wanderlust)` : ''}\nCost: ${rollCost} faith`
             );
         },
         cancelExpeditionRoll(el) {
@@ -368,8 +411,9 @@ export function getActionUiRules(context) {
             const max = getMaxFollowers();
             if (max >= 3) {
                 setVisible(el, true);
+                const preachCost = getPreachFaithCost();
                 const canAfford =
-                    gameState.progression.faith >= gameState.costs.preachFaithCost &&
+                    gameState.progression.faith >= preachCost &&
                     game.hungerPercent >= 10 &&
                     gameState.resources.food.amount >= 10 &&
                     gameState.progression.followers < max;
@@ -377,7 +421,8 @@ export function getActionUiRules(context) {
                 el.classList.toggle('purchased', !canAfford);
                 const preachRollText = preachBonus > 0 ? `1d4 + ${preachBonus}` : '1d4';
                 const altarStatus = game.altarBuilt ? 'Altar bonus active: +1' : (game.altarUnlocked ? 'Altar unlocked: build required for +1' : 'Altar bonus: none');
-                applyTooltip(el, 'Preach\nDeliver a sermon to convert followers.', `Cost: ${gameState.costs.preachFaithCost} faith, 10% hunger, 10 food\nRoll: ${preachRollText} followers (capped by capacity)\n${altarStatus}\nAlso nudges Alignment toward Good and Helios favor.`);
+                const shepherdsCreedNote = game.doctrineChoices?.flock === 'shepherdsCreed' ? " (Shepherd's Creed discount applied)" : '';
+                applyTooltip(el, 'Preach\nDeliver a sermon to convert followers.', `Cost: ${preachCost} faith${shepherdsCreedNote}, 10% hunger, 10 food\nRoll: ${preachRollText} followers (capped by capacity)\n${altarStatus}\nAlso nudges Alignment toward Good and Helios favor.`);
             } else {
                 setVisible(el, false);
             }
@@ -450,6 +495,7 @@ export function getActionUiRules(context) {
                 explore: Boolean(ritualBuilt && hasExplorationAccess),
                 unlocks: Boolean(game.unlocksTabUnlocked),
                 food: Boolean(game.hasGatheredFood),
+                doctrines: Boolean(game.doctrinesUnlocked),
                 followerManager: roleDefinitions.some((role) => game.roleUnlocks[role.id])
             };
         },
@@ -633,6 +679,92 @@ export function getActionUiRules(context) {
                 `Cost: ${faithCost} faith, ${woodCost} wood, ${stoneCost} stone\nEffect: Hunters and Gatherers produce +${blessPercent}% permanently`
             );
             applyUnlockExtras(el, { isPurchased: false, description: `Costs ${faithCost} faith, ${woodCost} wood, ${stoneCost} stone. Permanently boosts Hunter and Gatherer output +${blessPercent}%.` });
+        },
+        conveneCouncil(el) {
+            if (!game.unlocksTabUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+
+            const requirement = Number.isFinite(game.councilFollowerRequirement) ? game.councilFollowerRequirement : 10;
+            if (gameState.progression.followers < requirement && !game.doctrinesUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+
+            setVisible(el, true);
+
+            if (game.doctrinesUnlocked) {
+                el.disabled = true;
+                setButtonLabel(el, 'Convene the Council (Unlocked)');
+                el.classList.add('purchased');
+                applyTooltip(el, 'Convene the Council\nThe Council has convened.', 'Status: unlocked');
+                applyUnlockExtras(el, { isPurchased: true, description: 'The Doctrines tab is unlocked. Choose one permanent path in each doctrine group.' });
+                return;
+            }
+
+            const cost = Number.isFinite(gameState.costs.councilFaithCost) ? gameState.costs.councilFaithCost : 100;
+            const canAfford = gameState.progression.followers >= requirement && gameState.progression.faith >= cost;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, 'Convene the Council');
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(el, 'Convene the Council\nGather your followers to decide the fundamental doctrines of your faith.', `Requirement: ${requirement} followers\nCost: ${cost} faith`);
+            applyUnlockExtras(el, { isPurchased: false, description: `Requires ${requirement} followers. Costs ${cost} faith. Unlocks the Doctrines tab.` });
+        },
+        chooseShepherdsCreed(el) {
+            const option = DOCTRINE_GROUP_BY_ID.flock.options.find((o) => o.id === 'shepherdsCreed');
+            const discountPercent = Math.round((1 - game.shepherdsCreedCostMultiplier) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'flock', optionId: 'shepherdsCreed', label: option.label, summary: option.summary,
+                effectLine: `Preach/Convert cost: -${discountPercent}%\nAlignment +${option.alignmentDelta} Good, Helios favor +${option.favorAmount}`,
+                game, setVisible, setButtonLabel
+            });
+        },
+        chooseIronFist(el) {
+            const option = DOCTRINE_GROUP_BY_ID.flock.options.find((o) => o.id === 'ironFist');
+            const yieldPercent = Math.round((game.ironFistYieldMultiplier - 1) * 100);
+            const discountPercent = Math.round((1 - game.ironFistCostMultiplier) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'flock', optionId: 'ironFist', label: option.label, summary: option.summary,
+                effectLine: `Conquer yield: +${yieldPercent}%, cost: -${discountPercent}%\nAlignment ${option.alignmentDelta} Evil, Sekhmet favor +${option.favorAmount}`,
+                game, setVisible, setButtonLabel
+            });
+        },
+        chooseHomestead(el) {
+            const option = DOCTRINE_GROUP_BY_ID.hearth.options.find((o) => o.id === 'homestead');
+            const outputPercent = Math.round((game.homesteadOutputMultiplier - 1) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'hearth', optionId: 'homestead', label: option.label, summary: option.summary,
+                effectLine: `Hunter/Gatherer/Ritualist output: +${outputPercent}%\nNo alignment or favor effect`,
+                game, setVisible, setButtonLabel
+            });
+        },
+        chooseWanderlust(el) {
+            const option = DOCTRINE_GROUP_BY_ID.hearth.options.find((o) => o.id === 'wanderlust');
+            const discountPercent = Math.round((1 - game.wanderlustCostMultiplier) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'hearth', optionId: 'wanderlust', label: option.label, summary: option.summary,
+                effectLine: `Expedition roll: +${game.wanderlustRollBonus}, cost: -${discountPercent}%\nNo alignment or favor effect`,
+                game, setVisible, setButtonLabel
+            });
+        },
+        chooseAbundantTable(el) {
+            const option = DOCTRINE_GROUP_BY_ID.sacrifice.options.find((o) => o.id === 'abundantTable');
+            const reductionPercent = Math.round((1 - game.abundantTableConsumptionMultiplier) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'sacrifice', optionId: 'abundantTable', label: option.label, summary: option.summary,
+                effectLine: `Food consumption: -${reductionPercent}%\nAlignment +${option.alignmentDelta} Good, Danu favor +${option.favorAmount}`,
+                game, setVisible, setButtonLabel
+            });
+        },
+        chooseLeanYears(el) {
+            const option = DOCTRINE_GROUP_BY_ID.sacrifice.options.find((o) => o.id === 'leanYears');
+            const reductionPercent = Math.round((1 - game.leanYearsConsumptionMultiplier) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'sacrifice', optionId: 'leanYears', label: option.label, summary: option.summary,
+                effectLine: `Food consumption: -${reductionPercent}%, but starvation drain: ${game.leanYearsStarvationMultiplier}x worse\nAlignment ${option.alignmentDelta} Evil, Hel favor +${option.favorAmount}`,
+                game, setVisible, setButtonLabel
+            });
         }
     };
 }

@@ -163,6 +163,22 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Hel Offering Follower Cost', target: game, key: 'helOfferingFollowerCost', step: 1, min: 0 },
             { label: 'Hel Offering Faith Refund', target: game, key: 'helOfferingFaithRefund', step: 5, min: 0 }
         ]
+    },
+    {
+        title: 'Doctrines',
+        entries: [
+            { label: 'Council Faith Cost', target: gameState.costs, key: 'councilFaithCost', step: 5, min: 0 },
+            { label: 'Council Follower Requirement', target: game, key: 'councilFollowerRequirement', step: 1, min: 1 },
+            { label: "Shepherd's Creed Cost Multiplier", target: game, key: 'shepherdsCreedCostMultiplier', step: 0.05, min: 0 },
+            { label: 'Iron Fist Yield Multiplier', target: game, key: 'ironFistYieldMultiplier', step: 0.05, min: 1 },
+            { label: 'Iron Fist Cost Multiplier', target: game, key: 'ironFistCostMultiplier', step: 0.05, min: 0 },
+            { label: 'Homestead Output Multiplier', target: game, key: 'homesteadOutputMultiplier', step: 0.05, min: 1 },
+            { label: 'Wanderlust Roll Bonus', target: game, key: 'wanderlustRollBonus', step: 1, min: 0 },
+            { label: 'Wanderlust Cost Multiplier', target: game, key: 'wanderlustCostMultiplier', step: 0.05, min: 0 },
+            { label: 'Abundant Table Consumption Multiplier', target: game, key: 'abundantTableConsumptionMultiplier', step: 0.05, min: 0 },
+            { label: 'Lean Years Consumption Multiplier', target: game, key: 'leanYearsConsumptionMultiplier', step: 0.05, min: 0 },
+            { label: 'Lean Years Starvation Multiplier', target: game, key: 'leanYearsStarvationMultiplier', step: 0.1, min: 1 }
+        ]
     }
 ];
 
@@ -351,6 +367,16 @@ function initCheatMenu() {
             game.alignment = Math.max(-100, game.alignment - 10);
             game.alignmentVisible = true;
             addLog('Cheat used: -10 alignment (toward Evil).');
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
+
+    const cheatUnlockDoctrinesBtn = document.getElementById('cheatUnlockDoctrinesBtn');
+    if (cheatUnlockDoctrinesBtn) {
+        cheatUnlockDoctrinesBtn.addEventListener('click', () => {
+            game.doctrinesUnlocked = true;
+            addLog('Cheat used: Doctrines unlocked.');
             gameApi.updateUI();
             saveGame();
         });

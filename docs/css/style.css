@@ -348,6 +348,23 @@ button:disabled.purchased {
     font-size: 0.85em;
 }
 
+button.doctrine-selected,
+button:disabled.doctrine-selected {
+    background-color: #2f4a32;
+    color: #a8d0a8;
+    border-color: #4a6b4a;
+    cursor: default;
+}
+
+button.doctrine-foreclosed,
+button:disabled.doctrine-foreclosed {
+    background-color: #3a2626;
+    color: #a07a7a;
+    border-color: #5a3d3d;
+    cursor: default;
+    opacity: 0.85;
+}
+
 .next-goal-callout {
     border: 1px solid #4a6b4a;
     background: rgba(140, 191, 140, 0.08);

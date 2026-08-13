@@ -3,7 +3,7 @@ import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
-import { getRoleCount } from './utils/helpers.js';
+import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier } from './utils/helpers.js';
 
 const LIVE_TICK_CLAMP_SECONDS = 2;
 const CATCHUP_CHUNK_SECONDS = LIVE_TICK_CLAMP_SECONDS;
@@ -123,10 +123,10 @@ function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
         const cookFlatGain = cookCount * gameState.rates.cookFlatHungerGainPerSecond * dtSeconds;
 
         const cookEfficiency = Math.min(0.5, cookCount * gameState.rates.cookHungerDrainReductionPerCook);
-        const consumption = gameState.progression.followers * game.followerFoodConsumptionPerSecond * (1 - cookEfficiency) * dtSeconds;
+        const consumption = gameState.progression.followers * game.followerFoodConsumptionPerSecond * getFollowerFoodConsumptionMultiplier() * (1 - cookEfficiency) * dtSeconds;
         const foodAmount = Math.max(0, gameState.resources.food.amount);
         const sustainFoodUsed = Math.min(consumption, foodAmount);
-        const starvationDrain = foodAmount > 0 ? 0 : game.hungerStarvationDrainPerSecond * (1 - cookEfficiency) * dtSeconds;
+        const starvationDrain = foodAmount > 0 ? 0 : game.hungerStarvationDrainPerSecond * getHungerStarvationDrainMultiplier() * (1 - cookEfficiency) * dtSeconds;
 
         if (sustainFoodUsed > 0) {
             gameState.resources.food.spend(sustainFoodUsed);

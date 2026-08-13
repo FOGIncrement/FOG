@@ -174,6 +174,64 @@ export function getShelterBuildCosts() {
     };
 }
 
+function isDoctrineChosen(groupId, optionId) {
+    return game.doctrineChoices?.[groupId] === optionId;
+}
+
+export function getPreachFaithCost() {
+    const base = Number.isFinite(gameState.costs.preachFaithCost) ? gameState.costs.preachFaithCost : 20;
+    if (!isDoctrineChosen('flock', 'shepherdsCreed')) return base;
+    const multiplier = Number.isFinite(game.shepherdsCreedCostMultiplier) ? game.shepherdsCreedCostMultiplier : 1;
+    return Math.max(0, Math.floor(base * multiplier));
+}
+
+export function getConvertFollowerCost() {
+    const base = Number.isFinite(game.convertCost) ? game.convertCost : 10;
+    if (!isDoctrineChosen('flock', 'shepherdsCreed')) return base;
+    const multiplier = Number.isFinite(game.shepherdsCreedCostMultiplier) ? game.shepherdsCreedCostMultiplier : 1;
+    return Math.max(1, Math.floor(base * multiplier));
+}
+
+export function getConquerVillageFaithCost() {
+    const base = Number.isFinite(gameState.costs.conquerVillageFaithCost) ? gameState.costs.conquerVillageFaithCost : 8;
+    if (!isDoctrineChosen('flock', 'ironFist')) return base;
+    const multiplier = Number.isFinite(game.ironFistCostMultiplier) ? game.ironFistCostMultiplier : 1;
+    return Math.max(0, Math.floor(base * multiplier));
+}
+
+export function getConquerYieldMultiplier() {
+    if (!isDoctrineChosen('flock', 'ironFist')) return 1;
+    return Number.isFinite(game.ironFistYieldMultiplier) ? game.ironFistYieldMultiplier : 1;
+}
+
+export function getExpeditionRollFaithCost() {
+    const base = Number.isFinite(gameState.costs.expeditionRollFaithCost)
+        ? Math.max(1, Math.floor(gameState.costs.expeditionRollFaithCost))
+        : 50;
+    if (!isDoctrineChosen('hearth', 'wanderlust')) return base;
+    const multiplier = Number.isFinite(game.wanderlustCostMultiplier) ? game.wanderlustCostMultiplier : 1;
+    return Math.max(1, Math.floor(base * multiplier));
+}
+
+export function getExpeditionRollBonus() {
+    if (!isDoctrineChosen('hearth', 'wanderlust')) return 0;
+    return Number.isFinite(game.wanderlustRollBonus) ? Math.floor(game.wanderlustRollBonus) : 0;
+}
+
+export function getFollowerFoodConsumptionMultiplier() {
+    const choice = game.doctrineChoices?.sacrifice;
+    if (choice === 'abundantTable' && Number.isFinite(game.abundantTableConsumptionMultiplier)) return game.abundantTableConsumptionMultiplier;
+    if (choice === 'leanYears' && Number.isFinite(game.leanYearsConsumptionMultiplier)) return game.leanYearsConsumptionMultiplier;
+    return 1;
+}
+
+export function getHungerStarvationDrainMultiplier() {
+    if (game.doctrineChoices?.sacrifice === 'leanYears' && Number.isFinite(game.leanYearsStarvationMultiplier)) {
+        return game.leanYearsStarvationMultiplier;
+    }
+    return 1;
+}
+
 export function rollPreachConversions() {
     const weights = Array.isArray(game.preachOutcomeWeights) && game.preachOutcomeWeights.length === 4
         ? game.preachOutcomeWeights

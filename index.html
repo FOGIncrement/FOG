@@ -37,6 +37,7 @@
             <button id="cheatFavorHelBtn" type="button">+100 Favor: Hel</button>
             <button id="cheatFavorDanuBtn" type="button">+100 Favor: Danu</button>
             <button id="cheatFavorSekhmetBtn" type="button">+100 Favor: Sekhmet</button>
+            <button id="cheatUnlockDoctrinesBtn" type="button">Unlock Doctrines Tab</button>
             <div class="cheat-balance-panel">
                 <p class="cheat-balance-title">Balance Tuning</p>
                 <div class="cheat-balance-actions">
@@ -147,6 +148,7 @@
                         <button class="tab-btn" data-tab="build">Build<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="food" style="display:none;">Food<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="unlocks" style="display:none;">Unlocks<span class="tab-badge" style="display:none;"></span></button>
+                        <button class="tab-btn" data-tab="doctrines" style="display:none;">Doctrines<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="followerManager" style="display:none;">Followers<span class="tab-badge" style="display:none;"></span></button>
                     </div>
 
@@ -281,6 +283,61 @@
                             <div class="unlock-item">
                                 <button id="blessHarvestBtn" data-tab="unlocks" style="display: none;">
                                     Bless the Harvest<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                            <div class="unlock-item">
+                                <button id="conveneCouncilBtn" data-tab="unlocks" style="display: none;">
+                                    Convene the Council<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                        </div>
+
+                        <div id="tab-doctrines" class="tab-content" style="display: none;">
+                            <p class="unlocks-toggle">Choose one path in each doctrine group. Every choice is permanent.</p>
+
+                            <h3>Doctrine of the Flock</h3>
+                            <p class="unlocks-toggle">How do you grow your following — through compassion, or conquest?</p>
+                            <div class="unlock-item doctrine-option">
+                                <button id="chooseShepherdsCreedBtn" data-tab="doctrines" style="display: none;">
+                                    Shepherd's Creed<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                            <div class="unlock-item doctrine-option">
+                                <button id="chooseIronFistBtn" data-tab="doctrines" style="display: none;">
+                                    Iron Fist<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+
+                            <h3>Doctrine of the Hearth</h3>
+                            <p class="unlocks-toggle">Do your people thrive by tending the land, or by venturing beyond it?</p>
+                            <div class="unlock-item doctrine-option">
+                                <button id="chooseHomesteadBtn" data-tab="doctrines" style="display: none;">
+                                    Homestead<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                            <div class="unlock-item doctrine-option">
+                                <button id="chooseWanderlustBtn" data-tab="doctrines" style="display: none;">
+                                    Wanderlust<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+
+                            <h3>Doctrine of Sacrifice</h3>
+                            <p class="unlocks-toggle">When food runs short, how much can your people bear?</p>
+                            <div class="unlock-item doctrine-option">
+                                <button id="chooseAbundantTableBtn" data-tab="doctrines" style="display: none;">
+                                    Abundant Table<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                            <div class="unlock-item doctrine-option">
+                                <button id="chooseLeanYearsBtn" data-tab="doctrines" style="display: none;">
+                                    Lean Years<span class="btn-badge" style="display:none;"></span>
                                 </button>
                                 <p class="unlock-desc"></p>
                             </div>

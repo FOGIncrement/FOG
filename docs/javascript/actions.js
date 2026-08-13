@@ -2,9 +2,10 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
+import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
 
 let preachRollReady = false;
 let preachRollInProgress = false;
@@ -13,7 +14,7 @@ let expeditionRollInProgress = false;
 
 function canPreachNow() {
     const max = getMaxFollowers();
-    const hasCost = gameState.progression.faith >= gameState.costs.preachFaithCost &&
+    const hasCost = gameState.progression.faith >= getPreachFaithCost() &&
         game.hungerPercent >= 10 && gameState.resources.food.amount >= 10;
     const hasCapacity = gameState.progression.followers < max;
     return hasCost && hasCapacity;
@@ -78,9 +79,7 @@ function getExplorationState() {
 function getExpeditionConfig() {
     const exploration = getExplorationState();
     const limit = getExpeditionFollowerLimit();
-    const rollFaithCost = Number.isFinite(gameState.costs.expeditionRollFaithCost)
-        ? Math.max(1, Math.floor(gameState.costs.expeditionRollFaithCost))
-        : 50;
+    const rollFaithCost = getExpeditionRollFaithCost();
     return { exploration, limit, rollFaithCost };
 }
 
@@ -465,7 +464,8 @@ function resolveExpeditionRoll(baseRoll) {
     }
 
     const bonusFollowers = Math.max(0, Math.floor(expedition.followersSent));
-    const totalRoll = Math.max(1, Math.floor(baseRoll) + bonusFollowers);
+    const wanderlustBonus = getExpeditionRollBonus();
+    const totalRoll = Math.max(1, Math.floor(baseRoll) + bonusFollowers + wanderlustBonus);
     const moved = totalRoll;
     expedition.distanceCovered += moved;
     exploration.totalMetersExplored = Math.max(
@@ -474,7 +474,8 @@ function resolveExpeditionRoll(baseRoll) {
     );
     syncDiscoveredAreasByDistance(exploration, { logDiscoveries: true });
 
-    addLog(`Expedition roll 1d6 + followers: ${baseRoll} + ${bonusFollowers} = ${totalRoll}. Progress: +${moved}m.`);
+    const wanderlustLogNote = wanderlustBonus > 0 ? ` + ${wanderlustBonus} (Wanderlust)` : '';
+    addLog(`Expedition roll 1d6 + followers: ${baseRoll} + ${bonusFollowers}${wanderlustLogNote} = ${totalRoll}. Progress: +${moved}m.`);
 
     const targetVillage = exploration.villages.find((village) => village.id === expedition.targetVillageId);
     if (targetVillage && expedition.distanceCovered >= targetVillage.distanceFromCamp) {
@@ -650,8 +651,9 @@ export function trainZealousPreaching() {
 }
 
 export function convertFollower() {
-    if (gameState.progression.faith >= game.convertCost) {
-        gameState.progression.faith -= game.convertCost;
+    const cost = getConvertFollowerCost();
+    if (gameState.progression.faith >= cost) {
+        gameState.progression.faith -= cost;
         gameState.progression.followers += 1;
         game.convertCost = Math.floor(game.convertCost * 1.15);
         updateUI();
@@ -714,7 +716,7 @@ export function rollPreachD4() {
             if (die) die.innerText = `${finalRoll}`;
 
             const max = getMaxFollowers();
-            gameState.progression.faith -= gameState.costs.preachFaithCost;
+            gameState.progression.faith -= getPreachFaithCost();
             game.hungerPercent = Math.max(0, game.hungerPercent - 10);
             gameState.resources.food.spend(10);
 
@@ -858,6 +860,24 @@ export function blessTheHarvest() {
     saveGame();
 }
 
+export function conveneCouncil() {
+    if (game.doctrinesUnlocked) return;
+    if (!game.unlocksTabUnlocked) return;
+
+    const requirement = Number.isFinite(game.councilFollowerRequirement) ? game.councilFollowerRequirement : 10;
+    if (gameState.progression.followers < requirement) return;
+
+    const cost = Number.isFinite(gameState.costs.councilFaithCost) ? gameState.costs.councilFaithCost : 100;
+    if (gameState.progression.faith < cost) return;
+
+    gameState.progression.faith -= cost;
+    game.doctrinesUnlocked = true;
+    addLog('The Council convenes. The Doctrines tab is now open.');
+
+    updateUI();
+    saveGame();
+}
+
 export function offerToTheVeil() {
     if (!game.unlocksTabUnlocked) return;
 
@@ -956,8 +976,11 @@ export function rollExpedition() {
     const text = document.getElementById('expeditionDiceText');
     const die = document.getElementById('expeditionDieFace');
     const bonusFollowers = Math.max(0, Math.floor(expedition.followersSent));
+    const wanderlustBonus = getExpeditionRollBonus();
     if (text) {
-        text.innerText = `Roll 1d6 + ${bonusFollowers} to explore (${rollFaithCost} faith):`;
+        text.innerText = wanderlustBonus > 0
+            ? `Roll 1d6 + ${bonusFollowers} + ${wanderlustBonus} to explore (${rollFaithCost} faith):`
+            : `Roll 1d6 + ${bonusFollowers} to explore (${rollFaithCost} faith):`;
     }
     if (die) die.innerText = '?';
     setExpeditionDiceVisible(true);
@@ -998,10 +1021,13 @@ export function rollExpeditionD6() {
             const baseRoll = Math.floor(Math.random() * 6) + 1;
             const expedition = game.exploration?.activeExpedition;
             const bonusFollowers = Math.max(0, Math.floor(expedition?.followersSent || 0));
-            const totalRoll = baseRoll + bonusFollowers;
+            const wanderlustBonus = getExpeditionRollBonus();
+            const totalRoll = baseRoll + bonusFollowers + wanderlustBonus;
 
             if (die) die.innerText = `${totalRoll}`;
-            if (text) text.innerText = `Rolled ${baseRoll} + ${bonusFollowers} = ${totalRoll}.`;
+            if (text) text.innerText = wanderlustBonus > 0
+                ? `Rolled ${baseRoll} + ${bonusFollowers} + ${wanderlustBonus} = ${totalRoll}.`
+                : `Rolled ${baseRoll} + ${bonusFollowers} = ${totalRoll}.`;
 
             resolveExpeditionRoll(baseRoll);
 
@@ -1106,9 +1132,7 @@ export function conquerVillage(villageId) {
         return;
     }
 
-    const conquerFaithCost = Number.isFinite(gameState.costs.conquerVillageFaithCost)
-        ? Math.max(0, gameState.costs.conquerVillageFaithCost)
-        : 8;
+    const conquerFaithCost = getConquerVillageFaithCost();
     if (gameState.progression.faith < conquerFaithCost) {
         addLog(`Need ${conquerFaithCost} faith to launch a raid.`);
         return;
@@ -1122,8 +1146,9 @@ export function conquerVillage(villageId) {
     const roll = rollDice('1d20', { bonus: forceBonus });
     const conquerScale = Math.max(0.05, Math.min(1, roll.total / 20));
 
+    const yieldMultiplier = getConquerYieldMultiplier();
     const burstMultiplier = Number.isFinite(exploration.conquerFollowerBurstMultiplier) ? exploration.conquerFollowerBurstMultiplier : 3;
-    const baseFollowerYield = Math.max(1, Math.floor(village.population * 0.35 * burstMultiplier * conquerScale / 100));
+    const baseFollowerYield = Math.max(1, Math.floor(village.population * 0.35 * burstMultiplier * conquerScale * yieldMultiplier / 100));
     const max = getMaxFollowers();
     const capacity = Math.max(0, max - gameState.progression.followers);
     const grantedFollowers = Math.min(baseFollowerYield, capacity);
@@ -1131,8 +1156,8 @@ export function conquerVillage(villageId) {
         gameState.progression.followers += grantedFollowers;
     }
 
-    const woodLoot = Math.floor(randomIntInRange(exploration.conquerWoodLootMin, exploration.conquerWoodLootMax) * conquerScale);
-    const stoneLoot = Math.floor(randomIntInRange(exploration.conquerStoneLootMin, exploration.conquerStoneLootMax) * conquerScale);
+    const woodLoot = Math.floor(randomIntInRange(exploration.conquerWoodLootMin, exploration.conquerWoodLootMax) * conquerScale * yieldMultiplier);
+    const stoneLoot = Math.floor(randomIntInRange(exploration.conquerStoneLootMin, exploration.conquerStoneLootMax) * conquerScale * yieldMultiplier);
     gameState.resources.wood.amount += woodLoot;
     gameState.resources.stone.amount += stoneLoot;
 
@@ -1171,3 +1196,35 @@ export function collectWildAreaResources(areaId) {
     updateUI();
     saveGame();
 }
+
+function chooseDoctrine(groupId, optionId) {
+    if (!game.doctrinesUnlocked) return;
+    if (!game.doctrineChoices || typeof game.doctrineChoices !== 'object') return;
+    if (game.doctrineChoices[groupId]) return;
+
+    const group = DOCTRINE_GROUP_BY_ID[groupId];
+    const option = group?.options.find((candidate) => candidate.id === optionId);
+    if (!group || !option) return;
+
+    game.doctrineChoices[groupId] = optionId;
+
+    if (Number.isFinite(option.alignmentDelta) && option.alignmentDelta !== 0) {
+        game.alignment = Math.max(-100, Math.min(100, game.alignment + option.alignmentDelta));
+        if (!game.alignmentVisible) game.alignmentVisible = true;
+    }
+    if (option.favorFaction && Number.isFinite(option.favorAmount) && option.favorAmount !== 0) {
+        game.factionFavor[option.favorFaction] += option.favorAmount;
+        if (!game.alignmentVisible) game.alignmentVisible = true;
+    }
+
+    addLog(`Doctrine chosen: ${option.label} (${group.label}). This choice is permanent.`);
+    updateUI();
+    saveGame();
+}
+
+export function chooseShepherdsCreed() { chooseDoctrine('flock', 'shepherdsCreed'); }
+export function chooseIronFist() { chooseDoctrine('flock', 'ironFist'); }
+export function chooseHomestead() { chooseDoctrine('hearth', 'homestead'); }
+export function chooseWanderlust() { chooseDoctrine('hearth', 'wanderlust'); }
+export function chooseAbundantTable() { chooseDoctrine('sacrifice', 'abundantTable'); }
+export function chooseLeanYears() { chooseDoctrine('sacrifice', 'leanYears'); }

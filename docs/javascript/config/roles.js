@@ -1,3 +1,18 @@
+export function getRoleOutputMultiplier(roleId, game) {
+    let multiplier = 1;
+    if ((roleId === 'hunters' || roleId === 'gatherers') && game.danuBlessingUnlocked && Number.isFinite(game.danuBlessingMultiplier)) {
+        multiplier *= game.danuBlessingMultiplier;
+    }
+    if (
+        (roleId === 'hunters' || roleId === 'gatherers' || roleId === 'ritualists') &&
+        game.doctrineChoices?.hearth === 'homestead' &&
+        Number.isFinite(game.homesteadOutputMultiplier)
+    ) {
+        multiplier *= game.homesteadOutputMultiplier;
+    }
+    return multiplier;
+}
+
 export const ROLE_DEFINITIONS = [
     {
         id: 'hunters',
@@ -9,7 +24,7 @@ export const ROLE_DEFINITIONS = [
         roleValueId: 'huntersRoleValue',
         simulation: {
             tickRate: 1,
-            scaling: (count, gameState, game) => count * (game.danuBlessingUnlocked ? game.danuBlessingMultiplier : 1),
+            scaling: (count, gameState, game) => count * getRoleOutputMultiplier('hunters', game),
             outputs: [
                 { target: 'resource', key: 'food', rateKey: 'hunterFoodPerSecond' }
             ]
@@ -25,7 +40,7 @@ export const ROLE_DEFINITIONS = [
         roleValueId: 'ritualistsRoleValue',
         simulation: {
             tickRate: 1,
-            scaling: (count) => count,
+            scaling: (count, gameState, game) => count * getRoleOutputMultiplier('ritualists', game),
             outputs: [
                 { target: 'progression', key: 'faith', rateKey: 'ritualistFaithPerSecond' }
             ]
@@ -41,7 +56,7 @@ export const ROLE_DEFINITIONS = [
         roleValueId: 'gatherersRoleValue',
         simulation: {
             tickRate: 1,
-            scaling: (count, gameState, game) => count * (game.danuBlessingUnlocked ? game.danuBlessingMultiplier : 1),
+            scaling: (count, gameState, game) => count * getRoleOutputMultiplier('gatherers', game),
             outputs: [
                 { target: 'resource', key: 'wood', rateKey: 'gathererWoodPerSecond' },
                 { target: 'resource', key: 'stone', rateKey: 'gathererStonePerSecond' }

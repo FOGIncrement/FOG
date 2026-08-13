@@ -26,7 +26,14 @@ export {
     offerToTheVeil,
     holdVillageSermon,
     conquerVillage,
-    collectWildAreaResources
+    collectWildAreaResources,
+    conveneCouncil,
+    chooseShepherdsCreed,
+    chooseIronFist,
+    chooseHomestead,
+    chooseWanderlust,
+    chooseAbundantTable,
+    chooseLeanYears
 } from './actions.js';
 
 export {

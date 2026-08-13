@@ -7,6 +7,7 @@ import {
     createRoleAccumulatorMap
 } from '../config/roles.js';
 import { FACTION_DEFINITIONS, createFactionFavorMap } from '../config/factions.js';
+import { DOCTRINE_GROUPS, createDoctrineChoiceMap } from '../config/doctrines.js';
 
 let resetInProgress = false;
 
@@ -341,6 +342,55 @@ export function loadGame() {
                 mergedFactionFavor[factionDefinition.id] = Number.isFinite(value) && value >= 0 ? value : 0;
             });
             game.factionFavor = mergedFactionFavor;
+
+            if (typeof game.doctrinesUnlocked !== 'boolean') {
+                game.doctrinesUnlocked = false;
+            }
+            if (!Number.isFinite(gameState.costs.councilFaithCost) || gameState.costs.councilFaithCost < 0) {
+                gameState.costs.councilFaithCost = 100;
+            }
+            if (!Number.isFinite(game.councilFollowerRequirement) || game.councilFollowerRequirement < 1) {
+                game.councilFollowerRequirement = 10;
+            }
+            if (!Number.isFinite(game.shepherdsCreedCostMultiplier) || game.shepherdsCreedCostMultiplier <= 0 || game.shepherdsCreedCostMultiplier > 1) {
+                game.shepherdsCreedCostMultiplier = 0.85;
+            }
+            if (!Number.isFinite(game.ironFistYieldMultiplier) || game.ironFistYieldMultiplier < 1) {
+                game.ironFistYieldMultiplier = 1.25;
+            }
+            if (!Number.isFinite(game.ironFistCostMultiplier) || game.ironFistCostMultiplier <= 0 || game.ironFistCostMultiplier > 1) {
+                game.ironFistCostMultiplier = 0.9;
+            }
+            if (!Number.isFinite(game.homesteadOutputMultiplier) || game.homesteadOutputMultiplier < 1) {
+                game.homesteadOutputMultiplier = 1.2;
+            }
+            if (!Number.isFinite(game.wanderlustRollBonus) || game.wanderlustRollBonus < 0) {
+                game.wanderlustRollBonus = 2;
+            }
+            if (!Number.isFinite(game.wanderlustCostMultiplier) || game.wanderlustCostMultiplier <= 0 || game.wanderlustCostMultiplier > 1) {
+                game.wanderlustCostMultiplier = 0.9;
+            }
+            if (!Number.isFinite(game.abundantTableConsumptionMultiplier) || game.abundantTableConsumptionMultiplier <= 0 || game.abundantTableConsumptionMultiplier > 1) {
+                game.abundantTableConsumptionMultiplier = 0.75;
+            }
+            if (!Number.isFinite(game.leanYearsConsumptionMultiplier) || game.leanYearsConsumptionMultiplier <= 0 || game.leanYearsConsumptionMultiplier > 1) {
+                game.leanYearsConsumptionMultiplier = 0.5;
+            }
+            if (!Number.isFinite(game.leanYearsStarvationMultiplier) || game.leanYearsStarvationMultiplier < 1) {
+                game.leanYearsStarvationMultiplier = 2.5;
+            }
+
+            // Exhaustive doctrineChoices validation: rebuild from scratch so a corrupted save
+            // can never claim an invalid/foreign option was chosen for a group.
+            const validatedDoctrineChoices = createDoctrineChoiceMap(null);
+            if (game.doctrineChoices && typeof game.doctrineChoices === 'object') {
+                DOCTRINE_GROUPS.forEach((group) => {
+                    const savedValue = game.doctrineChoices[group.id];
+                    const validOptionIds = group.options.map((option) => option.id);
+                    validatedDoctrineChoices[group.id] = validOptionIds.includes(savedValue) ? savedValue : null;
+                });
+            }
+            game.doctrineChoices = validatedDoctrineChoices;
 
             if (!Number.isFinite(gameState.costs.unlockAltarFaithCost) || gameState.costs.unlockAltarFaithCost < 0) {
                 gameState.costs.unlockAltarFaithCost = 0;

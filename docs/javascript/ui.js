@@ -1,7 +1,7 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal } from './utils/helpers.js';
-import { ROLE_DEFINITIONS } from './config/roles.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost } from './utils/helpers.js';
+import { ROLE_DEFINITIONS, getRoleOutputMultiplier } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
 import { getActionUiRules } from './config/action-rules.js';
@@ -120,7 +120,7 @@ export function updateUI() {
         hunterContainer.style.display = hunterCount > 0 ? 'block' : 'none';
         if (hunterBonus) {
             const perHunter = gameState.rates.hunterFoodPerSecond;
-            const totalFoodRate = hunterCount * perHunter;
+            const totalFoodRate = hunterCount * perHunter * getRoleOutputMultiplier('hunters', game);
             hunterBonus.innerText = `(+${totalFoodRate.toFixed(2)} food/s)`;
             setTooltipContent(
                 hunterBonus,
@@ -135,7 +135,7 @@ export function updateUI() {
         ritualistContainer.style.display = ritualistCount > 0 ? 'block' : 'none';
         if (ritualistBonus) {
             const perRitualist = gameState.rates.ritualistFaithPerSecond;
-            const totalFaithRate = ritualistCount * perRitualist;
+            const totalFaithRate = ritualistCount * perRitualist * getRoleOutputMultiplier('ritualists', game);
             ritualistBonus.innerText = `(+${totalFaithRate.toFixed(2)} faith/s)`;
             setTooltipContent(
                 ritualistBonus,
@@ -151,8 +151,9 @@ export function updateUI() {
         if (gathererBonus) {
             const woodPerGatherer = gameState.rates.gathererWoodPerSecond;
             const stonePerGatherer = gameState.rates.gathererStonePerSecond;
-            const woodRate = gathererCount * woodPerGatherer;
-            const stoneRate = gathererCount * stonePerGatherer;
+            const gathererOutputMultiplier = getRoleOutputMultiplier('gatherers', game);
+            const woodRate = gathererCount * woodPerGatherer * gathererOutputMultiplier;
+            const stoneRate = gathererCount * stonePerGatherer * gathererOutputMultiplier;
             gathererBonus.innerText = `(+${woodRate.toFixed(2)} wood/s, +${stoneRate.toFixed(2)} stone/s)`;
             setTooltipContent(
                 gathererBonus,
@@ -193,10 +194,10 @@ export function updateUI() {
         if (type === 'food') {
             const rateEl = document.getElementById('foodRate');
             if (rateEl) {
-                const hunterRate = getRoleCount('hunters') * gameState.rates.hunterFoodPerSecond;
+                const hunterRate = getRoleCount('hunters') * gameState.rates.hunterFoodPerSecond * getRoleOutputMultiplier('hunters', game);
                 const cookEfficiency = Math.min(0.5, getRoleCount('cooks') * gameState.rates.cookHungerDrainReductionPerCook);
                 const sustainCost = game.hungerVisible
-                    ? Math.min(gameState.progression.followers * game.followerFoodConsumptionPerSecond * (1 - cookEfficiency), Math.max(0, gameState.resources.food.amount))
+                    ? Math.min(gameState.progression.followers * game.followerFoodConsumptionPerSecond * getFollowerFoodConsumptionMultiplier() * (1 - cookEfficiency), Math.max(0, gameState.resources.food.amount))
                     : 0;
                 const remainingFoodForAutoFeed = Math.max(0, gameState.resources.food.amount - sustainCost);
                 const autoFeedCost = (game.hungerVisible && game.hungerPercent < 100)
@@ -233,9 +234,9 @@ export function updateUI() {
         hungerValue.classList.toggle('hunger-weak', game.hungerPercent >= 20 && game.hungerPercent < 50);
 
         const cookEfficiency = Math.min(0.5, getRoleCount('cooks') * gameState.rates.cookHungerDrainReductionPerCook);
-        const consumption = gameState.progression.followers * game.followerFoodConsumptionPerSecond * (1 - cookEfficiency);
+        const consumption = gameState.progression.followers * game.followerFoodConsumptionPerSecond * getFollowerFoodConsumptionMultiplier() * (1 - cookEfficiency);
         const sustainConsumption = Math.min(consumption, Math.max(0, gameState.resources.food.amount));
-        const starvationDrain = gameState.resources.food.amount > 0 ? 0 : game.hungerStarvationDrainPerSecond * (1 - cookEfficiency);
+        const starvationDrain = gameState.resources.food.amount > 0 ? 0 : game.hungerStarvationDrainPerSecond * getHungerStarvationDrainMultiplier() * (1 - cookEfficiency);
         const autoFeeding = game.hungerVisible && game.hungerPercent < 100;
         const foodAfterSustain = Math.max(0, gameState.resources.food.amount - sustainConsumption);
         const autoFeedAmount = autoFeeding ? Math.min(game.autoFeedFoodPerSecond, foodAfterSustain) : 0;
@@ -386,7 +387,7 @@ function renderExplorationPanel(hasExplorationAccess) {
 
     if (expeditionStatusEl) {
         if (!expedition) {
-            expeditionStatusEl.innerText = `No active expedition. Roll cost: ${Math.floor(gameState.costs.expeditionRollFaithCost || 50)} faith.`;
+            expeditionStatusEl.innerText = `No active expedition. Roll cost: ${getExpeditionRollFaithCost()} faith.`;
         } else {
             const targetVillage = (exploration.villages || []).find((village) => village.id === expedition.targetVillageId);
             const villageText = targetVillage
@@ -434,9 +435,10 @@ function renderDiscoveredAreas(hasExplorationAccess) {
                 statusLine = `<p class="village-resolved">Ransacked — conquered</p>`;
             } else {
                 statusLine = `<p>Converted: ${converted}%</p>`;
+                const conquerCost = getConquerVillageFaithCost();
                 actionsLine = `
                     <button class="village-sermon-btn" data-village-id="${village.id}" ${converted >= 100 || !village.prophetPresent ? 'disabled' : ''}>Hold Sermon</button>
-                    <button class="village-conquer-btn" data-village-id="${village.id}">Conquer</button>
+                    <button class="village-conquer-btn" data-village-id="${village.id}">Conquer (${conquerCost} faith)</button>
                 `;
             }
 
@@ -544,6 +546,11 @@ function updateButtons() {
     const followerManagerHeader = document.querySelector('.tab-btn[data-tab="followerManager"]');
     if (followerManagerHeader) {
         followerManagerHeader.style.display = tabHeaderVisibility.followerManager ? 'inline-block' : 'none';
+    }
+
+    const doctrinesHeader = document.querySelector('.tab-btn[data-tab="doctrines"]');
+    if (doctrinesHeader) {
+        doctrinesHeader.style.display = tabHeaderVisibility.doctrines ? 'inline-block' : 'none';
     }
 
     const activeTabHeader = document.querySelector('.tab-btn.active');

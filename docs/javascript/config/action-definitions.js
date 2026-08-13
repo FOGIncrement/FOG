@@ -38,7 +38,16 @@ export const ACTION_GROUPS = {
         { id: 'unlockShelterUpgrade', buttonId: 'unlockShelterUpgradeBtn', handlerExport: 'unlockShelterUpgrade', tab: 'unlocks', category: 'buildingUpgrade' },
         { id: 'unlockAltar', buttonId: 'unlockAltarBtn', handlerExport: 'unlockAltar', tab: 'unlocks', category: 'buildingUpgrade' },
         { id: 'trainZealousPreaching', buttonId: 'zealousPreachingBtn', handlerExport: 'trainZealousPreaching', tab: 'unlocks', category: 'upgrade' },
-        { id: 'blessTheHarvest', buttonId: 'blessHarvestBtn', handlerExport: 'blessTheHarvest', tab: 'unlocks', category: 'buildingUpgrade' }
+        { id: 'blessTheHarvest', buttonId: 'blessHarvestBtn', handlerExport: 'blessTheHarvest', tab: 'unlocks', category: 'buildingUpgrade' },
+        { id: 'conveneCouncil', buttonId: 'conveneCouncilBtn', handlerExport: 'conveneCouncil', tab: 'unlocks', category: 'buildingUpgrade' }
+    ],
+    doctrines: [
+        { id: 'chooseShepherdsCreed', buttonId: 'chooseShepherdsCreedBtn', handlerExport: 'chooseShepherdsCreed', tab: 'doctrines', category: 'flock' },
+        { id: 'chooseIronFist', buttonId: 'chooseIronFistBtn', handlerExport: 'chooseIronFist', tab: 'doctrines', category: 'flock' },
+        { id: 'chooseHomestead', buttonId: 'chooseHomesteadBtn', handlerExport: 'chooseHomestead', tab: 'doctrines', category: 'hearth' },
+        { id: 'chooseWanderlust', buttonId: 'chooseWanderlustBtn', handlerExport: 'chooseWanderlust', tab: 'doctrines', category: 'hearth' },
+        { id: 'chooseAbundantTable', buttonId: 'chooseAbundantTableBtn', handlerExport: 'chooseAbundantTable', tab: 'doctrines', category: 'sacrifice' },
+        { id: 'chooseLeanYears', buttonId: 'chooseLeanYearsBtn', handlerExport: 'chooseLeanYears', tab: 'doctrines', category: 'sacrifice' }
     ],
     followerManager: [
         { id: 'trainHunters', buttonId: 'trainHuntersBtn', handlerExport: 'trainHunters', tab: 'followerManager', category: 'roles' },
@@ -49,6 +58,6 @@ export const ACTION_GROUPS = {
     ]
 };
 
-export const ACTION_TAB_ORDER = ['actions', 'explore', 'build', 'food', 'unlocks', 'followerManager'];
+export const ACTION_TAB_ORDER = ['actions', 'explore', 'build', 'food', 'unlocks', 'doctrines', 'followerManager'];
 
 export const ACTION_DEFINITIONS = Object.values(ACTION_GROUPS).flat();
