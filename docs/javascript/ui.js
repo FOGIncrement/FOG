@@ -345,11 +345,11 @@ export function renderWelcomeBackModal(summary) {
 }
 
 function renderExplorationPanel(hasExplorationAccess) {
-    const panel = document.getElementById('tab-explore');
-    if (panel) {
-        panel.style.display = hasExplorationAccess ? '' : 'none';
-    }
-
+    // Tab visibility/switching is owned entirely by the tab system (initTabs()'s
+    // activate() in main.js + getTabHeaderVisibility()'s header gating below) -
+    // this function must only update the panel's contents, never its display
+    // style, or it fights the tab switcher and the panel sticks visible on
+    // every tab regardless of which one is active.
     if (!hasExplorationAccess) return;
 
     const exploration = game.exploration || {};
@@ -536,11 +536,6 @@ function updateButtons() {
     const exploreHeader = document.querySelector('.tab-btn[data-tab="explore"]');
     if (exploreHeader) {
         exploreHeader.style.display = tabHeaderVisibility.explore ? 'inline-block' : 'none';
-    }
-
-    const discoveredHeader = document.querySelector('.tab-btn[data-tab="discovered"]');
-    if (discoveredHeader) {
-        discoveredHeader.style.display = tabHeaderVisibility.discovered ? 'inline-block' : 'none';
     }
 
     const followerManagerHeader = document.querySelector('.tab-btn[data-tab="followerManager"]');

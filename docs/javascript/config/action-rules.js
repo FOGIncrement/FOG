@@ -318,15 +318,11 @@ export function getActionUiRules(context) {
             return Boolean(ritualButtonElement && (ritualButtonElement.dataset.unlocked === 'true' || ritualBuilt));
         },
         getTabHeaderVisibility(roleDefinitions) {
-            const hasDiscoveredArea = Boolean((game.exploration?.villages || []).some((village) => village.discovered))
-                || Boolean((game.exploration?.discoveredAreas || []).some((area) => area.discovered));
-
             return {
                 explore: Boolean(ritualBuilt && hasExplorationAccess),
                 unlocks: Boolean(game.unlocksTabUnlocked),
                 food: Boolean(game.hasGatheredFood),
-                followerManager: roleDefinitions.some((role) => game.roleUnlocks[role.id]),
-                discovered: Boolean(ritualBuilt && hasExplorationAccess && hasDiscoveredArea)
+                followerManager: roleDefinitions.some((role) => game.roleUnlocks[role.id])
             };
         },
         hasAnyRoleUnlocked(roleDefinitions) {
