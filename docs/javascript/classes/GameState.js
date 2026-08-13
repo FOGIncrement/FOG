@@ -96,6 +96,7 @@ export const game = {
     hungerVisible: false,
     followerFoodConsumptionPerSecond: 0.25,
     hungerStarvationDrainPerSecond: 3,
+    offlineProgressMaxHours: 8,
     autoFeedFoodPerSecond: 0.15,
     foodHungerGain: 0.15,
     feedAmount: 10,     // manual feed amount per click

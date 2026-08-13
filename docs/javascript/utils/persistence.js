@@ -84,7 +84,8 @@ export function saveGame() {
 
     const saveData = {
         gameState,
-        game
+        game,
+        lastSavedAtMs: Date.now()
     };
     localStorage.setItem('fogGameSave', JSON.stringify(saveData));
     // console.log('Game saved to localStorage');
@@ -616,14 +617,23 @@ export function loadGame() {
                 : 0;
             game.diceBonuses.preach = game.altarBuilt ? Math.max(1, savedPreachBonus) : 0;
 
+            if (!Number.isFinite(game.offlineProgressMaxHours) || game.offlineProgressMaxHours <= 0) {
+                game.offlineProgressMaxHours = 8;
+            }
+
+            const now = Date.now();
+            const rawLastSavedAtMs = Number.isFinite(data?.lastSavedAtMs) ? data.lastSavedAtMs : now;
+            const offlineSecondsRaw = Math.max(0, (now - rawLastSavedAtMs) / 1000);
+            const offlineSeconds = Math.min(offlineSecondsRaw, game.offlineProgressMaxHours * 3600);
+
             console.log('Game loaded from localStorage');
-            return true;
+            return { loaded: true, offlineSeconds, offlineSecondsRaw, cappedByLimit: offlineSecondsRaw > offlineSeconds };
         } catch (e) {
             console.error('Failed to load save:', e);
-            return false;
+            return { loaded: false, offlineSeconds: 0, offlineSecondsRaw: 0, cappedByLimit: false };
         }
     }
-    return false;
+    return { loaded: false, offlineSeconds: 0, offlineSecondsRaw: 0, cappedByLimit: false };
 }
 
 export function clearSave() {

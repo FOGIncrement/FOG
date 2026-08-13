@@ -17,6 +17,7 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Manual Feed Hunger Gain', target: game, key: 'feedAmount', step: 0.5, min: 0 },
             { label: 'Follower Food Consumption/s', target: game, key: 'followerFoodConsumptionPerSecond', step: 0.01, min: 0 },
             { label: 'Hunger Starvation Drain/s', target: game, key: 'hungerStarvationDrainPerSecond', step: 0.5, min: 0 },
+            { label: 'Offline Progress Cap (Hours)', target: game, key: 'offlineProgressMaxHours', step: 1, min: 0.1 },
             { label: 'Auto Feed Food Per Second', target: game, key: 'autoFeedFoodPerSecond', step: 0.01, min: 0 },
             { label: 'Food Hunger Gain Multiplier', target: game, key: 'foodHungerGain', step: 0.01, min: 0 },
             { label: 'Shelter Capacity Per Shelter', target: game, key: 'shelterCapacityPerShelter', step: 1, min: 0 },
@@ -137,7 +138,7 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
 // ===== DOM LOADED =====
 document.addEventListener("DOMContentLoaded", () => {
     // Try to load saved game first
-    loadGame();
+    const loadResult = loadGame();
     initTooltips();
 
     // startup sanity (defensive against bad legacy saves)
@@ -146,6 +147,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (!Number.isFinite(gameState.progression.faith) || gameState.progression.faith < 0) {
         gameState.progression.faith = 0;
+    }
+
+    const welcomeBackSummary = gameApi.runOfflineCatchup(loadResult.offlineSeconds, loadResult.offlineSecondsRaw);
+    if (welcomeBackSummary) {
+        gameApi.renderWelcomeBackModal(welcomeBackSummary);
+    }
+
+    const welcomeBackDismissBtn = document.getElementById('welcomeBackDismissBtn');
+    if (welcomeBackDismissBtn) {
+        welcomeBackDismissBtn.addEventListener('click', () => {
+            const modal = document.getElementById('welcomeBackModal');
+            if (modal) modal.style.display = 'none';
+        });
     }
 
     initTabs();

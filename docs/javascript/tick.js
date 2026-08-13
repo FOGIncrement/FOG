@@ -5,6 +5,10 @@ import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
 import { getRoleCount } from './utils/helpers.js';
 
+const LIVE_TICK_CLAMP_SECONDS = 2;
+const CATCHUP_CHUNK_SECONDS = LIVE_TICK_CLAMP_SECONDS;
+const MIN_OFFLINE_SECONDS_TO_CATCHUP = 60;
+
 function getRuntime() {
     if (!gameState.runtime || typeof gameState.runtime !== 'object') {
         gameState.runtime = { roleAccumulators: {}, autoSaveAccumulator: 0 };
@@ -89,12 +93,17 @@ function processRoleSimulation(dtSeconds) {
     });
 }
 
-export function gameTick(dtSeconds = 1) {
+function defaultLiveEventHandler(eventType) {
+    if (eventType === 'hunger-critical') addLog('The faithful are starving.');
+    else if (eventType === 'hunger-weak') addLog('The faithful grow weak.');
+}
+
+// Pure simulation step: mutates game state only, no DOM/localStorage I/O.
+// Safe to call repeatedly in a chunked loop for offline catch-up.
+function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
     if (!Number.isFinite(dtSeconds) || dtSeconds <= 0) return;
 
-    const clampedDt = Math.min(2, dtSeconds);
-
-    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * clampedDt;
+    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * dtSeconds;
 
     const outpostFaithPerSecond = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond)
         ? game.exploration.villageOutpostFaithPerSecond
@@ -102,22 +111,22 @@ export function gameTick(dtSeconds = 1) {
     if (outpostFaithPerSecond > 0 && Array.isArray(game.exploration?.villages)) {
         const outpostCount = game.exploration.villages.reduce((count, village) => count + (village.resolutionType === 'converted' ? 1 : 0), 0);
         if (outpostCount > 0) {
-            gameState.progression.faith += outpostCount * outpostFaithPerSecond * clampedDt;
+            gameState.progression.faith += outpostCount * outpostFaithPerSecond * dtSeconds;
         }
     }
 
-    processRoleSimulation(clampedDt);
+    processRoleSimulation(dtSeconds);
 
     const cookCount = getRoleCount('cooks');
 
     if (game.hungerVisible) {
-        const cookFlatGain = cookCount * gameState.rates.cookFlatHungerGainPerSecond * clampedDt;
+        const cookFlatGain = cookCount * gameState.rates.cookFlatHungerGainPerSecond * dtSeconds;
 
         const cookEfficiency = Math.min(0.5, cookCount * gameState.rates.cookHungerDrainReductionPerCook);
-        const consumption = gameState.progression.followers * game.followerFoodConsumptionPerSecond * (1 - cookEfficiency) * clampedDt;
+        const consumption = gameState.progression.followers * game.followerFoodConsumptionPerSecond * (1 - cookEfficiency) * dtSeconds;
         const foodAmount = Math.max(0, gameState.resources.food.amount);
         const sustainFoodUsed = Math.min(consumption, foodAmount);
-        const starvationDrain = foodAmount > 0 ? 0 : game.hungerStarvationDrainPerSecond * (1 - cookEfficiency) * clampedDt;
+        const starvationDrain = foodAmount > 0 ? 0 : game.hungerStarvationDrainPerSecond * (1 - cookEfficiency) * dtSeconds;
 
         if (sustainFoodUsed > 0) {
             gameState.resources.food.spend(sustainFoodUsed);
@@ -125,7 +134,7 @@ export function gameTick(dtSeconds = 1) {
 
         let autoFeedAmount = 0;
         if (gameState.resources.food.amount > 0 && game.hungerPercent < 100) {
-            autoFeedAmount = Math.min(game.autoFeedFoodPerSecond * clampedDt, gameState.resources.food.amount);
+            autoFeedAmount = Math.min(game.autoFeedFoodPerSecond * dtSeconds, gameState.resources.food.amount);
             if (autoFeedAmount > 0) {
                 gameState.resources.food.spend(autoFeedAmount);
             }
@@ -136,15 +145,23 @@ export function gameTick(dtSeconds = 1) {
         game.hungerPercent = Math.max(0, Math.min(100, game.hungerPercent + netEffect));
 
         if (game.hungerPercent < 5 && game.lastHungerWarning !== 'critical') {
-            addLog('The faithful are starving.');
+            onEvent('hunger-critical');
             game.lastHungerWarning = 'critical';
         } else if (game.hungerPercent < 20 && game.lastHungerWarning !== 'weak') {
-            addLog('The faithful grow weak.');
+            onEvent('hunger-weak');
             game.lastHungerWarning = 'weak';
         } else if (game.hungerPercent >= 20) {
             game.lastHungerWarning = null;
         }
     }
+}
+
+// Live-loop wrapper: same public signature/behavior as before the refactor.
+export function gameTick(dtSeconds = 1) {
+    if (!Number.isFinite(dtSeconds) || dtSeconds <= 0) return;
+
+    const clampedDt = Math.min(LIVE_TICK_CLAMP_SECONDS, dtSeconds);
+    simulateStep(clampedDt);
 
     const runtime = getRuntime();
     runtime.autoSaveAccumulator += clampedDt;
@@ -154,4 +171,65 @@ export function gameTick(dtSeconds = 1) {
     }
 
     updateUI();
+}
+
+function captureResourceSnapshot() {
+    return {
+        faith: gameState.progression.faith,
+        followers: gameState.progression.followers,
+        wood: gameState.resources.wood.amount,
+        stone: gameState.resources.stone.amount,
+        food: gameState.resources.food.amount,
+        hungerPercent: game.hungerPercent
+    };
+}
+
+function buildWelcomeBackSummary(before, after, offlineSeconds, offlineSecondsRaw, eventCounts) {
+    return {
+        offlineSeconds,
+        offlineSecondsRaw,
+        cappedByLimit: offlineSecondsRaw > offlineSeconds,
+        before,
+        after,
+        deltas: {
+            faith: after.faith - before.faith,
+            followers: after.followers - before.followers,
+            wood: after.wood - before.wood,
+            stone: after.stone - before.stone,
+            food: after.food - before.food
+        },
+        hunger: {
+            wentWeak: Boolean(eventCounts['hunger-weak']),
+            wentCritical: Boolean(eventCounts['hunger-critical']),
+            weakEventCount: eventCounts['hunger-weak'] || 0,
+            criticalEventCount: eventCounts['hunger-critical'] || 0
+        }
+    };
+}
+
+// Catch-up driver: simulates a real elapsed gap in small chunks (re-checking
+// food/hunger state every chunk, unlike a single giant dt would), with no
+// DOM/localStorage I/O until it's done. Returns a "welcome back" summary, or
+// null if the gap is too short to be worth reporting.
+export function runOfflineCatchup(offlineSeconds, offlineSecondsRaw = offlineSeconds) {
+    if (!Number.isFinite(offlineSeconds) || offlineSeconds < MIN_OFFLINE_SECONDS_TO_CATCHUP) return null;
+
+    const before = captureResourceSnapshot();
+    const eventCounts = {};
+    const collector = (eventType) => {
+        eventCounts[eventType] = (eventCounts[eventType] || 0) + 1;
+    };
+
+    let remaining = offlineSeconds;
+    while (remaining > 0) {
+        const step = Math.min(CATCHUP_CHUNK_SECONDS, remaining);
+        simulateStep(step, collector);
+        remaining -= step;
+    }
+
+    const after = captureResourceSnapshot();
+    saveGame();
+    updateUI();
+
+    return buildWelcomeBackSummary(before, after, offlineSeconds, offlineSecondsRaw, eventCounts);
 }

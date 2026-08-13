@@ -25,6 +25,22 @@ function describeAlignment(value) {
     return 'Neutral';
 }
 
+function applyRateClass(el, value) {
+    if (!el) return;
+    el.classList.toggle('rate-positive', value > 0);
+    el.classList.toggle('rate-negative', value < 0);
+}
+
+function getOutpostFaithRate() {
+    const outpostFaithPerSecond = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond)
+        ? game.exploration.villageOutpostFaithPerSecond
+        : 0.05;
+    const outpostCount = Array.isArray(game.exploration?.villages)
+        ? game.exploration.villages.reduce((count, village) => count + (village.resolutionType === 'converted' ? 1 : 0), 0)
+        : 0;
+    return outpostCount * outpostFaithPerSecond;
+}
+
 export function updateUI() {
     if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 0) {
         gameState.progression.followers = 0;
@@ -49,12 +65,27 @@ export function updateUI() {
     const prophetContainer = document.getElementById('prophetContainer');
     const prophetValue = document.getElementById('prophetValue');
 
-    if (followersEl) followersEl.innerText = `${gameState.progression.followers}/${getMaxFollowers()}`;
+    if (followersEl) {
+        const maxFollowers = getMaxFollowers();
+        followersEl.innerText = `${gameState.progression.followers}/${maxFollowers}`;
+        const perShelter = (game.shelterCapacityPerShelter || 3) * (game.shelterCapacityMultiplier || 1);
+        setTooltipContent(
+            followersEl,
+            'Followers\nThe faithful you have converted or trained.',
+            `Capacity: 1 base + ${game.shelter} shelter${game.shelter === 1 ? '' : 's'} × ${perShelter} = ${maxFollowers}\nUnassigned: ${getUnassignedFollowers()}`
+        );
+    }
     if (faithEl) {
         const followerFaithRate = gameState.progression.followers * gameState.progression.faithPerFollower;
         const ritualistFaithRate = getRoleCount('ritualists') * gameState.rates.ritualistFaithPerSecond;
-        const totalFaithRate = followerFaithRate + ritualistFaithRate;
+        const outpostFaithRate = getOutpostFaithRate();
+        const totalFaithRate = followerFaithRate + ritualistFaithRate + outpostFaithRate;
         faithEl.innerText = `${gameState.progression.faith.toFixed(2)} (+${totalFaithRate.toFixed(3)}/s)`;
+        setTooltipContent(
+            faithEl,
+            'Faith\nSpent on nearly everything.',
+            `Followers: +${followerFaithRate.toFixed(3)}/s\nRitualists: +${ritualistFaithRate.toFixed(3)}/s\nOutposts: +${outpostFaithRate.toFixed(3)}/s\nTotal: +${totalFaithRate.toFixed(3)}/s`
+        );
     }
 
     if (woodRateEl) {
@@ -62,6 +93,7 @@ export function updateUI() {
         const perGatherer = gameState.rates.gathererWoodPerSecond;
         const woodRate = gathererCount * perGatherer;
         woodRateEl.innerText = `(+${woodRate.toFixed(3)}/s)`;
+        applyRateClass(woodRateEl, woodRate);
         setTooltipContent(
             woodRateEl,
             'Wood Rate\nWood income per second.',
@@ -74,6 +106,7 @@ export function updateUI() {
         const perGatherer = gameState.rates.gathererStonePerSecond;
         const stoneRate = gathererCount * perGatherer;
         stoneRateEl.innerText = `(+${stoneRate.toFixed(3)}/s)`;
+        applyRateClass(stoneRateEl, stoneRate);
         setTooltipContent(
             stoneRateEl,
             'Stone Rate\nStone income per second.',
@@ -173,6 +206,7 @@ export function updateUI() {
                 rateEl.innerText = netFoodRate >= 0
                     ? `(+${netFoodRate.toFixed(3)}/s)`
                     : `(${netFoodRate.toFixed(3)}/s)`;
+                applyRateClass(rateEl, netFoodRate);
                 setTooltipContent(
                     rateEl,
                     'Food Rate\nNet food change per second.',
@@ -195,6 +229,8 @@ export function updateUI() {
     if (hungerContainer && hungerValue && hungerRate) {
         hungerContainer.style.display = game.hungerVisible ? 'block' : 'none';
         hungerValue.innerText = game.hungerPercent.toFixed(2) + '%';
+        hungerValue.classList.toggle('hunger-critical', game.hungerPercent < 20);
+        hungerValue.classList.toggle('hunger-weak', game.hungerPercent >= 20 && game.hungerPercent < 50);
 
         const cookEfficiency = Math.min(0.5, getRoleCount('cooks') * gameState.rates.cookHungerDrainReductionPerCook);
         const consumption = gameState.progression.followers * game.followerFoodConsumptionPerSecond * (1 - cookEfficiency);
@@ -209,6 +245,7 @@ export function updateUI() {
             ? ((autoFeedAmount * game.foodHungerGain * cookBonusMultiplier) + cookFlatGain - starvationDrain)
             : (cookFlatGain - starvationDrain);
         hungerRate.innerText = netRate >= 0 ? `(+${netRate.toFixed(2)}/s)` : `(${netRate.toFixed(2)}/s)`;
+        applyRateClass(hungerRate, netRate);
         const timeToCrisisSeconds = starvationDrain > 0 ? Math.max(0, game.hungerPercent / starvationDrain) : null;
         const timeToCrisisLine = timeToCrisisSeconds != null ? `\nTime to crisis: ${timeToCrisisSeconds.toFixed(0)}s` : '';
         setTooltipContent(
@@ -264,6 +301,49 @@ export function updateUI() {
     updateButtons();
 }
 
+function formatOfflineDuration(totalSeconds) {
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+export function renderWelcomeBackModal(summary) {
+    if (!summary) return;
+
+    const modal = document.getElementById('welcomeBackModal');
+    const durationEl = document.getElementById('welcomeBackDuration');
+    const gainsEl = document.getElementById('welcomeBackGains');
+    const hungerNoteEl = document.getElementById('welcomeBackHungerNote');
+    if (!modal || !durationEl || !gainsEl || !hungerNoteEl) return;
+
+    durationEl.innerText = `You were away for ${formatOfflineDuration(summary.offlineSeconds)}${summary.cappedByLimit ? ' (capped)' : ''}.`;
+
+    const deltaLabels = { faith: 'Faith', followers: 'Followers', wood: 'Wood', stone: 'Stone', food: 'Food' };
+    const gainLines = Object.keys(deltaLabels)
+        .map((key) => {
+            const delta = summary.deltas[key];
+            if (!Number.isFinite(delta) || Math.abs(delta) < 0.01) return null;
+            const sign = delta >= 0 ? '+' : '';
+            const formatted = Number.isInteger(delta) ? delta : delta.toFixed(2);
+            return `<p>${sign}${formatted} ${deltaLabels[key]}</p>`;
+        })
+        .filter(Boolean);
+    gainsEl.innerHTML = gainLines.length ? gainLines.join('') : '<p>Nothing much happened.</p>';
+
+    if (summary.hunger.wentCritical) {
+        hungerNoteEl.style.display = 'block';
+        hungerNoteEl.innerText = 'Your followers went hungry and grew weak while you were away.';
+    } else if (summary.hunger.wentWeak) {
+        hungerNoteEl.style.display = 'block';
+        hungerNoteEl.innerText = 'Your followers went hungry while you were away.';
+    } else {
+        hungerNoteEl.style.display = 'none';
+    }
+
+    modal.style.display = 'flex';
+}
+
 function renderExplorationPanel(hasExplorationAccess) {
     const panel = document.getElementById('tab-explore');
     if (panel) {
@@ -316,13 +396,9 @@ function renderExplorationPanel(hasExplorationAccess) {
 
 function renderDiscoveredAreas(hasExplorationAccess) {
     const container = document.getElementById('discoveredAreasList');
-    const sidebar = document.getElementById('discoveredSidebar');
-    if (!container || !sidebar) return;
+    if (!container) return;
 
-    if (!hasExplorationAccess) {
-        sidebar.style.display = 'none';
-        return;
-    }
+    if (!hasExplorationAccess) return;
 
     const exploration = game.exploration || {};
     const villages = Array.isArray(exploration.villages)
@@ -332,8 +408,6 @@ function renderDiscoveredAreas(hasExplorationAccess) {
         ? exploration.discoveredAreas.filter((area) => area.discovered)
         : [];
     const hasDiscoveries = villages.length > 0 || wildAreas.length > 0;
-
-    sidebar.style.display = hasDiscoveries ? 'block' : 'none';
 
     if (!hasDiscoveries) {
         container.innerHTML = '<p class="area-empty">No discovered areas yet.</p>';

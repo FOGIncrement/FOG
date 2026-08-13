@@ -38,5 +38,5 @@ export {
     unlockProphetRole
 } from './roles.js';
 
-export { gameTick } from './tick.js';
-export { updateUI } from './ui.js';
+export { gameTick, runOfflineCatchup } from './tick.js';
+export { updateUI, renderWelcomeBackModal } from './ui.js';

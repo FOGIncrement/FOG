@@ -92,38 +92,45 @@
                 Prophet: <span id="prophetValue">0</span>
             </p>
         </div>
+        <!-- END LEFT COLUMN -->
 
-        <!-- CENTER COLUMN -->
-        <div id="centerColumn">
+        <!-- STATS COLUMN -->
+        <div id="statsColumn">
 
             <!-- Stats -->
             <div id="stats">
-                <p>Followers: <span id="followers">0</span></p> 
+                <p>Followers: <span id="followers">0</span></p>
                 <p>Faith: <span id="faith">0</span></p>
                 <p style="display: none">Prophet: <span id="prophet">0</span></p>
-                <p id="woodContainer" style="display: none;">Wood: <span id="woodValue">0</span><span id="woodRate" style="color: #888; margin-left: 1em;"></span></p>
-                <p id="stoneContainer" style="display: none;">Stone: <span id="stoneValue">0</span><span id="stoneRate" style="color: #888; margin-left: 1em;"></span></p>
+                <p id="woodContainer" style="display: none;">Wood: <span id="woodValue">0</span><span id="woodRate" class="rate-value" style="margin-left: 1em;"></span></p>
+                <p id="stoneContainer" style="display: none;">Stone: <span id="stoneValue">0</span><span id="stoneRate" class="rate-value" style="margin-left: 1em;"></span></p>
                 <p id="foodContainer" style="display: none;">
                     Food: <span id="foodValue">0</span>
-                    <span id="foodRate" style="color: #888; margin-left: 1em;"></span>
+                    <span id="foodRate" class="rate-value" style="margin-left: 1em;"></span>
                 </p>
                 <p id="hungerContainer" style="display: none;">
                     Hunger: <span id="hungerValue">100.00%</span>
-                    <span id="hungerRate" style="color: #888; margin-left: 1em;"></span>
+                    <span id="hungerRate" class="rate-value" style="margin-left: 1em;"></span>
                 </p>
                 <p id="alignmentContainer" style="display: none;">
                     Alignment: <span id="alignmentValue">0 (Neutral)</span>
                 </p>
-                <p id="nextGoalHint" style="display: none; color: #9c6; margin-top: 0.5em;"></p>
+                <p id="nextGoalHint" class="next-goal-callout" style="display: none;"></p>
             </div>
 
             <div id="factionFavorContainer" style="display: none;">
                 <p class="faction-favor-title">Faction Favor</p>
-                <p>Helios: <span id="heliosFavorValue">0</span></p>
-                <p>Hel: <span id="helFavorValue">0</span></p>
-                <p>Danu: <span id="danuFavorValue">0</span></p>
-                <p>Sekhmet: <span id="sekhmetFavorValue">0</span></p>
+                <p><span class="favor-label favor-helios">Helios</span>: <span id="heliosFavorValue" class="favor-value favor-helios">0</span></p>
+                <p><span class="favor-label favor-hel">Hel</span>: <span id="helFavorValue" class="favor-value favor-hel">0</span></p>
+                <p><span class="favor-label favor-danu">Danu</span>: <span id="danuFavorValue" class="favor-value favor-danu">0</span></p>
+                <p><span class="favor-label favor-sekhmet">Sekhmet</span>: <span id="sekhmetFavorValue" class="favor-value favor-sekhmet">0</span></p>
             </div>
+
+        </div>
+        <!-- END STATS COLUMN -->
+
+        <!-- CENTER COLUMN (Main Content) -->
+        <div id="centerColumn">
 
             <!-- Main Content -->
             <div id="mainContent">
@@ -264,7 +271,10 @@
                         </div>
 
                         <div id="tab-discovered" class="tab-content" style="display: none;">
-                            <p>Discovered villages are listed in the right-side panel.</p>
+                            <h3>Discovered Areas</h3>
+                            <div id="discoveredAreasList">
+                                <p class="area-empty">No discovered areas yet.</p>
+                            </div>
                         </div>
 
                     </div>
@@ -273,13 +283,6 @@
 
         </div>
         <!-- END CENTER COLUMN -->
-
-        <div id="discoveredSidebar" style="display: none;">
-            <h3>Discovered Areas</h3>
-            <div id="discoveredAreasList">
-                <p class="area-empty">No discovered areas yet.</p>
-            </div>
-        </div>
 
     </div>
 
@@ -293,6 +296,16 @@
         <div id="gameTooltipTitle" class="game-tooltip-title"></div>
         <div id="gameTooltipSummary" class="game-tooltip-summary"></div>
         <div id="gameTooltipStats" class="game-tooltip-stats"></div>
+    </div>
+
+    <div id="welcomeBackModal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <h3>While you were away</h3>
+            <p id="welcomeBackDuration"></p>
+            <div id="welcomeBackGains"></div>
+            <p id="welcomeBackHungerNote" style="display: none;"></p>
+            <button id="welcomeBackDismissBtn" type="button">Continue</button>
+        </div>
     </div>
 
     <script type="module" src="docs/javascript/main.js"></script>

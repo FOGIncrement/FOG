@@ -110,56 +110,13 @@ button {
     border: 1px solid #555;
     padding: 5px 10px;
     cursor: pointer;
+    position: relative;
 }
 
 button:hover {
     background-color: #333;
 }
 
-/* Tabs */
-.tabs { margin-top: 12px; }
-.tab-headers { display: flex; gap: 8px; margin-bottom: 8px; }
-.tab-btn { background: #1a1a1a; border: 1px solid #444; padding: 6px 10px; }
-.tab-btn.active { background: #333; border-color: #666; }
-.tab-content { padding: 8px 0; }
-
-/* Log message fade */
-#log p {
-    margin: 0 0 6px;
-    opacity: 1;
-    transition: opacity 500ms ease;
-}
-
-/* Center tabs at top with padding from top */
-
-#mainContent { flex: 1; }
-#mainActions { text-align: center; margin-top: 18px; }
-.tabs {
-    width: 720px;
-    max-width: 95%;
-    margin: 40px auto 0; /* centered in mainContent, 40px from top to make room */
-}
-.tab-headers { display: flex; gap: 0; }
-.tab-btn {
-    background: #1a1a1a;
-    border: 1px solid #444;
-    padding: 8px 14px;
-    margin-right: -1px; /* collapse borders so they look like tabs */
-    border-bottom: 1px solid transparent;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-}
-.tab-btn.active {
-    background: #272727;
-    border-color: #666;
-    border-bottom-color: #272727; /* blend with content area */
-}
-.tab-contents {
-    border: 1px solid #444;
-    padding: 12px;
-    background: #161616;
-}
-/* purchased/disabled appearance */
 button:disabled {
     background-color: #444 !important;
     color: #888 !important;
@@ -182,6 +139,85 @@ button:disabled.purchased {
     cursor: default;
 }
 
+/* ======== Page layout ======== */
+
+#appContainer {
+    display: grid;
+    grid-template-columns: minmax(200px, 240px) minmax(260px, 320px) minmax(480px, 1fr);
+    gap: 32px;
+    align-items: start;
+    max-width: 1400px;
+    margin: 24px auto 0;
+}
+
+@media (max-width: 960px) {
+    #appContainer {
+        grid-template-columns: 1fr;
+    }
+}
+
+#trainedContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#statsColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#stats {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+#centerColumn {
+    min-width: 0; /* allow grid cell to shrink below content's natural width */
+}
+
+#mainActions {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.tabs {
+    width: 100%;
+}
+
+.tab-headers { display: flex; gap: 0; flex-wrap: wrap; }
+.tab-btn {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    padding: 8px 14px;
+    margin-right: -1px; /* collapse borders so they look like tabs */
+    border-bottom: 1px solid transparent;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+.tab-btn.active {
+    background: #272727;
+    border-color: #666;
+    border-bottom-color: #272727; /* blend with content area */
+}
+.tab-content { padding: 8px 0; }
+.tab-contents {
+    border: 1px solid #444;
+    padding: 12px;
+    background: #161616;
+}
+
+#bottomLog { margin-top: 20px; }
+
+/* Log message fade */
+#log p {
+    margin: 0 0 6px;
+    opacity: 1;
+    transition: opacity 500ms ease;
+}
+
 /* badges */
 /* tab header badge: show count as red number with transparent background */
 .tab-badge {
@@ -201,7 +237,6 @@ button:disabled.purchased {
 }
 
 /* button dot positioning - red dots on newly unlocked/affordable buttons */
-button { position: relative; }
 .btn-badge {
     position: absolute;
     top: 4px;
@@ -211,63 +246,6 @@ button { position: relative; }
     border-radius: 3px;
     background: red;
     display: inline-block;
-}
-
-/* Push stats to align with center system */
-#leftColumn {
-    display: flex;
-    justify-content: center;
-    position: relative;
-}
-
-/* Center stats block so it lines up with your tab system */
-#stats {
-    width: 400px; /* match your tab system width */
-    text-align: left;
-}
-
-/* ======== Layout Structure ======== */
-
-#appContainer {
-    display: grid;
-    grid-template-columns: 220px 260px 1fr;
-    gap: 40px;
-    align-items: start;
-}
-
-/* ===== LEFT SIDE PANELS ===== */
-
-#appContainer {
-    display: flex;
-    align-items: flex-start;
-    gap: 40px;
-}
-
-/* Hunters column */
-#trainedContainer {
-    width: 200px;
-}
-
-/* Resources column */
-#stats {
-    width: 260px;
-}
-
-/* ===== CENTER MAIN CONTENT ===== */
-
-#mainContent {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    top: 140px; /* adjust if needed */
-    width: 720px;
-    max-width: 90%;
-}
-
-/* Tabs stay centered inside mainContent */
-.tabs {
-    width: 100%;
-    margin-top: 40px;
 }
 
 .dice-panel {
@@ -325,6 +303,95 @@ button { position: relative; }
     color: #6ea8ff;
 }
 
+/* ======== Legibility: rates, hunger, next-goal, favor ======== */
+
+.rate-value {
+    color: #888;
+}
+
+.rate-value.rate-positive {
+    color: #8fbf8f;
+}
+
+.rate-value.rate-negative {
+    color: #d08a6a;
+}
+
+#hungerValue.hunger-weak {
+    color: #d0a05a;
+}
+
+#hungerValue.hunger-critical {
+    color: #e06a6a;
+    font-weight: bold;
+}
+
+.next-goal-callout {
+    border: 1px solid #4a6b4a;
+    background: rgba(140, 191, 140, 0.08);
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-top: 8px;
+    color: #a8d0a8;
+}
+
+.faction-favor-title {
+    margin: 0 0 6px;
+    color: #bbb;
+    font-weight: bold;
+}
+
+#factionFavorContainer {
+    border: 1px solid #444;
+    background: #141414;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#factionFavorContainer p {
+    margin: 2px 0;
+}
+
+.favor-label {
+    color: #999;
+}
+
+.favor-value.favor-helios, .favor-label.favor-helios { color: #c9a227; }
+.favor-value.favor-hel, .favor-label.favor-hel { color: #7c85a3; }
+.favor-value.favor-danu, .favor-label.favor-danu { color: #5c8a4a; }
+.favor-value.favor-sekhmet, .favor-label.favor-sekhmet { color: #a8402f; }
+
+/* ======== Welcome back modal ======== */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-box {
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 20px;
+    width: 360px;
+    max-width: 90vw;
+}
+
+.modal-box h3 {
+    margin-top: 0;
+}
+
+.modal-box button {
+    margin-top: 12px;
+}
+
+/* ======== Discovered areas ======== */
+
 #discoveredAreasList {
     display: grid;
     gap: 10px;
@@ -350,33 +417,10 @@ button { position: relative; }
     border-color: #5f6a7a;
 }
 
+.village-resolved {
+    color: #8fbf8f;
+}
+
 .area-empty {
     color: #8a8a8a;
-}
-
-#discoveredSidebar {
-    position: fixed;
-    top: 220px;
-    left: calc(50% + 390px);
-    width: 280px;
-    max-height: 60vh;
-    overflow-y: auto;
-    z-index: 20;
-}
-
-#discoveredSidebar h3 {
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-@media (max-width: 1400px) {
-    #discoveredSidebar {
-        position: static;
-        left: auto;
-        top: auto;
-        width: min(720px, 95%);
-        margin: 14px auto 0;
-        max-height: none;
-        overflow-y: visible;
-    }
 }
