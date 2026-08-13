@@ -59,6 +59,8 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Unlock Prophet Cost (Faith)', target: gameState.costs, key: 'unlockProphetFaithCost', step: 1, min: 0 },
             { label: 'Unlock Exploration Cost (Faith)', target: gameState.costs, key: 'unlockExplorationFaithCost', step: 1, min: 0 },
             { label: 'Expedition Roll Cost (Faith)', target: gameState.costs, key: 'expeditionRollFaithCost', step: 1, min: 0 },
+            { label: 'Hold Sermon Cost (Faith)', target: gameState.costs, key: 'holdSermonFaithCost', step: 1, min: 0 },
+            { label: 'Conquer Village Cost (Faith)', target: gameState.costs, key: 'conquerVillageFaithCost', step: 1, min: 0 },
             { label: 'Unlock Shelter Upgrade Cost (Faith)', target: gameState.costs, key: 'unlockShelterUpgradeFaithCost', step: 1, min: 0 },
             { label: 'Unlock Altar Cost (Faith)', target: gameState.costs, key: 'unlockAltarFaithCost', step: 1, min: 0 },
             { label: 'Build Altar Wood Cost', target: gameState.costs, key: 'altarBuildWoodCost', step: 1, min: 0 },
@@ -101,14 +103,26 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Wild Area Hunger Penalty Min', target: game.exploration, key: 'wildAreaHungerDrainPenaltyMin', step: 0.0001, min: 0 },
             { label: 'Wild Area Hunger Penalty Max', target: game.exploration, key: 'wildAreaHungerDrainPenaltyMax', step: 0.0001, min: 0 },
             { label: 'Prophet Sway', target: gameState.progression, key: 'prophetSway', step: 1, min: 1 },
-            { label: 'Prophet Unlock Capacity Requirement', target: game, key: 'prophetUnlockCapacityRequirement', step: 1, min: 1 }
+            { label: 'Prophet Unlock Capacity Requirement', target: game, key: 'prophetUnlockCapacityRequirement', step: 1, min: 1 },
+            { label: 'Sermon Sway Divisor', target: game.exploration, key: 'sermonSwayDivisor', step: 1, min: 1 },
+            { label: 'Conquer Force Divisor', target: game.exploration, key: 'conquerForceDivisor', step: 1, min: 1 },
+            { label: 'Village Outpost Faith Per Second', target: game.exploration, key: 'villageOutpostFaithPerSecond', step: 0.01, min: 0 },
+            { label: 'Conquer Follower Burst Multiplier', target: game.exploration, key: 'conquerFollowerBurstMultiplier', step: 0.5, min: 0 },
+            { label: 'Conquer Wood Loot Min', target: game.exploration, key: 'conquerWoodLootMin', step: 10, min: 0 },
+            { label: 'Conquer Wood Loot Max', target: game.exploration, key: 'conquerWoodLootMax', step: 10, min: 0 },
+            { label: 'Conquer Stone Loot Min', target: game.exploration, key: 'conquerStoneLootMin', step: 10, min: 0 },
+            { label: 'Conquer Stone Loot Max', target: game.exploration, key: 'conquerStoneLootMax', step: 10, min: 0 }
         ]
     },
     {
         title: 'Alignment & Favor',
         entries: [
             { label: 'Preach Alignment Gain', target: game, key: 'alignmentPreachGain', step: 0.5, min: 0 },
-            { label: 'Preach Helios Favor Gain', target: game, key: 'heliosFavorPreachGain', step: 0.5, min: 0 }
+            { label: 'Preach Helios Favor Gain', target: game, key: 'heliosFavorPreachGain', step: 0.5, min: 0 },
+            { label: 'Convert Alignment Gain', target: game, key: 'alignmentConvertGain', step: 0.5, min: 0 },
+            { label: 'Convert Helios Favor Gain', target: game, key: 'heliosFavorConvertGain', step: 0.5, min: 0 },
+            { label: 'Conquer Alignment Loss', target: game, key: 'alignmentConquerLoss', step: 0.5, min: 0 },
+            { label: 'Conquer Sekhmet Favor Gain', target: game, key: 'sekhmetFavorConquerGain', step: 0.5, min: 0 }
         ]
     }
 ];
@@ -164,11 +178,20 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const sermonBtn = target.closest('.village-sermon-btn');
-            if (!sermonBtn) return;
-            const villageId = sermonBtn.dataset.villageId;
+            if (sermonBtn) {
+                const villageId = sermonBtn.dataset.villageId;
+                if (villageId && typeof gameApi.holdVillageSermon === 'function') {
+                    gameApi.holdVillageSermon(villageId);
+                }
+                return;
+            }
+
+            const conquerBtn = target.closest('.village-conquer-btn');
+            if (!conquerBtn) return;
+            const villageId = conquerBtn.dataset.villageId;
             if (!villageId) return;
-            if (typeof gameApi.holdVillageSermon === 'function') {
-                gameApi.holdVillageSermon(villageId);
+            if (typeof gameApi.conquerVillage === 'function') {
+                gameApi.conquerVillage(villageId);
             }
         });
     }

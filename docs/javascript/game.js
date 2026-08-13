@@ -20,6 +20,7 @@ export {
     cancelExpeditionRoll,
     cancelExpedition,
     holdVillageSermon,
+    conquerVillage,
     collectWildAreaResources
 } from './actions.js';
 

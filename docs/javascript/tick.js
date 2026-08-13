@@ -95,6 +95,17 @@ export function gameTick(dtSeconds = 1) {
     const clampedDt = Math.min(2, dtSeconds);
 
     gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * clampedDt;
+
+    const outpostFaithPerSecond = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond)
+        ? game.exploration.villageOutpostFaithPerSecond
+        : 0.05;
+    if (outpostFaithPerSecond > 0 && Array.isArray(game.exploration?.villages)) {
+        const outpostCount = game.exploration.villages.reduce((count, village) => count + (village.resolutionType === 'converted' ? 1 : 0), 0);
+        if (outpostCount > 0) {
+            gameState.progression.faith += outpostCount * outpostFaithPerSecond * clampedDt;
+        }
+    }
+
     processRoleSimulation(clampedDt);
 
     const cookCount = getRoleCount('cooks');

@@ -337,16 +337,33 @@ function renderDiscoveredAreas(hasExplorationAccess) {
             const resistance = Number.isFinite(village.resistance) ? village.resistance : 0;
             const sermonsHeld = Number.isFinite(village.sermonsHeld) ? village.sermonsHeld : 0;
             const prophetStatus = village.prophetPresent ? 'Present' : 'Not present';
+            const resolutionType = village.resolutionType || null;
+
+            let statusLine;
+            let actionsLine = '';
+            if (resolutionType === 'converted') {
+                const rate = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond) ? game.exploration.villageOutpostFaithPerSecond : 0.05;
+                statusLine = `<p class="village-resolved">Outpost — tithing +${rate.toFixed(3)} faith/s</p>`;
+            } else if (resolutionType === 'conquered') {
+                statusLine = `<p class="village-resolved">Ransacked — conquered</p>`;
+            } else {
+                statusLine = `<p>Converted: ${converted}%</p>`;
+                actionsLine = `
+                    <button class="village-sermon-btn" data-village-id="${village.id}" ${converted >= 100 || !village.prophetPresent ? 'disabled' : ''}>Hold Sermon</button>
+                    <button class="village-conquer-btn" data-village-id="${village.id}">Conquer</button>
+                `;
+            }
+
             return `
                 <div class="area-card village-card">
                     <h4>${village.name}</h4>
                     <p>Distance: ${Math.floor(village.distanceFromCamp)}m</p>
                     <p>Population: ${Math.floor(village.population).toLocaleString()}</p>
                     <p>Resistance: ${resistance}</p>
-                    <p>Converted: ${converted}%</p>
+                    ${statusLine}
                     <p>Sermons Held: ${sermonsHeld}</p>
                     <p>Prophet: ${prophetStatus}</p>
-                    <button class="village-sermon-btn" data-village-id="${village.id}" ${converted >= 100 || !village.prophetPresent ? 'disabled' : ''}>Hold Sermon</button>
+                    ${actionsLine}
                 </div>
             `;
         })

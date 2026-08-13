@@ -349,7 +349,8 @@ function maybeCreateNewVillage(exploration) {
         convertedPercent: 0,
         discovered: false,
         sermonsHeld: 0,
-        prophetPresent: false
+        prophetPresent: false,
+        resolutionType: null
     });
 
     exploration.nextVillageIndex += 1;
@@ -910,6 +911,11 @@ export function holdVillageSermon(villageId) {
     const village = exploration.villages.find((candidate) => candidate.id === villageId && candidate.discovered);
     if (!village) return;
 
+    if (village.resolutionType) {
+        addLog(`${village.name} has already been resolved.`);
+        return;
+    }
+
     if (!village.prophetPresent) {
         addLog('A Prophet must arrive with the expedition before sermons can be held in this village.');
         return;
@@ -920,11 +926,21 @@ export function holdVillageSermon(villageId) {
         return;
     }
 
+    const sermonFaithCost = Number.isFinite(gameState.costs.holdSermonFaithCost)
+        ? Math.max(0, gameState.costs.holdSermonFaithCost)
+        : 5;
+    if (gameState.progression.faith < sermonFaithCost) {
+        addLog(`Need ${sermonFaithCost} faith to hold a sermon.`);
+        return;
+    }
+    gameState.progression.faith -= sermonFaithCost;
+
     const prophetSway = Number.isFinite(gameState.progression.prophetSway)
         ? gameState.progression.prophetSway
         : 12;
     const resistance = Number.isFinite(village.resistance) ? village.resistance : 50;
-    const swayBonus = Math.max(0, Math.floor((prophetSway - resistance) / 8));
+    const swayDivisor = Number.isFinite(exploration.sermonSwayDivisor) ? exploration.sermonSwayDivisor : 8;
+    const swayBonus = Math.max(0, Math.floor((prophetSway - resistance) / swayDivisor));
     const roll = rollDice('1d20', { bonus: swayBonus });
     const conversionPercent = Math.max(0, Math.min(100, Math.floor((roll.total / 20) * 100)));
 
@@ -934,8 +950,80 @@ export function holdVillageSermon(villageId) {
     village.sermonsHeld = (village.sermonsHeld || 0) + 1;
 
     const convertedPeople = Math.floor(village.population * (gainPercent / 100));
+    const max = getMaxFollowers();
+    const capacity = Math.max(0, max - gameState.progression.followers);
+    const grantedFollowers = Math.min(convertedPeople, capacity);
+    if (grantedFollowers > 0) {
+        gameState.progression.followers += grantedFollowers;
+    }
+
+    game.alignment = Math.max(-100, Math.min(100, game.alignment + game.alignmentConvertGain));
+    game.factionFavor.helios += game.heliosFavorConvertGain;
+    if (!game.alignmentVisible) game.alignmentVisible = true;
+
     addLog(
-        `Sermon at ${village.name}: roll ${roll.baseTotal}${roll.bonus > 0 ? ` + ${roll.bonus}` : ''} = ${roll.total}. Converted ${gainPercent}% (${convertedPeople} followers).`
+        `Sermon at ${village.name}: roll ${roll.baseTotal}${roll.bonus > 0 ? ` + ${roll.bonus}` : ''} = ${roll.total}. Converted ${gainPercent}% (${grantedFollowers} follower${grantedFollowers === 1 ? '' : 's'} joined).`
+    );
+
+    if (village.convertedPercent >= 100) {
+        village.resolutionType = 'converted';
+        addLog(`${village.name} is now a permanent outpost, tithing faith to your cause.`);
+    }
+
+    updateUI();
+    saveGame();
+}
+
+export function conquerVillage(villageId) {
+    const exploration = getExplorationState();
+    const village = exploration.villages.find((candidate) => candidate.id === villageId && candidate.discovered);
+    if (!village) return;
+
+    if (village.resolutionType) {
+        addLog(`${village.name} has already been resolved.`);
+        return;
+    }
+
+    const conquerFaithCost = Number.isFinite(gameState.costs.conquerVillageFaithCost)
+        ? Math.max(0, gameState.costs.conquerVillageFaithCost)
+        : 8;
+    if (gameState.progression.faith < conquerFaithCost) {
+        addLog(`Need ${conquerFaithCost} faith to launch a raid.`);
+        return;
+    }
+    gameState.progression.faith -= conquerFaithCost;
+
+    const hunterForce = getRoleCount('hunters');
+    const resistance = Number.isFinite(village.resistance) ? village.resistance : 50;
+    const forceDivisor = Number.isFinite(exploration.conquerForceDivisor) ? exploration.conquerForceDivisor : 10;
+    const forceBonus = Math.max(0, Math.floor((hunterForce - resistance) / forceDivisor));
+    const roll = rollDice('1d20', { bonus: forceBonus });
+    const conquerScale = Math.max(0.05, Math.min(1, roll.total / 20));
+
+    const burstMultiplier = Number.isFinite(exploration.conquerFollowerBurstMultiplier) ? exploration.conquerFollowerBurstMultiplier : 3;
+    const baseFollowerYield = Math.max(1, Math.floor(village.population * 0.35 * burstMultiplier * conquerScale / 100));
+    const max = getMaxFollowers();
+    const capacity = Math.max(0, max - gameState.progression.followers);
+    const grantedFollowers = Math.min(baseFollowerYield, capacity);
+    if (grantedFollowers > 0) {
+        gameState.progression.followers += grantedFollowers;
+    }
+
+    const woodLoot = Math.floor(randomIntInRange(exploration.conquerWoodLootMin, exploration.conquerWoodLootMax) * conquerScale);
+    const stoneLoot = Math.floor(randomIntInRange(exploration.conquerStoneLootMin, exploration.conquerStoneLootMax) * conquerScale);
+    gameState.resources.wood.amount += woodLoot;
+    gameState.resources.stone.amount += stoneLoot;
+
+    village.resolutionType = 'conquered';
+    village.convertedPercent = 0;
+
+    game.alignment = Math.max(-100, Math.min(100, game.alignment - game.alignmentConquerLoss));
+    game.factionFavor.sekhmet += game.sekhmetFavorConquerGain;
+    if (!game.alignmentVisible) game.alignmentVisible = true;
+
+    addLog(
+        `Raid on ${village.name}: roll ${roll.baseTotal}${roll.bonus > 0 ? ` + ${roll.bonus}` : ''} = ${roll.total} vs resistance ${resistance}. ` +
+        `${village.name} is ransacked. +${grantedFollowers} follower${grantedFollowers === 1 ? '' : 's'}, +${woodLoot} wood, +${stoneLoot} stone.`
     );
 
     updateUI();

@@ -268,6 +268,18 @@ export function loadGame() {
             if (!Number.isFinite(game.heliosFavorPreachGain) || game.heliosFavorPreachGain < 0) {
                 game.heliosFavorPreachGain = 1;
             }
+            if (!Number.isFinite(game.alignmentConvertGain) || game.alignmentConvertGain < 0) {
+                game.alignmentConvertGain = 1;
+            }
+            if (!Number.isFinite(game.heliosFavorConvertGain) || game.heliosFavorConvertGain < 0) {
+                game.heliosFavorConvertGain = 1;
+            }
+            if (!Number.isFinite(game.alignmentConquerLoss) || game.alignmentConquerLoss < 0) {
+                game.alignmentConquerLoss = 1;
+            }
+            if (!Number.isFinite(game.sekhmetFavorConquerGain) || game.sekhmetFavorConquerGain < 0) {
+                game.sekhmetFavorConquerGain = 1;
+            }
 
             if (!game.factionFavor || typeof game.factionFavor !== 'object') {
                 game.factionFavor = {};
@@ -290,6 +302,12 @@ export function loadGame() {
             }
             if (!Number.isFinite(gameState.costs.expeditionRollFaithCost) || gameState.costs.expeditionRollFaithCost < 1) {
                 gameState.costs.expeditionRollFaithCost = 50;
+            }
+            if (!Number.isFinite(gameState.costs.holdSermonFaithCost) || gameState.costs.holdSermonFaithCost < 0) {
+                gameState.costs.holdSermonFaithCost = 5;
+            }
+            if (!Number.isFinite(gameState.costs.conquerVillageFaithCost) || gameState.costs.conquerVillageFaithCost < 0) {
+                gameState.costs.conquerVillageFaithCost = 8;
             }
             if (!Number.isFinite(gameState.costs.altarBuildWoodCost) || gameState.costs.altarBuildWoodCost < 1) {
                 gameState.costs.altarBuildWoodCost = 150;
@@ -461,6 +479,31 @@ export function loadGame() {
                 }
                 game.exploration.discoveredAreas = seededAreas;
             }
+            if (!Number.isFinite(game.exploration.sermonSwayDivisor) || game.exploration.sermonSwayDivisor < 1) {
+                game.exploration.sermonSwayDivisor = 8;
+            }
+            if (!Number.isFinite(game.exploration.conquerForceDivisor) || game.exploration.conquerForceDivisor < 1) {
+                game.exploration.conquerForceDivisor = 10;
+            }
+            if (!Number.isFinite(game.exploration.villageOutpostFaithPerSecond) || game.exploration.villageOutpostFaithPerSecond < 0) {
+                game.exploration.villageOutpostFaithPerSecond = 0.05;
+            }
+            if (!Number.isFinite(game.exploration.conquerFollowerBurstMultiplier) || game.exploration.conquerFollowerBurstMultiplier < 0) {
+                game.exploration.conquerFollowerBurstMultiplier = 3;
+            }
+            if (!Number.isFinite(game.exploration.conquerWoodLootMin) || game.exploration.conquerWoodLootMin < 0) {
+                game.exploration.conquerWoodLootMin = 100;
+            }
+            if (!Number.isFinite(game.exploration.conquerWoodLootMax) || game.exploration.conquerWoodLootMax <= game.exploration.conquerWoodLootMin) {
+                game.exploration.conquerWoodLootMax = game.exploration.conquerWoodLootMin + 200;
+            }
+            if (!Number.isFinite(game.exploration.conquerStoneLootMin) || game.exploration.conquerStoneLootMin < 0) {
+                game.exploration.conquerStoneLootMin = 100;
+            }
+            if (!Number.isFinite(game.exploration.conquerStoneLootMax) || game.exploration.conquerStoneLootMax <= game.exploration.conquerStoneLootMin) {
+                game.exploration.conquerStoneLootMax = game.exploration.conquerStoneLootMin + 200;
+            }
+
             migrateLegacyWildAreaDistances(game.exploration);
             syncDiscoveredAreasByDistance(game.exploration);
             applyDiscoveredAreaPassiveEffects(game.exploration);
@@ -474,20 +517,31 @@ export function loadGame() {
                     convertedPercent: 0,
                     discovered: false,
                     sermonsHeld: 0,
-                    prophetPresent: false
+                    prophetPresent: false,
+                    resolutionType: null
                 }];
             }
-            game.exploration.villages = game.exploration.villages.map((village, index) => ({
-                id: village?.id || `village-${index + 1}`,
-                name: village?.name || `Village ${index + 1}`,
-                distanceFromCamp: Number.isFinite(village?.distanceFromCamp) ? Math.floor(village.distanceFromCamp) : 500,
-                population: Number.isFinite(village?.population) ? Math.floor(village.population) : 1500,
-                resistance: Number.isFinite(village?.resistance) ? Math.floor(village.resistance) : 45,
-                convertedPercent: Number.isFinite(village?.convertedPercent) ? Math.max(0, Math.min(100, Math.floor(village.convertedPercent))) : 0,
-                discovered: Boolean(village?.discovered),
-                sermonsHeld: Number.isFinite(village?.sermonsHeld) ? Math.max(0, Math.floor(village.sermonsHeld)) : 0,
-                prophetPresent: Boolean(village?.prophetPresent)
-            }));
+            game.exploration.villages = game.exploration.villages.map((village, index) => {
+                const convertedPercent = Number.isFinite(village?.convertedPercent) ? Math.max(0, Math.min(100, Math.floor(village.convertedPercent))) : 0;
+                let resolutionType = village?.resolutionType === 'converted' || village?.resolutionType === 'conquered'
+                    ? village.resolutionType
+                    : null;
+                if (!resolutionType && convertedPercent >= 100) {
+                    resolutionType = 'converted';
+                }
+                return {
+                    id: village?.id || `village-${index + 1}`,
+                    name: village?.name || `Village ${index + 1}`,
+                    distanceFromCamp: Number.isFinite(village?.distanceFromCamp) ? Math.floor(village.distanceFromCamp) : 500,
+                    population: Number.isFinite(village?.population) ? Math.floor(village.population) : 1500,
+                    resistance: Number.isFinite(village?.resistance) ? Math.floor(village.resistance) : 45,
+                    convertedPercent,
+                    discovered: Boolean(village?.discovered),
+                    sermonsHeld: Number.isFinite(village?.sermonsHeld) ? Math.max(0, Math.floor(village.sermonsHeld)) : 0,
+                    prophetPresent: Boolean(village?.prophetPresent),
+                    resolutionType
+                };
+            });
             if (!Number.isFinite(game.exploration.nextVillageIndex) || game.exploration.nextVillageIndex < 2) {
                 game.exploration.nextVillageIndex = game.exploration.villages.length + 1;
             }
