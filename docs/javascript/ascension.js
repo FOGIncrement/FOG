@@ -6,6 +6,7 @@ import { getUpgradeCost, canAscendNow, getEchoesOfDivinityPreview } from './util
 import { ASCENSION_UPGRADE_BY_ID } from './config/ascension.js';
 import { createRoleCountMap, createRoleUnlockMap, createRoleAccumulatorMap } from './config/roles.js';
 import { createFactionFavorMap } from './config/factions.js';
+import { createFavorTierClaimedMap } from './config/favor-tiers.js';
 
 function buyAscensionUpgrade(upgradeId) {
     const upgrade = ASCENSION_UPGRADE_BY_ID[upgradeId];
@@ -78,6 +79,23 @@ function performAscensionReset(echoesGained) {
     game.doctrinesUnlocked = false;
 
     game.temple = { built: false, godId: null };
+
+    // Every physical building resets each incarnation — only Doctrines,
+    // Temple's covenant memory, and Ascension upgrades carry forward.
+    game.storehouse = 0;
+    game.granary = 0;
+    game.scriptorium = 0;
+    game.settlementTier = 0;
+    game.watchtower = 0;
+    game.barracks = 0;
+    game.well = 0;
+    game.marketplace = 0;
+    game.marketplaceTradesCompleted = 0;
+    game.monument = 0;
+
+    // Favor-tier "seen" high-water marks reset alongside factionFavor itself,
+    // so tier-unlock log messages fire again as favor is rebuilt from zero.
+    game.factionFavorTiersSeen = createFavorTierClaimedMap(0);
 
     // Only wipe Home exploration's *progress* fields — tuning/rate constants
     // (hazard chances, loot ranges, seed counts) are simulation config, not

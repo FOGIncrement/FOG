@@ -267,6 +267,7 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Marketplace Trade Stone Cost', target: gameState.costs, key: 'marketplaceTradeStoneCost', step: 10, min: 0 },
             { label: 'Marketplace Trade Faith Base', target: game, key: 'marketplaceTradeFaithBase', step: 5, min: 0 },
             { label: 'Marketplace Trade Faith / Level', target: game, key: 'marketplaceTradeFaithPerLevel', step: 1, min: 0 },
+            { label: 'Marketplace Trade Cost Growth Rate', target: game, key: 'marketplaceTradeCostGrowthRate', step: 0.01, min: 1 },
             { label: 'Monument Faith Cost', target: gameState.costs, key: 'monumentFaithCost', step: 100, min: 0 },
             { label: 'Monument Wood Cost', target: gameState.costs, key: 'monumentWoodCost', step: 100, min: 0 },
             { label: 'Monument Stone Cost', target: gameState.costs, key: 'monumentStoneCost', step: 100, min: 0 },

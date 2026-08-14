@@ -504,10 +504,14 @@ export function getMarketplaceCost() {
 }
 
 export function getMarketplaceTradeCost() {
-    return {
-        wood: Number.isFinite(gameState.costs.marketplaceTradeWoodCost) ? gameState.costs.marketplaceTradeWoodCost : 150,
-        stone: Number.isFinite(gameState.costs.marketplaceTradeStoneCost) ? gameState.costs.marketplaceTradeStoneCost : 150
-    };
+    const woodBase = Number.isFinite(gameState.costs.marketplaceTradeWoodCost) ? gameState.costs.marketplaceTradeWoodCost : 150;
+    const stoneBase = Number.isFinite(gameState.costs.marketplaceTradeStoneCost) ? gameState.costs.marketplaceTradeStoneCost : 150;
+    const trades = Number.isFinite(game.marketplaceTradesCompleted) ? game.marketplaceTradesCompleted : 0;
+    const growthRate = Number.isFinite(game.marketplaceTradeCostGrowthRate) && game.marketplaceTradeCostGrowthRate > 1
+        ? game.marketplaceTradeCostGrowthRate
+        : 1.15;
+    const scale = Math.pow(growthRate, trades);
+    return { wood: Math.ceil(woodBase * scale), stone: Math.ceil(stoneBase * scale) };
 }
 
 export function getMarketplaceTradeFaithYield() {

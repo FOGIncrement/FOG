@@ -584,10 +584,11 @@ export function getActionUiRules(context) {
             const tradeCost = getMarketplaceTradeCost();
             const canAfford = gameState.resources.wood.amount >= tradeCost.wood && gameState.resources.stone.amount >= tradeCost.stone;
             setAffordability(el, canAfford);
+            const tradesCompleted = Number.isFinite(game.marketplaceTradesCompleted) ? game.marketplaceTradesCompleted : 0;
             applyTooltip(
                 el,
                 'Trade at Marketplace\nSell surplus wood and stone for faith.',
-                `Cost: ${tradeCost.wood} wood, ${tradeCost.stone} stone\nYield: ${getMarketplaceTradeFaithYield()} faith`
+                `Cost: ${tradeCost.wood} wood, ${tradeCost.stone} stone (rises with each trade)\nYield: ${getMarketplaceTradeFaithYield()} faith\nTrades completed: ${tradesCompleted}`
             );
         },
         buildMonument(el) {

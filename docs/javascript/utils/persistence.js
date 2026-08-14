@@ -740,6 +740,13 @@ export function loadGame() {
             if (!Number.isFinite(game.marketplaceTradeFaithPerLevel) || game.marketplaceTradeFaithPerLevel < 0) {
                 game.marketplaceTradeFaithPerLevel = 6;
             }
+            if (!Number.isFinite(game.marketplaceTradesCompleted) || game.marketplaceTradesCompleted < 0) {
+                game.marketplaceTradesCompleted = 0;
+            }
+            game.marketplaceTradesCompleted = Math.floor(game.marketplaceTradesCompleted);
+            if (!Number.isFinite(game.marketplaceTradeCostGrowthRate) || game.marketplaceTradeCostGrowthRate <= 1) {
+                game.marketplaceTradeCostGrowthRate = 1.15;
+            }
             if (!Number.isFinite(gameState.costs.marketplaceWoodCost) || gameState.costs.marketplaceWoodCost < 0) {
                 gameState.costs.marketplaceWoodCost = 250;
             }

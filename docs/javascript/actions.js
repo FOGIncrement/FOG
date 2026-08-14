@@ -1045,6 +1045,7 @@ export function tradeAtMarketplace() {
     gameState.resources.stone.spend(cost.stone);
     const faithGained = getMarketplaceTradeFaithYield();
     gameState.progression.faith += faithGained;
+    game.marketplaceTradesCompleted = (Number.isFinite(game.marketplaceTradesCompleted) ? game.marketplaceTradesCompleted : 0) + 1;
     addLog(`Traded surplus wood and stone at the Marketplace for ${faithGained} faith.`);
 
     updateUI();

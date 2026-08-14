@@ -248,6 +248,8 @@ export const game = {
     marketplaceCostScalePerBuilt: 0.2,
     marketplaceTradeFaithBase: 40,
     marketplaceTradeFaithPerLevel: 6,
+    marketplaceTradesCompleted: 0,
+    marketplaceTradeCostGrowthRate: 1.15,
     monument: 0,
     monumentCostScalePerBuilt: 0.25,
     monumentFaithPerFollowerBonusPerLevel: 0.05,
