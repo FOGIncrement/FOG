@@ -44,7 +44,13 @@ export {
     buildTempleHel,
     buildStorehouse,
     buildGranary,
-    buildScriptorium
+    buildScriptorium,
+    buildWatchtower,
+    buildBarracks,
+    buildWell,
+    buildMarketplace,
+    tradeAtMarketplace,
+    buildMonument
 } from './actions.js';
 
 export {

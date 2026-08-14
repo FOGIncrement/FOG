@@ -239,6 +239,38 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
         ]
     },
     {
+        title: 'New Buildings',
+        entries: [
+            { label: 'Watchtower Wood Cost', target: gameState.costs, key: 'watchtowerWoodCost', step: 10, min: 0 },
+            { label: 'Watchtower Stone Cost', target: gameState.costs, key: 'watchtowerStoneCost', step: 10, min: 0 },
+            { label: 'Watchtower Cost Scale', target: game, key: 'watchtowerCostScalePerBuilt', step: 0.05, min: 0 },
+            { label: 'Watchtower Hazard Avoid / Level', target: game, key: 'watchtowerHazardAvoidPerLevel', step: 0.01, min: 0 },
+            { label: 'Watchtower Hazard Avoid Cap', target: game, key: 'watchtowerHazardAvoidCap', step: 0.05, min: 0 },
+            { label: 'Barracks Wood Cost', target: gameState.costs, key: 'barracksWoodCost', step: 10, min: 0 },
+            { label: 'Barracks Stone Cost', target: gameState.costs, key: 'barracksStoneCost', step: 10, min: 0 },
+            { label: 'Barracks Cost Scale', target: game, key: 'barracksCostScalePerBuilt', step: 0.05, min: 0 },
+            { label: 'Barracks Conquer Roll Bonus / Level', target: game, key: 'barracksConquerRollBonusPerLevel', step: 1, min: 0 },
+            { label: 'Well Wood Cost', target: gameState.costs, key: 'wellWoodCost', step: 10, min: 0 },
+            { label: 'Well Stone Cost', target: gameState.costs, key: 'wellStoneCost', step: 10, min: 0 },
+            { label: 'Well Cost Scale', target: game, key: 'wellCostScalePerBuilt', step: 0.05, min: 0 },
+            { label: 'Well Consumption Reduction / Level', target: game, key: 'wellConsumptionReductionPerLevel', step: 0.01, min: 0 },
+            { label: 'Well Consumption Reduction Cap', target: game, key: 'wellConsumptionReductionCap', step: 0.05, min: 0 },
+            { label: 'Marketplace Wood Cost', target: gameState.costs, key: 'marketplaceWoodCost', step: 10, min: 0 },
+            { label: 'Marketplace Stone Cost', target: gameState.costs, key: 'marketplaceStoneCost', step: 10, min: 0 },
+            { label: 'Marketplace Cost Scale', target: game, key: 'marketplaceCostScalePerBuilt', step: 0.05, min: 0 },
+            { label: 'Marketplace Trade Wood Cost', target: gameState.costs, key: 'marketplaceTradeWoodCost', step: 10, min: 0 },
+            { label: 'Marketplace Trade Stone Cost', target: gameState.costs, key: 'marketplaceTradeStoneCost', step: 10, min: 0 },
+            { label: 'Marketplace Trade Faith Base', target: game, key: 'marketplaceTradeFaithBase', step: 5, min: 0 },
+            { label: 'Marketplace Trade Faith / Level', target: game, key: 'marketplaceTradeFaithPerLevel', step: 1, min: 0 },
+            { label: 'Monument Faith Cost', target: gameState.costs, key: 'monumentFaithCost', step: 100, min: 0 },
+            { label: 'Monument Wood Cost', target: gameState.costs, key: 'monumentWoodCost', step: 100, min: 0 },
+            { label: 'Monument Stone Cost', target: gameState.costs, key: 'monumentStoneCost', step: 100, min: 0 },
+            { label: 'Monument Cost Scale', target: game, key: 'monumentCostScalePerBuilt', step: 0.05, min: 0 },
+            { label: 'Monument Faith/Follower Bonus / Level', target: game, key: 'monumentFaithPerFollowerBonusPerLevel', step: 0.01, min: 0 },
+            { label: 'Monument Unlock Settlement Tier', target: game, key: 'monumentUnlockSettlementTier', step: 1, min: 0 }
+        ]
+    },
+    {
         title: 'Food System',
         entries: [
             { label: 'Farmer Food Per Second', target: gameState.rates, key: 'farmerFoodPerSecond', step: 0.1, min: 0 },

@@ -1,5 +1,5 @@
 import { setTooltipContent } from '../utils/tooltip.js';
-import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getNextSettlementTier, canAffordSettlementTier, getFavorTierCount, getNextFavorTierThreshold } from '../utils/helpers.js';
+import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getNextSettlementTier, canAffordSettlementTier, getFavorTierCount, getNextFavorTierThreshold, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getWellConsumptionMultiplier, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, getMonumentFaithPerFollowerMultiplier, canUnlockMonument } from '../utils/helpers.js';
 import { DOCTRINE_GROUP_BY_ID } from './doctrines.js';
 import { TEMPLE_OPTION_BY_GOD } from './temples.js';
 import { ASCENSION_UPGRADE_BY_ID } from './ascension.js';
@@ -497,6 +497,113 @@ export function getActionUiRules(context) {
                 setAffordability,
                 setButtonLabel
             });
+        },
+        buildWatchtower(el) {
+            if (!game.explorationUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const level = Number.isFinite(game.watchtower) ? game.watchtower : 0;
+            const cost = getWatchtowerCost();
+            const canAfford = gameState.resources.wood.amount >= cost.wood && gameState.resources.stone.amount >= cost.stone;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Build Watchtower (${level})`);
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Build Watchtower\nScouts spot danger before it strikes your expeditions.',
+                `Cost: ${cost.wood} wood, ${cost.stone} stone\nCurrent hazard avoid chance: ${Math.round(getWatchtowerHazardAvoidChance() * 100)}%`
+            );
+        },
+        buildBarracks(el) {
+            if (!game.explorationUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const level = Number.isFinite(game.barracks) ? game.barracks : 0;
+            const cost = getBarracksCost();
+            const canAfford = gameState.resources.wood.amount >= cost.wood && gameState.resources.stone.amount >= cost.stone;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Build Barracks (${level})`);
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Build Barracks\nTrain your raiders, boosting the conquest roll against villages.',
+                `Cost: ${cost.wood} wood, ${cost.stone} stone\nCurrent conquest roll bonus: +${getBarracksConquerRollBonus()}`
+            );
+        },
+        buildWell(el) {
+            if (!game.hungerVisible) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const level = Number.isFinite(game.well) ? game.well : 0;
+            const cost = getWellCost();
+            const canAfford = gameState.resources.wood.amount >= cost.wood && gameState.resources.stone.amount >= cost.stone;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Dig Well (${level})`);
+            el.classList.toggle('purchased', !canAfford);
+            const reduction = Math.round((1 - getWellConsumptionMultiplier()) * 100);
+            applyTooltip(
+                el,
+                'Dig Well\nA reliable water source reduces follower food consumption.',
+                `Cost: ${cost.wood} wood, ${cost.stone} stone\nCurrent consumption reduction: -${reduction}%`
+            );
+        },
+        buildMarketplace(el) {
+            if (game.storehouse < 1) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const level = Number.isFinite(game.marketplace) ? game.marketplace : 0;
+            const cost = getMarketplaceCost();
+            const canAfford = gameState.resources.wood.amount >= cost.wood && gameState.resources.stone.amount >= cost.stone;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Build Marketplace (${level})`);
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Build Marketplace\nEstablish trade routes to convert surplus wood and stone into faith.',
+                `Cost: ${cost.wood} wood, ${cost.stone} stone\nNext level trade yield: ${getMarketplaceTradeFaithYield()} faith`
+            );
+        },
+        tradeAtMarketplace(el) {
+            if (game.marketplace < 1) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const tradeCost = getMarketplaceTradeCost();
+            const canAfford = gameState.resources.wood.amount >= tradeCost.wood && gameState.resources.stone.amount >= tradeCost.stone;
+            setAffordability(el, canAfford);
+            applyTooltip(
+                el,
+                'Trade at Marketplace\nSell surplus wood and stone for faith.',
+                `Cost: ${tradeCost.wood} wood, ${tradeCost.stone} stone\nYield: ${getMarketplaceTradeFaithYield()} faith`
+            );
+        },
+        buildMonument(el) {
+            if (!canUnlockMonument()) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const level = Number.isFinite(game.monument) ? game.monument : 0;
+            const cost = getMonumentCost();
+            const canAfford = gameState.progression.faith >= cost.faith && gameState.resources.wood.amount >= cost.wood && gameState.resources.stone.amount >= cost.stone;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Build Monument (${level})`);
+            el.classList.toggle('purchased', !canAfford);
+            const bonus = Math.round((getMonumentFaithPerFollowerMultiplier() - 1) * 100);
+            applyTooltip(
+                el,
+                'Build Monument\nA towering testament to your faith, multiplying what every follower earns you.',
+                `Cost: ${cost.faith} faith, ${cost.wood} wood, ${cost.stone} stone\nCurrent follower faith bonus: +${bonus}%`
+            );
         },
         unlockShelterUpgrade(el) {
             if (!game.unlocksTabUnlocked) {

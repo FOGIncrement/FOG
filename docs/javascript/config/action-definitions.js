@@ -26,7 +26,13 @@ export const ACTION_GROUPS = {
         { id: 'advanceSettlementTier', buttonId: 'advanceSettlementTierBtn', handlerExport: 'advanceSettlementTier', tab: 'build', category: 'building' },
         { id: 'buildStorehouse', buttonId: 'buildStorehouseBtn', handlerExport: 'buildStorehouse', tab: 'build', category: 'building' },
         { id: 'buildGranary', buttonId: 'buildGranaryBtn', handlerExport: 'buildGranary', tab: 'build', category: 'building' },
-        { id: 'buildScriptorium', buttonId: 'buildScriptoriumBtn', handlerExport: 'buildScriptorium', tab: 'build', category: 'building' }
+        { id: 'buildScriptorium', buttonId: 'buildScriptoriumBtn', handlerExport: 'buildScriptorium', tab: 'build', category: 'building' },
+        { id: 'buildWatchtower', buttonId: 'buildWatchtowerBtn', handlerExport: 'buildWatchtower', tab: 'build', category: 'building' },
+        { id: 'buildBarracks', buttonId: 'buildBarracksBtn', handlerExport: 'buildBarracks', tab: 'build', category: 'building' },
+        { id: 'buildWell', buttonId: 'buildWellBtn', handlerExport: 'buildWell', tab: 'build', category: 'building' },
+        { id: 'buildMarketplace', buttonId: 'buildMarketplaceBtn', handlerExport: 'buildMarketplace', tab: 'build', category: 'building' },
+        { id: 'tradeAtMarketplace', buttonId: 'tradeAtMarketplaceBtn', handlerExport: 'tradeAtMarketplace', tab: 'build', category: 'building' },
+        { id: 'buildMonument', buttonId: 'buildMonumentBtn', handlerExport: 'buildMonument', tab: 'build', category: 'building' }
     ],
     food: [
         { id: 'feedFollowers', buttonId: 'feedFollowersBtn', handlerExport: 'feedFollowers', tab: 'food', category: 'food' },

@@ -654,6 +654,113 @@ export function loadGame() {
             game.granary = Math.floor(game.granary);
             game.scriptorium = Math.min(Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10, Math.floor(game.scriptorium));
 
+            // --- Watchtower / Barracks / Well / Marketplace / Monument ---
+            if (!Number.isFinite(game.watchtower) || game.watchtower < 0) {
+                game.watchtower = 0;
+            }
+            game.watchtower = Math.floor(game.watchtower);
+            if (!Number.isFinite(game.watchtowerCostScalePerBuilt) || game.watchtowerCostScalePerBuilt < 0) {
+                game.watchtowerCostScalePerBuilt = 0.18;
+            }
+            if (!Number.isFinite(game.watchtowerHazardAvoidPerLevel) || game.watchtowerHazardAvoidPerLevel < 0) {
+                game.watchtowerHazardAvoidPerLevel = 0.04;
+            }
+            if (!Number.isFinite(game.watchtowerHazardAvoidCap) || game.watchtowerHazardAvoidCap < 0) {
+                game.watchtowerHazardAvoidCap = 0.6;
+            }
+            if (!Number.isFinite(gameState.costs.watchtowerWoodCost) || gameState.costs.watchtowerWoodCost < 0) {
+                gameState.costs.watchtowerWoodCost = 150;
+            }
+            if (!Number.isFinite(gameState.costs.watchtowerStoneCost) || gameState.costs.watchtowerStoneCost < 0) {
+                gameState.costs.watchtowerStoneCost = 150;
+            }
+
+            if (!Number.isFinite(game.barracks) || game.barracks < 0) {
+                game.barracks = 0;
+            }
+            game.barracks = Math.floor(game.barracks);
+            if (!Number.isFinite(game.barracksCostScalePerBuilt) || game.barracksCostScalePerBuilt < 0) {
+                game.barracksCostScalePerBuilt = 0.18;
+            }
+            if (!Number.isFinite(game.barracksConquerRollBonusPerLevel) || game.barracksConquerRollBonusPerLevel < 0) {
+                game.barracksConquerRollBonusPerLevel = 1;
+            }
+            if (!Number.isFinite(gameState.costs.barracksWoodCost) || gameState.costs.barracksWoodCost < 0) {
+                gameState.costs.barracksWoodCost = 200;
+            }
+            if (!Number.isFinite(gameState.costs.barracksStoneCost) || gameState.costs.barracksStoneCost < 0) {
+                gameState.costs.barracksStoneCost = 150;
+            }
+
+            if (!Number.isFinite(game.well) || game.well < 0) {
+                game.well = 0;
+            }
+            game.well = Math.floor(game.well);
+            if (!Number.isFinite(game.wellCostScalePerBuilt) || game.wellCostScalePerBuilt < 0) {
+                game.wellCostScalePerBuilt = 0.15;
+            }
+            if (!Number.isFinite(game.wellConsumptionReductionPerLevel) || game.wellConsumptionReductionPerLevel < 0) {
+                game.wellConsumptionReductionPerLevel = 0.03;
+            }
+            if (!Number.isFinite(game.wellConsumptionReductionCap) || game.wellConsumptionReductionCap < 0) {
+                game.wellConsumptionReductionCap = 0.5;
+            }
+            if (!Number.isFinite(gameState.costs.wellWoodCost) || gameState.costs.wellWoodCost < 0) {
+                gameState.costs.wellWoodCost = 80;
+            }
+            if (!Number.isFinite(gameState.costs.wellStoneCost) || gameState.costs.wellStoneCost < 0) {
+                gameState.costs.wellStoneCost = 40;
+            }
+
+            if (!Number.isFinite(game.marketplace) || game.marketplace < 0) {
+                game.marketplace = 0;
+            }
+            game.marketplace = Math.floor(game.marketplace);
+            if (!Number.isFinite(game.marketplaceCostScalePerBuilt) || game.marketplaceCostScalePerBuilt < 0) {
+                game.marketplaceCostScalePerBuilt = 0.2;
+            }
+            if (!Number.isFinite(game.marketplaceTradeFaithBase) || game.marketplaceTradeFaithBase < 0) {
+                game.marketplaceTradeFaithBase = 40;
+            }
+            if (!Number.isFinite(game.marketplaceTradeFaithPerLevel) || game.marketplaceTradeFaithPerLevel < 0) {
+                game.marketplaceTradeFaithPerLevel = 6;
+            }
+            if (!Number.isFinite(gameState.costs.marketplaceWoodCost) || gameState.costs.marketplaceWoodCost < 0) {
+                gameState.costs.marketplaceWoodCost = 250;
+            }
+            if (!Number.isFinite(gameState.costs.marketplaceStoneCost) || gameState.costs.marketplaceStoneCost < 0) {
+                gameState.costs.marketplaceStoneCost = 250;
+            }
+            if (!Number.isFinite(gameState.costs.marketplaceTradeWoodCost) || gameState.costs.marketplaceTradeWoodCost < 0) {
+                gameState.costs.marketplaceTradeWoodCost = 150;
+            }
+            if (!Number.isFinite(gameState.costs.marketplaceTradeStoneCost) || gameState.costs.marketplaceTradeStoneCost < 0) {
+                gameState.costs.marketplaceTradeStoneCost = 150;
+            }
+
+            if (!Number.isFinite(game.monument) || game.monument < 0) {
+                game.monument = 0;
+            }
+            game.monument = Math.floor(game.monument);
+            if (!Number.isFinite(game.monumentCostScalePerBuilt) || game.monumentCostScalePerBuilt < 0) {
+                game.monumentCostScalePerBuilt = 0.25;
+            }
+            if (!Number.isFinite(game.monumentFaithPerFollowerBonusPerLevel) || game.monumentFaithPerFollowerBonusPerLevel < 0) {
+                game.monumentFaithPerFollowerBonusPerLevel = 0.05;
+            }
+            if (!Number.isFinite(game.monumentUnlockSettlementTier) || game.monumentUnlockSettlementTier < 0) {
+                game.monumentUnlockSettlementTier = 3;
+            }
+            if (!Number.isFinite(gameState.costs.monumentFaithCost) || gameState.costs.monumentFaithCost < 0) {
+                gameState.costs.monumentFaithCost = 4000;
+            }
+            if (!Number.isFinite(gameState.costs.monumentWoodCost) || gameState.costs.monumentWoodCost < 0) {
+                gameState.costs.monumentWoodCost = 1500;
+            }
+            if (!Number.isFinite(gameState.costs.monumentStoneCost) || gameState.costs.monumentStoneCost < 0) {
+                gameState.costs.monumentStoneCost = 1500;
+            }
+
             // --- New roles / food depth ---
             if (!Number.isFinite(gameState.costs.unlockFarmersFaithCost) || gameState.costs.unlockFarmersFaithCost < 0) {
                 gameState.costs.unlockFarmersFaithCost = 95;

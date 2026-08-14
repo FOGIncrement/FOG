@@ -443,7 +443,104 @@ export function getFollowerFoodConsumptionMultiplier() {
     let multiplier = 1;
     if (choice === 'abundantTable' && Number.isFinite(game.abundantTableConsumptionMultiplier)) multiplier = game.abundantTableConsumptionMultiplier;
     else if (choice === 'leanYears' && Number.isFinite(game.leanYearsConsumptionMultiplier)) multiplier = game.leanYearsConsumptionMultiplier;
-    return multiplier * getTempleConsumptionMultiplier() * getHelFavorConsumptionMultiplier();
+    return multiplier * getTempleConsumptionMultiplier() * getHelFavorConsumptionMultiplier() * getWellConsumptionMultiplier();
+}
+
+export function getWatchtowerCost() {
+    const woodBase = Number.isFinite(gameState.costs.watchtowerWoodCost) ? gameState.costs.watchtowerWoodCost : 150;
+    const stoneBase = Number.isFinite(gameState.costs.watchtowerStoneCost) ? gameState.costs.watchtowerStoneCost : 150;
+    const level = Number.isFinite(game.watchtower) ? game.watchtower : 0;
+    const scale = Number.isFinite(game.watchtowerCostScalePerBuilt) ? game.watchtowerCostScalePerBuilt : 0.18;
+    const multiplier = 1 + scale * level;
+    return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
+}
+
+export function getWatchtowerHazardAvoidChance() {
+    const level = Number.isFinite(game.watchtower) ? game.watchtower : 0;
+    const perLevel = Number.isFinite(game.watchtowerHazardAvoidPerLevel) ? game.watchtowerHazardAvoidPerLevel : 0.04;
+    const cap = Number.isFinite(game.watchtowerHazardAvoidCap) ? game.watchtowerHazardAvoidCap : 0.6;
+    return Math.min(cap, level * perLevel);
+}
+
+export function getBarracksCost() {
+    const woodBase = Number.isFinite(gameState.costs.barracksWoodCost) ? gameState.costs.barracksWoodCost : 200;
+    const stoneBase = Number.isFinite(gameState.costs.barracksStoneCost) ? gameState.costs.barracksStoneCost : 150;
+    const level = Number.isFinite(game.barracks) ? game.barracks : 0;
+    const scale = Number.isFinite(game.barracksCostScalePerBuilt) ? game.barracksCostScalePerBuilt : 0.18;
+    const multiplier = 1 + scale * level;
+    return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
+}
+
+export function getBarracksConquerRollBonus() {
+    const level = Number.isFinite(game.barracks) ? game.barracks : 0;
+    const perLevel = Number.isFinite(game.barracksConquerRollBonusPerLevel) ? game.barracksConquerRollBonusPerLevel : 1;
+    return level * perLevel;
+}
+
+export function getWellCost() {
+    const woodBase = Number.isFinite(gameState.costs.wellWoodCost) ? gameState.costs.wellWoodCost : 80;
+    const stoneBase = Number.isFinite(gameState.costs.wellStoneCost) ? gameState.costs.wellStoneCost : 40;
+    const level = Number.isFinite(game.well) ? game.well : 0;
+    const scale = Number.isFinite(game.wellCostScalePerBuilt) ? game.wellCostScalePerBuilt : 0.15;
+    const multiplier = 1 + scale * level;
+    return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
+}
+
+export function getWellConsumptionMultiplier() {
+    const level = Number.isFinite(game.well) ? game.well : 0;
+    const perLevel = Number.isFinite(game.wellConsumptionReductionPerLevel) ? game.wellConsumptionReductionPerLevel : 0.03;
+    const cap = Number.isFinite(game.wellConsumptionReductionCap) ? game.wellConsumptionReductionCap : 0.5;
+    const reduction = Math.min(cap, level * perLevel);
+    return 1 - reduction;
+}
+
+export function getMarketplaceCost() {
+    const woodBase = Number.isFinite(gameState.costs.marketplaceWoodCost) ? gameState.costs.marketplaceWoodCost : 250;
+    const stoneBase = Number.isFinite(gameState.costs.marketplaceStoneCost) ? gameState.costs.marketplaceStoneCost : 250;
+    const level = Number.isFinite(game.marketplace) ? game.marketplace : 0;
+    const scale = Number.isFinite(game.marketplaceCostScalePerBuilt) ? game.marketplaceCostScalePerBuilt : 0.2;
+    const multiplier = 1 + scale * level;
+    return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
+}
+
+export function getMarketplaceTradeCost() {
+    return {
+        wood: Number.isFinite(gameState.costs.marketplaceTradeWoodCost) ? gameState.costs.marketplaceTradeWoodCost : 150,
+        stone: Number.isFinite(gameState.costs.marketplaceTradeStoneCost) ? gameState.costs.marketplaceTradeStoneCost : 150
+    };
+}
+
+export function getMarketplaceTradeFaithYield() {
+    const level = Number.isFinite(game.marketplace) ? game.marketplace : 0;
+    const base = Number.isFinite(game.marketplaceTradeFaithBase) ? game.marketplaceTradeFaithBase : 40;
+    const perLevel = Number.isFinite(game.marketplaceTradeFaithPerLevel) ? game.marketplaceTradeFaithPerLevel : 6;
+    return Math.floor(base + level * perLevel);
+}
+
+export function getMonumentCost() {
+    const faithBase = Number.isFinite(gameState.costs.monumentFaithCost) ? gameState.costs.monumentFaithCost : 4000;
+    const woodBase = Number.isFinite(gameState.costs.monumentWoodCost) ? gameState.costs.monumentWoodCost : 1500;
+    const stoneBase = Number.isFinite(gameState.costs.monumentStoneCost) ? gameState.costs.monumentStoneCost : 1500;
+    const level = Number.isFinite(game.monument) ? game.monument : 0;
+    const scale = Number.isFinite(game.monumentCostScalePerBuilt) ? game.monumentCostScalePerBuilt : 0.25;
+    const multiplier = 1 + scale * level;
+    return {
+        faith: Math.ceil(faithBase * multiplier),
+        wood: Math.ceil(woodBase * multiplier),
+        stone: Math.ceil(stoneBase * multiplier)
+    };
+}
+
+export function getMonumentFaithPerFollowerMultiplier() {
+    const level = Number.isFinite(game.monument) ? game.monument : 0;
+    const perLevel = Number.isFinite(game.monumentFaithPerFollowerBonusPerLevel) ? game.monumentFaithPerFollowerBonusPerLevel : 0.05;
+    return 1 + level * perLevel;
+}
+
+export function canUnlockMonument() {
+    const requirement = Number.isFinite(game.monumentUnlockSettlementTier) ? game.monumentUnlockSettlementTier : 3;
+    const tier = Number.isFinite(game.settlementTier) ? game.settlementTier : 0;
+    return tier >= requirement;
 }
 
 export function getHungerStarvationDrainMultiplier() {

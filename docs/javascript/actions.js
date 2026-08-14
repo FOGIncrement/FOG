@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
@@ -446,10 +446,16 @@ function syncDiscoveredAreasByDistance(exploration, { logDiscoveries = false } =
 }
 
 function processExpeditionHazard(expedition) {
-    const hazardRoll = Math.random();
     const alive = Math.max(0, Math.floor(expedition.followersAlive));
     if (alive <= 0) return { casualties: 0, ended: true, prophetDied: false };
 
+    const watchtowerAvoidChance = getWatchtowerHazardAvoidChance();
+    if (watchtowerAvoidChance > 0 && Math.random() < watchtowerAvoidChance) {
+        addLog('Watchtower scouts spotted danger ahead. The party slips past unharmed.');
+        return { casualties: 0, ended: false, prophetDied: false };
+    }
+
+    const hazardRoll = Math.random();
     const exploration = getExplorationState();
     const hazardMultiplier = getAscensionHazardMultiplier() * getSekhmetFavorHazardMultiplier();
     const wipeoutThreshold = exploration.hazardWipeoutChance * hazardMultiplier;
@@ -974,6 +980,96 @@ export function buildScriptorium() {
     saveGame();
 }
 
+export function buildWatchtower() {
+    if (!game.explorationUnlocked) return;
+    const cost = getWatchtowerCost();
+    if (gameState.resources.wood.amount < cost.wood || gameState.resources.stone.amount < cost.stone) return;
+
+    gameState.resources.wood.spend(cost.wood);
+    gameState.resources.stone.spend(cost.stone);
+    game.watchtower = (Number.isFinite(game.watchtower) ? game.watchtower : 0) + 1;
+    addLog(`Watchtower raised to level ${game.watchtower}. Scouts now spot ${Math.round(getWatchtowerHazardAvoidChance() * 100)}% of expedition dangers before they strike.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function buildBarracks() {
+    if (!game.explorationUnlocked) return;
+    const cost = getBarracksCost();
+    if (gameState.resources.wood.amount < cost.wood || gameState.resources.stone.amount < cost.stone) return;
+
+    gameState.resources.wood.spend(cost.wood);
+    gameState.resources.stone.spend(cost.stone);
+    game.barracks = (Number.isFinite(game.barracks) ? game.barracks : 0) + 1;
+    addLog(`Barracks raised to level ${game.barracks}. Raiding parties gain +${getBarracksConquerRollBonus()} to their conquest roll.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function buildWell() {
+    if (!game.hungerVisible) return;
+    const cost = getWellCost();
+    if (gameState.resources.wood.amount < cost.wood || gameState.resources.stone.amount < cost.stone) return;
+
+    gameState.resources.wood.spend(cost.wood);
+    gameState.resources.stone.spend(cost.stone);
+    game.well = (Number.isFinite(game.well) ? game.well : 0) + 1;
+    addLog(`Well dug to level ${game.well}. Follower food consumption reduced further.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function buildMarketplace() {
+    if (game.storehouse < 1) return;
+    const cost = getMarketplaceCost();
+    if (gameState.resources.wood.amount < cost.wood || gameState.resources.stone.amount < cost.stone) return;
+
+    gameState.resources.wood.spend(cost.wood);
+    gameState.resources.stone.spend(cost.stone);
+    game.marketplace = (Number.isFinite(game.marketplace) ? game.marketplace : 0) + 1;
+    addLog(`Marketplace expanded to level ${game.marketplace}. Trades now yield ${getMarketplaceTradeFaithYield()} faith.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function tradeAtMarketplace() {
+    if (game.marketplace < 1) return;
+    const cost = getMarketplaceTradeCost();
+    if (gameState.resources.wood.amount < cost.wood || gameState.resources.stone.amount < cost.stone) return;
+
+    gameState.resources.wood.spend(cost.wood);
+    gameState.resources.stone.spend(cost.stone);
+    const faithGained = getMarketplaceTradeFaithYield();
+    gameState.progression.faith += faithGained;
+    addLog(`Traded surplus wood and stone at the Marketplace for ${faithGained} faith.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function buildMonument() {
+    if (!canUnlockMonument()) return;
+    const cost = getMonumentCost();
+    if (
+        gameState.progression.faith < cost.faith ||
+        gameState.resources.wood.amount < cost.wood ||
+        gameState.resources.stone.amount < cost.stone
+    ) return;
+
+    gameState.progression.faith -= cost.faith;
+    gameState.resources.wood.spend(cost.wood);
+    gameState.resources.stone.spend(cost.stone);
+    game.monument = (Number.isFinite(game.monument) ? game.monument : 0) + 1;
+    addLog(`Monument raised to level ${game.monument}. Every follower's faith output rises.`);
+
+    updateUI();
+    saveGame();
+}
+
 export function unlockAltar() {
     if (game.altarUnlocked) return;
     if (gameState.progression.followers < game.shelterUpgradeFollowerRequirement) return;
@@ -1299,7 +1395,7 @@ export function conquerVillage(villageId) {
     const hunterForce = getRoleCount('hunters');
     const resistance = Number.isFinite(village.resistance) ? village.resistance : 50;
     const forceDivisor = Number.isFinite(exploration.conquerForceDivisor) ? exploration.conquerForceDivisor : 10;
-    const forceBonus = Math.max(0, Math.floor((hunterForce - resistance) / forceDivisor));
+    const forceBonus = Math.max(0, Math.floor((hunterForce - resistance) / forceDivisor)) + getBarracksConquerRollBonus();
     const roll = rollDice('1d20', { bonus: forceBonus });
     const conquerScale = Math.max(0.05, Math.min(1, roll.total / 20));
 
