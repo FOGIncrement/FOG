@@ -1,6 +1,6 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus, getFavorTierCount, getNextFavorTierThreshold, getNextSettlementTier, getSettlementTierCapacityMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getWarOutpostProductionMultiplier, getDeclareWarFaithCost, getSiegeProgressPerSecond } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus, getFavorTierCount, getNextFavorTierThreshold, getNextSettlementTier, getSettlementTierCapacityMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getWarOutpostProductionMultiplier, getDeclareWarFaithCost, getSiegeProgressPerSecond, isDoctrineGroupUnlocked, getDoctrineGroupUnlockHint, getMaxWarbandSize } from './utils/helpers.js';
 import { getSettlementReputationTier, SETTLEMENT_SPECIALTY_BY_ID, TRADE_GOODS, SETTLEMENT_REPUTATION_TIER_THRESHOLDS } from './config/trade-settlements.js';
 import { ROLE_DEFINITIONS, getRoleOutputMultiplier } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
@@ -11,6 +11,7 @@ import { setTooltipContent } from './utils/tooltip.js';
 import { getAscensionTitle } from './config/ascension.js';
 import { getNextUniverseConquestTier } from './config/universe-conquest.js';
 import { FAVOR_GOD_DESCRIPTIONS, FAVOR_TIER_THRESHOLDS } from './config/favor-tiers.js';
+import { DOCTRINE_GROUPS } from './config/doctrines.js';
 
 function getExplorationCapacityRequirement() {
     return Number.isFinite(game.prophetUnlockCapacityRequirement)
@@ -591,10 +592,7 @@ function renderDiscoveredAreas(hasExplorationAccess) {
             const resolutionType = village.resolutionType || null;
             const isCity = village.tier === 'city';
             const cityBadge = isCity ? ' <span class="settlement-tag">City</span>' : '';
-            const warbandMax = Math.max(1, Math.min(
-                Number.isFinite(game.exploration?.followerSendLimit) ? game.exploration.followerSendLimit : 10,
-                getUnassignedFollowers()
-            ));
+            const warbandMax = Math.max(1, Math.min(getMaxWarbandSize(), getUnassignedFollowers()));
             const warbandInputHtml = (villageId) => `<input type="number" id="warbandInput-${villageId}" min="1" max="${warbandMax}" value="1" style="width: 70px;">`;
 
             let statusLine;
@@ -958,6 +956,27 @@ function updateButtons() {
     const doctrinesHeader = document.querySelector('.tab-btn[data-tab="doctrines"]');
     if (doctrinesHeader) {
         doctrinesHeader.style.display = tabHeaderVisibility.doctrines ? 'inline-block' : 'none';
+    }
+
+    if (game.doctrinesUnlocked) {
+        let nextLockedHint = '';
+        DOCTRINE_GROUPS.forEach((group) => {
+            const container = document.getElementById(`doctrine-group-${group.id}`);
+            const unlocked = isDoctrineGroupUnlocked(group.id);
+            if (container) container.style.display = unlocked ? '' : 'none';
+            if (!unlocked && !nextLockedHint) {
+                nextLockedHint = getDoctrineGroupUnlockHint(group.id);
+            }
+        });
+        const hintEl = document.getElementById('nextDoctrineHint');
+        if (hintEl) {
+            if (nextLockedHint) {
+                hintEl.style.display = '';
+                hintEl.innerText = `Next doctrine: ${nextLockedHint}`;
+            } else {
+                hintEl.style.display = 'none';
+            }
+        }
     }
 
     const worldsHeader = document.querySelector('.tab-btn[data-tab="worlds"]');

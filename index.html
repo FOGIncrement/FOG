@@ -216,6 +216,8 @@
                             <button id="tradeAtMarketplaceBtn" style="display: none;">Trade at Marketplace</button>
                             <button id="hirePilgrimsBtn" style="display: none;">Hire Pilgrims</button>
                             <button id="buildMonumentBtn" style="display: none;">Build Monument</button>
+                            <button id="buildCatechismHallBtn" style="display: none;">Build Catechism Hall</button>
+                            <button id="buildWarCampBtn" style="display: none;">Build War Camp</button>
                         </div>
 
                         <div id="tab-explore" class="tab-content" style="display: none;">
@@ -353,81 +355,92 @@
                         </div>
 
                         <div id="tab-doctrines" class="tab-content" style="display: none;">
-                            <p class="unlocks-toggle">Choose one path in each doctrine group. Every choice is permanent.</p>
+                            <p class="unlocks-toggle">Choose one path in each doctrine group. Every choice is permanent. New doctrine groups reveal themselves as your cult grows.</p>
+                            <p id="nextDoctrineHint" class="unlocks-toggle" style="display: none;"></p>
 
-                            <h3>Doctrine of the Flock</h3>
-                            <p class="unlocks-toggle">How do you grow your following — through compassion, or conquest?</p>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseShepherdsCreedBtn" data-tab="doctrines" style="display: none;">
-                                    Shepherd's Creed<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
-                            </div>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseIronFistBtn" data-tab="doctrines" style="display: none;">
-                                    Iron Fist<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
-                            </div>
-
-                            <h3>Doctrine of the Hearth</h3>
-                            <p class="unlocks-toggle">Do your people thrive by tending the land, or by venturing beyond it?</p>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseHomesteadBtn" data-tab="doctrines" style="display: none;">
-                                    Homestead<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
-                            </div>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseWanderlustBtn" data-tab="doctrines" style="display: none;">
-                                    Wanderlust<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
+                            <div id="doctrine-group-flock">
+                                <h3>Doctrine of the Flock</h3>
+                                <p class="unlocks-toggle">How do you grow your following — through compassion, or conquest?</p>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseShepherdsCreedBtn" data-tab="doctrines" style="display: none;">
+                                        Shepherd's Creed<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseIronFistBtn" data-tab="doctrines" style="display: none;">
+                                        Iron Fist<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
                             </div>
 
-                            <h3>Doctrine of Sacrifice</h3>
-                            <p class="unlocks-toggle">When food runs short, how much can your people bear?</p>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseAbundantTableBtn" data-tab="doctrines" style="display: none;">
-                                    Abundant Table<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
-                            </div>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseLeanYearsBtn" data-tab="doctrines" style="display: none;">
-                                    Lean Years<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
-                            </div>
-
-                            <h3>Doctrine of the Forge</h3>
-                            <p class="unlocks-toggle">Do your artisans build to last, or does your quarry work double-time?</p>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseStonemasonsBtn" data-tab="doctrines" style="display: none;">
-                                    Stonemasons<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
-                            </div>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseQuarryRushBtn" data-tab="doctrines" style="display: none;">
-                                    Quarry Rush<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
+                            <div id="doctrine-group-hearth">
+                                <h3>Doctrine of the Hearth</h3>
+                                <p class="unlocks-toggle">Do your people thrive by tending the land, or by venturing beyond it?</p>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseHomesteadBtn" data-tab="doctrines" style="display: none;">
+                                        Homestead<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseWanderlustBtn" data-tab="doctrines" style="display: none;">
+                                        Wanderlust<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
                             </div>
 
-                            <h3>Doctrine of the Pilgrimage</h3>
-                            <p class="unlocks-toggle">Is your faith proven by tireless devotion, or by patient trust in providence?</p>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseZealousHandsBtn" data-tab="doctrines" style="display: none;">
-                                    Zealous Hands<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
+                            <div id="doctrine-group-sacrifice">
+                                <h3>Doctrine of Sacrifice</h3>
+                                <p class="unlocks-toggle">When food runs short, how much can your people bear?</p>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseAbundantTableBtn" data-tab="doctrines" style="display: none;">
+                                        Abundant Table<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseLeanYearsBtn" data-tab="doctrines" style="display: none;">
+                                        Lean Years<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
                             </div>
-                            <div class="unlock-item doctrine-option">
-                                <button id="chooseQuietFaithBtn" data-tab="doctrines" style="display: none;">
-                                    Quiet Faith<span class="btn-badge" style="display:none;"></span>
-                                </button>
-                                <p class="unlock-desc"></p>
+
+                            <div id="doctrine-group-forge">
+                                <h3>Doctrine of the Forge</h3>
+                                <p class="unlocks-toggle">Do your artisans build to last, or does your quarry work double-time?</p>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseStonemasonsBtn" data-tab="doctrines" style="display: none;">
+                                        Stonemasons<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseQuarryRushBtn" data-tab="doctrines" style="display: none;">
+                                        Quarry Rush<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
+                            </div>
+
+                            <div id="doctrine-group-pilgrimage">
+                                <h3>Doctrine of the Pilgrimage</h3>
+                                <p class="unlocks-toggle">Is your faith proven by tireless devotion, or by patient trust in providence?</p>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseZealousHandsBtn" data-tab="doctrines" style="display: none;">
+                                        Zealous Hands<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
+                                <div class="unlock-item doctrine-option">
+                                    <button id="chooseQuietFaithBtn" data-tab="doctrines" style="display: none;">
+                                        Quiet Faith<span class="btn-badge" style="display:none;"></span>
+                                    </button>
+                                    <p class="unlock-desc"></p>
+                                </div>
                             </div>
 
                             <h3>The Temple</h3>

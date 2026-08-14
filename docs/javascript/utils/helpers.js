@@ -399,6 +399,32 @@ function isDoctrineChosen(groupId, optionId) {
     return game.doctrineChoices?.[groupId] === optionId;
 }
 
+// Each Doctrine group unlocks behind its own real milestone instead of all
+// ten buttons appearing the instant the Council is convened - drip-fed like
+// Kittens Game's policies, spread across meaningfully different points in
+// a playthrough rather than dumped on the player at once.
+export function isDoctrineGroupUnlocked(groupId) {
+    if (!game.doctrinesUnlocked) return false;
+    if (groupId === 'flock') return true;
+    if (groupId === 'hearth') return Boolean(game.explorationUnlocked);
+    if (groupId === 'sacrifice') return Number.isFinite(game.granary) && game.granary >= 1;
+    if (groupId === 'forge') {
+        return (Number.isFinite(game.watchtower) && game.watchtower >= 1)
+            || (Number.isFinite(game.barracks) && game.barracks >= 1)
+            || (Number.isFinite(game.well) && game.well >= 1);
+    }
+    if (groupId === 'pilgrimage') return Number.isFinite(game.settlementTier) && game.settlementTier >= 1;
+    return true;
+}
+
+export function getDoctrineGroupUnlockHint(groupId) {
+    if (groupId === 'hearth') return 'Unlocks once Exploration is unlocked.';
+    if (groupId === 'sacrifice') return 'Unlocks once your first Granary is built.';
+    if (groupId === 'forge') return 'Unlocks once you build a Watchtower, Barracks, or Well.';
+    if (groupId === 'pilgrimage') return 'Unlocks once your Settlement reaches Village tier.';
+    return '';
+}
+
 export function getPreachFaithCost() {
     const base = Number.isFinite(gameState.costs.preachFaithCost) ? gameState.costs.preachFaithCost : 20;
     const doctrineMultiplier = isDoctrineChosen('flock', 'shepherdsCreed') && Number.isFinite(game.shepherdsCreedCostMultiplier)
@@ -613,6 +639,43 @@ export function getIronConquestRollBonus() {
 
 export function getConquestRollBonus() {
     return getBarracksConquerRollBonus() + getIronConquestRollBonus();
+}
+
+export function getCatechismHallCost() {
+    const faithBase = Number.isFinite(gameState.costs.catechismHallFaithCost) ? gameState.costs.catechismHallFaithCost : 300;
+    const woodBase = Number.isFinite(gameState.costs.catechismHallWoodCost) ? gameState.costs.catechismHallWoodCost : 200;
+    const level = Number.isFinite(game.catechismHall) ? game.catechismHall : 0;
+    const scale = Number.isFinite(game.catechismHallCostScalePerBuilt) ? game.catechismHallCostScalePerBuilt : 0.32;
+    const multiplier = Math.pow(1 + scale, level) * getDoctrineBuildingCostMultiplier();
+    return { faith: Math.ceil(faithBase * multiplier), wood: Math.ceil(woodBase * multiplier) };
+}
+
+export function getGoodwillTricklePerSecond() {
+    const level = Number.isFinite(game.catechismHall) ? game.catechismHall : 0;
+    if (level <= 0) return 0;
+    const perLevel = Number.isFinite(game.catechismHallGoodwillPerSecondPerLevel) ? game.catechismHallGoodwillPerSecondPerLevel : 0.03;
+    return level * perLevel;
+}
+
+export function getWarCampCost() {
+    const faithBase = Number.isFinite(gameState.costs.warCampFaithCost) ? gameState.costs.warCampFaithCost : 250;
+    const woodBase = Number.isFinite(gameState.costs.warCampWoodCost) ? gameState.costs.warCampWoodCost : 300;
+    const stoneBase = Number.isFinite(gameState.costs.warCampStoneCost) ? gameState.costs.warCampStoneCost : 300;
+    const level = Number.isFinite(game.warCamp) ? game.warCamp : 0;
+    const scale = Number.isFinite(game.warCampCostScalePerBuilt) ? game.warCampCostScalePerBuilt : 0.32;
+    const multiplier = Math.pow(1 + scale, level) * getDoctrineBuildingCostMultiplier();
+    return {
+        faith: Math.ceil(faithBase * multiplier),
+        wood: Math.ceil(woodBase * multiplier),
+        stone: Math.ceil(stoneBase * multiplier)
+    };
+}
+
+export function getMaxWarbandSize() {
+    const base = Number.isFinite(game.exploration?.followerSendLimit) ? game.exploration.followerSendLimit : 10;
+    const level = Number.isFinite(game.warCamp) ? game.warCamp : 0;
+    const perLevel = Number.isFinite(game.warCampCapacityPerLevel) ? game.warCampCapacityPerLevel : 3;
+    return base + level * perLevel;
 }
 
 export function getHirePilgrimsCost() {

@@ -4,7 +4,7 @@ import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
 import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier, getWoodStoneCap, getFoodCap, getScribeFaithMultiplier, getFoodSpoilageRate, getGranaryPassiveFoodPerSecond, getHelFavorStarlightMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, getWarOutpostProductionMultiplier, checkFavorTierUnlocks } from './utils/helpers.js';
-import { processSiegeTick } from './actions.js';
+import { processSiegeTick, processGoodwillTrickle } from './actions.js';
 
 const LIVE_TICK_CLAMP_SECONDS = 2;
 const CATCHUP_CHUNK_SECONDS = LIVE_TICK_CLAMP_SECONDS;
@@ -114,6 +114,9 @@ function defaultLiveEventHandler(eventType, payload) {
     else if (eventType === 'siege-victory' && payload) {
         addLog(`${payload.villageName} has fallen! ${payload.grantedFollowers} survivor${payload.grantedFollowers === 1 ? '' : 's'} join your cult as followers.`);
     }
+    else if (eventType === 'goodwill-resolved' && payload) {
+        addLog(`Missionaries from the Catechism Hall have won over ${payload.villageName}. It joins you peacefully, no Sermon needed.`);
+    }
 }
 
 // Pure simulation step: mutates game state only, no DOM/localStorage I/O.
@@ -150,6 +153,7 @@ function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
     }
 
     processSiegeTick(dtSeconds, onEvent);
+    processGoodwillTrickle(dtSeconds, onEvent);
 
     if (Array.isArray(game.worlds) && game.worlds.length > 0) {
         const worldStarlightPerSecond = game.worlds.reduce((sum, world) => {

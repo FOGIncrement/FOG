@@ -322,7 +322,16 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'War Outpost Unrest Decay / s', target: game.exploration, key: 'warOutpostUnrestDecayPerSecond', step: 0.01, min: 0 },
             { label: 'War Outpost Unrest Production Penalty', target: game.exploration, key: 'warOutpostUnrestProductionPenalty', step: 0.05, min: 0 },
             { label: 'Pacify Outpost Unrest Reduction', target: game.exploration, key: 'pacifyOutpostUnrestReduction', step: 5, min: 0 },
-            { label: 'Pacify Outpost Faith Cost', target: gameState.costs, key: 'pacifyOutpostFaithCost', step: 10, min: 0 }
+            { label: 'Pacify Outpost Faith Cost', target: gameState.costs, key: 'pacifyOutpostFaithCost', step: 10, min: 0 },
+            { label: 'Catechism Hall Faith Cost', target: gameState.costs, key: 'catechismHallFaithCost', step: 25, min: 0 },
+            { label: 'Catechism Hall Wood Cost', target: gameState.costs, key: 'catechismHallWoodCost', step: 25, min: 0 },
+            { label: 'Catechism Hall Cost Scale', target: game, key: 'catechismHallCostScalePerBuilt', step: 0.02, min: 0.01 },
+            { label: 'Catechism Hall Goodwill / Level / s', target: game, key: 'catechismHallGoodwillPerSecondPerLevel', step: 0.01, min: 0 },
+            { label: 'War Camp Faith Cost', target: gameState.costs, key: 'warCampFaithCost', step: 25, min: 0 },
+            { label: 'War Camp Wood Cost', target: gameState.costs, key: 'warCampWoodCost', step: 25, min: 0 },
+            { label: 'War Camp Stone Cost', target: gameState.costs, key: 'warCampStoneCost', step: 25, min: 0 },
+            { label: 'War Camp Cost Scale', target: game, key: 'warCampCostScalePerBuilt', step: 0.02, min: 0.01 },
+            { label: 'War Camp Capacity / Level', target: game, key: 'warCampCapacityPerLevel', step: 1, min: 0 }
         ]
     },
     {

@@ -1,5 +1,5 @@
 import { setTooltipContent } from '../utils/tooltip.js';
-import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getNextSettlementTier, canAffordSettlementTier, getFavorTierCount, getNextFavorTierThreshold, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getWellConsumptionMultiplier, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, getMonumentFaithPerFollowerMultiplier, canUnlockMonument, getManualActionYieldMultiplier, getHirePilgrimsCost } from '../utils/helpers.js';
+import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getNextSettlementTier, canAffordSettlementTier, getFavorTierCount, getNextFavorTierThreshold, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getWellConsumptionMultiplier, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, getMonumentFaithPerFollowerMultiplier, canUnlockMonument, getManualActionYieldMultiplier, getHirePilgrimsCost, getCatechismHallCost, getGoodwillTricklePerSecond, getWarCampCost, getMaxWarbandSize } from '../utils/helpers.js';
 import { DOCTRINE_GROUP_BY_ID } from './doctrines.js';
 import { TEMPLE_OPTION_BY_GOD } from './temples.js';
 import { ASCENSION_UPGRADE_BY_ID } from './ascension.js';
@@ -625,6 +625,43 @@ export function getActionUiRules(context) {
                 el,
                 'Build Monument\nA towering testament to your faith, multiplying what every follower earns you.',
                 `Cost: ${cost.faith} faith, ${cost.wood} wood, ${cost.stone} stone\nCurrent follower faith bonus: +${bonus}%`
+            );
+        },
+        buildCatechismHall(el) {
+            if (!game.altarBuilt) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const level = Number.isFinite(game.catechismHall) ? game.catechismHall : 0;
+            const cost = getCatechismHallCost();
+            const canAfford = gameState.progression.faith >= cost.faith && gameState.resources.wood.amount >= cost.wood;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Build Catechism Hall (${level})`);
+            el.classList.toggle('purchased', !canAfford);
+            const trickle = getGoodwillTricklePerSecond();
+            applyTooltip(
+                el,
+                'Build Catechism Hall\nMissionaries quietly win hearts in every unresolved village and city, no Sermon required.',
+                `Cost: ${cost.faith} faith, ${cost.wood} wood\nCurrent Goodwill trickle: +${trickle.toFixed(2)}%/s per settlement`
+            );
+        },
+        buildWarCamp(el) {
+            if (!game.explorationUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const level = Number.isFinite(game.warCamp) ? game.warCamp : 0;
+            const cost = getWarCampCost();
+            const canAfford = gameState.progression.faith >= cost.faith && gameState.resources.wood.amount >= cost.wood && gameState.resources.stone.amount >= cost.stone;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Build War Camp (${level})`);
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Build War Camp\nTrain and quarter a standing force, raising how many followers a single warband can hold.',
+                `Cost: ${cost.faith} faith, ${cost.wood} wood, ${cost.stone} stone\nCurrent max warband size: ${getMaxWarbandSize()}`
             );
         },
         unlockShelterUpgrade(el) {

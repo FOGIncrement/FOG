@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument, getManualActionYieldMultiplier, getConquestRollBonus, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getDeclareWarFaithCost, getSiegeProgressPerSecond } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument, getManualActionYieldMultiplier, getConquestRollBonus, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getDeclareWarFaithCost, getSiegeProgressPerSecond, isDoctrineGroupUnlocked, getCatechismHallCost, getWarCampCost, getMaxWarbandSize, getGoodwillTricklePerSecond } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
@@ -1158,6 +1158,39 @@ export function buildMonument() {
     saveGame();
 }
 
+export function buildCatechismHall() {
+    if (!game.altarBuilt) return;
+    const cost = getCatechismHallCost();
+    if (gameState.progression.faith < cost.faith || gameState.resources.wood.amount < cost.wood) return;
+
+    gameState.progression.faith -= cost.faith;
+    gameState.resources.wood.spend(cost.wood);
+    game.catechismHall = (Number.isFinite(game.catechismHall) ? game.catechismHall : 0) + 1;
+    addLog(`Catechism Hall raised to level ${game.catechismHall}. Missionaries now quietly win hearts in every unresolved village and city.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function buildWarCamp() {
+    if (!game.explorationUnlocked) return;
+    const cost = getWarCampCost();
+    if (
+        gameState.progression.faith < cost.faith ||
+        gameState.resources.wood.amount < cost.wood ||
+        gameState.resources.stone.amount < cost.stone
+    ) return;
+
+    gameState.progression.faith -= cost.faith;
+    gameState.resources.wood.spend(cost.wood);
+    gameState.resources.stone.spend(cost.stone);
+    game.warCamp = (Number.isFinite(game.warCamp) ? game.warCamp : 0) + 1;
+    addLog(`War Camp raised to level ${game.warCamp}. Warbands can now number up to ${getMaxWarbandSize()}.`);
+
+    updateUI();
+    saveGame();
+}
+
 function findSettlement(settlementId) {
     const exploration = getExplorationState();
     return exploration.settlements.find((settlement) => settlement.id === settlementId && settlement.discovered) || null;
@@ -1636,8 +1669,7 @@ function readWarbandInput(villageId) {
     let size = inputEl ? parseInt(inputEl.value, 10) : 1;
     if (!Number.isFinite(size)) size = 1;
 
-    const exploration = getExplorationState();
-    const limit = Number.isFinite(exploration.followerSendLimit) ? exploration.followerSendLimit : 10;
+    const limit = getMaxWarbandSize();
     const unassigned = getUnassignedFollowers();
     return { size: Math.max(1, Math.min(limit, unassigned, size)), unassigned };
 }
@@ -1835,6 +1867,34 @@ export function processSiegeTick(dtSeconds, onEvent) {
     });
 }
 
+// Catechism Hall's passive effect: every discovered, unresolved village and
+// city slowly gains Goodwill on its own, no Sermon required. Villages mid-
+// siege are left alone (the two paths don't blend once war has started).
+// Reaching 100% this way resolves the settlement outright, same as a Sermon
+// would - a purely passive building shouldn't dead-end at "100%, unresolved"
+// waiting for a manual click that defeats the point of it being passive.
+export function processGoodwillTrickle(dtSeconds, onEvent) {
+    const trickle = getGoodwillTricklePerSecond();
+    if (trickle <= 0) return;
+
+    const exploration = game.exploration;
+    if (!exploration || !Array.isArray(exploration.villages)) return;
+
+    exploration.villages.forEach((village) => {
+        if (!village.discovered || village.resolutionType || village.war) return;
+        const current = Number.isFinite(village.convertedPercent) ? village.convertedPercent : 0;
+        village.convertedPercent = Math.min(100, current + trickle * dtSeconds);
+
+        if (village.convertedPercent >= 100) {
+            village.resolutionType = 'converted';
+            game.alignment = Math.max(-100, Math.min(100, game.alignment + game.alignmentConvertGain));
+            game.factionFavor.helios += game.heliosFavorConvertGain;
+            if (!game.alignmentVisible) game.alignmentVisible = true;
+            onEvent('goodwill-resolved', { villageName: village.name });
+        }
+    });
+}
+
 export function collectWildAreaResources(areaId) {
     const exploration = getExplorationState();
     const area = (exploration.discoveredAreas || []).find((candidate) => candidate.id === areaId && candidate.discovered);
@@ -1905,7 +1965,7 @@ export function searchRuins(areaId) {
 }
 
 function chooseDoctrine(groupId, optionId) {
-    if (!game.doctrinesUnlocked) return;
+    if (!isDoctrineGroupUnlocked(groupId)) return;
     if (!game.doctrineChoices || typeof game.doctrineChoices !== 'object') return;
     if (game.doctrineChoices[groupId]) return;
 

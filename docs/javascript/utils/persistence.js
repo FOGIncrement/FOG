@@ -1127,6 +1127,43 @@ export function loadGame() {
                 gameState.costs.pacifyOutpostFaithCost = 100;
             }
 
+            // --- Catechism Hall and War Camp ---
+            if (!Number.isFinite(game.catechismHall) || game.catechismHall < 0) {
+                game.catechismHall = 0;
+            }
+            game.catechismHall = Math.floor(game.catechismHall);
+            if (!Number.isFinite(game.catechismHallCostScalePerBuilt) || game.catechismHallCostScalePerBuilt <= 0) {
+                game.catechismHallCostScalePerBuilt = 0.32;
+            }
+            if (!Number.isFinite(game.catechismHallGoodwillPerSecondPerLevel) || game.catechismHallGoodwillPerSecondPerLevel < 0) {
+                game.catechismHallGoodwillPerSecondPerLevel = 0.03;
+            }
+            if (!Number.isFinite(gameState.costs.catechismHallFaithCost) || gameState.costs.catechismHallFaithCost < 0) {
+                gameState.costs.catechismHallFaithCost = 300;
+            }
+            if (!Number.isFinite(gameState.costs.catechismHallWoodCost) || gameState.costs.catechismHallWoodCost < 0) {
+                gameState.costs.catechismHallWoodCost = 200;
+            }
+            if (!Number.isFinite(game.warCamp) || game.warCamp < 0) {
+                game.warCamp = 0;
+            }
+            game.warCamp = Math.floor(game.warCamp);
+            if (!Number.isFinite(game.warCampCostScalePerBuilt) || game.warCampCostScalePerBuilt <= 0) {
+                game.warCampCostScalePerBuilt = 0.32;
+            }
+            if (!Number.isFinite(game.warCampCapacityPerLevel) || game.warCampCapacityPerLevel < 0) {
+                game.warCampCapacityPerLevel = 3;
+            }
+            if (!Number.isFinite(gameState.costs.warCampFaithCost) || gameState.costs.warCampFaithCost < 0) {
+                gameState.costs.warCampFaithCost = 250;
+            }
+            if (!Number.isFinite(gameState.costs.warCampWoodCost) || gameState.costs.warCampWoodCost < 0) {
+                gameState.costs.warCampWoodCost = 300;
+            }
+            if (!Number.isFinite(gameState.costs.warCampStoneCost) || gameState.costs.warCampStoneCost < 0) {
+                gameState.costs.warCampStoneCost = 300;
+            }
+
             migrateLegacyWildAreaDistances(game.exploration);
             syncDiscoveredAreasByDistance(game.exploration);
             applyDiscoveredAreaPassiveEffects(game.exploration);

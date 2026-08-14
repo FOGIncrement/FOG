@@ -93,6 +93,8 @@ function performAscensionReset(echoesGained) {
     game.marketplace = 0;
     game.marketplaceTradesCompleted = 0;
     game.monument = 0;
+    game.catechismHall = 0;
+    game.warCamp = 0;
 
     // Favor-tier "seen" high-water marks reset alongside factionFavor itself,
     // so tier-unlock log messages fire again as favor is rebuilt from zero.

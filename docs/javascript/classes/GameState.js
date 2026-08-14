@@ -112,7 +112,12 @@ export const gameState = {
         settlementSellResourceFaithYield: 25,
         settlementBuyGoodFaithCost: 250,
         hirePilgrimsBaseFaithCost: 500,
-        pacifyOutpostFaithCost: 100
+        pacifyOutpostFaithCost: 100,
+        catechismHallFaithCost: 300,
+        catechismHallWoodCost: 200,
+        warCampFaithCost: 250,
+        warCampWoodCost: 300,
+        warCampStoneCost: 300
     },
     rates: {
         hunterFoodPerSecond: 2.0,
@@ -273,6 +278,12 @@ export const game = {
     hirePilgrimsPurchased: 0,
     hirePilgrimsCostGrowthRate: 1.04,
     hirePilgrimsFollowersPerPurchase: 10,
+    catechismHall: 0,
+    catechismHallCostScalePerBuilt: 0.32,
+    catechismHallGoodwillPerSecondPerLevel: 0.03,
+    warCamp: 0,
+    warCampCostScalePerBuilt: 0.32,
+    warCampCapacityPerLevel: 3,
     ascension: {
         echoesOfDivinity: 0,
         upgradeRanks: createAscensionUpgradeRankMap(0),

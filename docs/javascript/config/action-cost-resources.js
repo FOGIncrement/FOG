@@ -36,6 +36,8 @@ export const ACTION_COST_RESOURCES = {
     tradeAtMarketplace: ['woodContainer', 'stoneContainer'],
     hirePilgrims: ['faithContainer'],
     buildMonument: ['faithContainer', 'woodContainer', 'stoneContainer'],
+    buildCatechismHall: ['faithContainer', 'woodContainer'],
+    buildWarCamp: ['faithContainer', 'woodContainer', 'stoneContainer'],
 
     feedFollowers: ['foodContainer'],
     holdFeast: ['foodContainer'],

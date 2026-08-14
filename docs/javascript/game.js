@@ -61,7 +61,9 @@ export {
     hirePilgrims,
     declareWar,
     reinforceSiege,
-    pacifyOutpost
+    pacifyOutpost,
+    buildCatechismHall,
+    buildWarCamp
 } from './actions.js';
 
 export {
