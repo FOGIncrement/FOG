@@ -1,6 +1,6 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus, getFavorTierCount, getNextFavorTierThreshold, getNextSettlementTier, getSettlementTierCapacityMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus, getFavorTierCount, getNextFavorTierThreshold, getNextSettlementTier, getSettlementTierCapacityMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getWarOutpostProductionMultiplier, getDeclareWarFaithCost, getSiegeProgressPerSecond } from './utils/helpers.js';
 import { getSettlementReputationTier, SETTLEMENT_SPECIALTY_BY_ID, TRADE_GOODS, SETTLEMENT_REPUTATION_TIER_THRESHOLDS } from './config/trade-settlements.js';
 import { ROLE_DEFINITIONS, getRoleOutputMultiplier } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
@@ -45,6 +45,15 @@ export function formatBigNumber(value) {
     return `${sign}${scaled.toFixed(decimals)}${BIG_NUMBER_UNITS[tier]}`;
 }
 
+function formatSiegeDuration(totalSeconds) {
+    if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return 'moments';
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    if (hours > 0) return `~${hours}h ${minutes}m`;
+    if (minutes > 0) return `~${minutes}m`;
+    return '<1m';
+}
+
 function applyRateClass(el, value) {
     if (!el) return;
     el.classList.toggle('rate-positive', value > 0);
@@ -55,10 +64,11 @@ function getOutpostFaithRate() {
     const outpostFaithPerSecond = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond)
         ? game.exploration.villageOutpostFaithPerSecond
         : 0.05;
-    const outpostCount = Array.isArray(game.exploration?.villages)
-        ? game.exploration.villages.reduce((count, village) => count + (village.resolutionType === 'converted' ? 1 : 0), 0)
-        : 0;
-    return outpostCount * outpostFaithPerSecond;
+    if (!Array.isArray(game.exploration?.villages)) return 0;
+    return game.exploration.villages.reduce((sum, village) => {
+        if (village.resolutionType !== 'converted' && village.resolutionType !== 'conquered') return sum;
+        return sum + outpostFaithPerSecond * getWarOutpostProductionMultiplier(village);
+    }, 0);
 }
 
 export function updateUI() {
@@ -527,7 +537,9 @@ function renderExplorationPanel(hasExplorationAccess) {
 let lastDiscoveredAreasSignature = null;
 
 function getVillageSignature(village) {
-    return `${village.id}:${village.discovered ? 1 : 0}:${Math.floor(village.convertedPercent)}:${village.resolutionType || ''}:${village.sermonsHeld}:${village.prophetPresent ? 1 : 0}`;
+    const war = village.war;
+    const warSig = war ? `${Math.floor(war.progress)}:${Math.floor(war.warbandAlive)}:${Math.floor(war.warbandSent)}` : 'n';
+    return `${village.id}:${village.discovered ? 1 : 0}:${Math.floor(village.convertedPercent)}:${village.resolutionType || ''}:${village.sermonsHeld}:${village.prophetPresent ? 1 : 0}:${village.tier || 'village'}:${warSig}:${Math.floor(village.unrest || 0)}`;
 }
 
 function getWildAreaSignature(area) {
@@ -577,14 +589,55 @@ function renderDiscoveredAreas(hasExplorationAccess) {
             const sermonsHeld = Number.isFinite(village.sermonsHeld) ? village.sermonsHeld : 0;
             const prophetStatus = village.prophetPresent ? 'Present' : 'Not present';
             const resolutionType = village.resolutionType || null;
+            const isCity = village.tier === 'city';
+            const cityBadge = isCity ? ' <span class="settlement-tag">City</span>' : '';
+            const warbandMax = Math.max(1, Math.min(
+                Number.isFinite(game.exploration?.followerSendLimit) ? game.exploration.followerSendLimit : 10,
+                getUnassignedFollowers()
+            ));
+            const warbandInputHtml = (villageId) => `<input type="number" id="warbandInput-${villageId}" min="1" max="${warbandMax}" value="1" style="width: 70px;">`;
 
             let statusLine;
             let actionsLine = '';
+
             if (resolutionType === 'converted') {
                 const rate = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond) ? game.exploration.villageOutpostFaithPerSecond : 0.05;
                 statusLine = `<p class="village-resolved">Outpost — tithing +${rate.toFixed(3)} faith/s</p>`;
+            } else if (resolutionType === 'conquered' && isCity) {
+                const unrest = Math.floor(village.unrest || 0);
+                const baseRate = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond) ? game.exploration.villageOutpostFaithPerSecond : 0.05;
+                const rate = baseRate * getWarOutpostProductionMultiplier(village);
+                const unrestNote = unrest > 0 ? ` (unrest ${unrest}% — production reduced, recovering on its own)` : '';
+                statusLine = `<p class="village-resolved">Conquered outpost — tithing +${rate.toFixed(3)} faith/s${unrestNote}</p>`;
+                if (unrest > 0) {
+                    const pacifyCost = Number.isFinite(gameState.costs.pacifyOutpostFaithCost) ? gameState.costs.pacifyOutpostFaithCost : 100;
+                    actionsLine = `<button class="city-pacify-btn" data-village-id="${village.id}">Send Envoys to Pacify (${pacifyCost} faith)</button>`;
+                }
             } else if (resolutionType === 'conquered') {
                 statusLine = `<p class="village-resolved">Ransacked — conquered</p>`;
+            } else if (isCity && village.war) {
+                const war = village.war;
+                const progress = Math.floor(war.progress || 0);
+                const rate = getSiegeProgressPerSecond(village);
+                const etaSeconds = rate > 0 ? Math.ceil(((100 - progress) / rate)) : null;
+                statusLine = `
+                    <p>Siege in progress: ${progress}%</p>
+                    <p>Warband: ${Math.floor(war.warbandAlive)}/${Math.floor(war.warbandSent)} alive</p>
+                    <p>Est. time to fall: ${rate > 0 ? formatSiegeDuration(etaSeconds) : 'stalled — send reinforcements'}</p>
+                `;
+                const reinforceCost = getDeclareWarFaithCost(village);
+                actionsLine = `
+                    ${warbandInputHtml(village.id)}
+                    <button class="city-reinforce-btn" data-village-id="${village.id}">Reinforce (${reinforceCost} faith)</button>
+                `;
+            } else if (isCity) {
+                statusLine = `<p>Goodwill: ${converted}%</p>`;
+                const warCost = getDeclareWarFaithCost(village);
+                actionsLine = `
+                    <button class="village-sermon-btn" data-village-id="${village.id}" ${converted >= 100 || !village.prophetPresent ? 'disabled' : ''}>Hold Sermon</button>
+                    ${warbandInputHtml(village.id)}
+                    <button class="city-declare-war-btn" data-village-id="${village.id}">Declare War (${warCost} faith)</button>
+                `;
             } else {
                 statusLine = `<p>Converted: ${converted}%</p>`;
                 const conquerCost = getConquerVillageFaithCost();
@@ -596,7 +649,7 @@ function renderDiscoveredAreas(hasExplorationAccess) {
 
             return `
                 <div class="area-card village-card">
-                    <h4>${village.name}</h4>
+                    <h4>${village.name}${cityBadge}</h4>
                     <p>Distance: ${Math.floor(village.distanceFromCamp)}m</p>
                     <p>Population: ${Math.floor(village.population).toLocaleString()}</p>
                     <p>Resistance: ${resistance}</p>

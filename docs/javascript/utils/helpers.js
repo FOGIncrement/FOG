@@ -629,6 +629,31 @@ export function getHungerStarvationDrainMultiplier() {
     return 1;
 }
 
+// --- War: sieges against Cities ---
+
+export function getDeclareWarFaithCost(village) {
+    const base = Number.isFinite(game.exploration?.declareWarFaithCost) ? game.exploration.declareWarFaithCost : 60;
+    const distanceTier = Math.max(1, Math.floor((village?.distanceFromCamp || 0) / 1000) + 1);
+    return Math.ceil(base * Math.pow(1.15, distanceTier - 1));
+}
+
+export function getSiegeProgressPerSecond(village) {
+    const war = village?.war;
+    if (!war) return 0;
+    const warbandAlive = Number.isFinite(war.warbandAlive) ? war.warbandAlive : 0;
+    const resistance = Number.isFinite(war.resistanceAtStart) ? war.resistanceAtStart : (village?.resistance || 50);
+    if (warbandAlive <= 0 || resistance <= 0) return 0;
+    const power = Number.isFinite(game.exploration?.warbandPowerPerFollower) ? game.exploration.warbandPowerPerFollower : 0.4;
+    return (warbandAlive * power) / resistance;
+}
+
+export function getWarOutpostProductionMultiplier(village) {
+    const unrest = Number.isFinite(village?.unrest) ? village.unrest : 0;
+    if (unrest <= 0) return 1;
+    const penalty = Number.isFinite(game.exploration?.warOutpostUnrestProductionPenalty) ? game.exploration.warOutpostUnrestProductionPenalty : 0.6;
+    return Math.max(1 - penalty, 1 - (unrest / 100) * penalty);
+}
+
 export function getDoctrineBuildingCostMultiplier() {
     if (isDoctrineChosen('forge', 'stonemasons') && Number.isFinite(game.stonemasonsCostMultiplier)) {
         return game.stonemasonsCostMultiplier;

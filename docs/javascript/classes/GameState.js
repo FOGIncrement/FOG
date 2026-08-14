@@ -111,7 +111,8 @@ export const gameState = {
         settlementBuyResourceFaithCost: 30,
         settlementSellResourceFaithYield: 25,
         settlementBuyGoodFaithCost: 250,
-        hirePilgrimsBaseFaithCost: 500
+        hirePilgrimsBaseFaithCost: 500,
+        pacifyOutpostFaithCost: 100
     },
     rates: {
         hunterFoodPerSecond: 2.0,
@@ -311,6 +312,26 @@ export const game = {
         conquerWoodLootMax: 300,
         conquerStoneLootMin: 100,
         conquerStoneLootMax: 300,
+        cityChanceBase: 0.03,
+        cityChancePerDistanceTier: 0.025,
+        cityChanceCap: 0.5,
+        cityPopulationMultiplier: 2.2,
+        cityResistanceMultiplier: 1.4,
+        declareWarFaithCost: 60,
+        warbandPowerPerFollower: 0.4,
+        siegeEventCheckIntervalSeconds: 180,
+        siegeEventChance: 0.35,
+        siegeAmbushCasualtyMin: 0.05,
+        siegeAmbushCasualtyMax: 0.15,
+        siegeAttritionCasualtyMin: 0.01,
+        siegeAttritionCasualtyMax: 0.04,
+        siegeReinforcementProgressBonus: 5,
+        siegeBrutalityPopulationFactor: 0.8,
+        siegePopulationSurvivalFloor: 0.3,
+        warOutpostUnrestInitial: 50,
+        warOutpostUnrestDecayPerSecond: 0.05,
+        warOutpostUnrestProductionPenalty: 0.6,
+        pacifyOutpostUnrestReduction: 20,
         wildAreaSeedCount: 8,
         wildAreaMinBuffer: 6,
         wildAreaDistanceMinStep: 30,
@@ -408,7 +429,10 @@ export const game = {
                 discovered: false,
                 sermonsHeld: 0,
                 prophetPresent: false,
-                resolutionType: null
+                resolutionType: null,
+                tier: 'village',
+                war: null,
+                unrest: 0
             }
         ],
         villageDistanceRange: {

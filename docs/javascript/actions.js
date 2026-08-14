@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument, getManualActionYieldMultiplier, getConquestRollBonus, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument, getManualActionYieldMultiplier, getConquestRollBonus, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getDeclareWarFaithCost, getSiegeProgressPerSecond } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
@@ -448,12 +448,27 @@ function spawnNewVillage(exploration, { silent = false } = {}) {
     // the numbers from the first few settlements.
     const distanceTier = Math.max(1, Math.floor(distanceFromCamp / 1000) + 1);
     const populationBase = Math.floor(Math.random() * 1001) + 800;
-    const population = Math.floor(populationBase * Math.pow(1.12, distanceTier - 1));
-    const resistance = Math.floor((Math.random() * 41) + 35 + (distanceTier - 1) * 3);
+    let population = Math.floor(populationBase * Math.pow(1.12, distanceTier - 1));
+    let resistance = Math.floor((Math.random() * 41) + 35 + (distanceTier - 1) * 3);
+
+    // Cities are rarer the closer to camp, more common further out - a
+    // deliberately bigger, tougher discovery that the quick Sermon/Conquer
+    // actions don't fit, so they get the deeper War/Goodwill treatment.
+    const cityChanceBase = Number.isFinite(exploration.cityChanceBase) ? exploration.cityChanceBase : 0.03;
+    const cityChancePerTier = Number.isFinite(exploration.cityChancePerDistanceTier) ? exploration.cityChancePerDistanceTier : 0.025;
+    const cityChanceCap = Number.isFinite(exploration.cityChanceCap) ? exploration.cityChanceCap : 0.5;
+    const cityChance = Math.min(cityChanceCap, cityChanceBase + cityChancePerTier * (distanceTier - 1));
+    const tier = Math.random() < cityChance ? 'city' : 'village';
+    if (tier === 'city') {
+        const popMult = Number.isFinite(exploration.cityPopulationMultiplier) ? exploration.cityPopulationMultiplier : 2.2;
+        const resMult = Number.isFinite(exploration.cityResistanceMultiplier) ? exploration.cityResistanceMultiplier : 1.4;
+        population = Math.floor(population * popMult);
+        resistance = Math.floor(resistance * resMult);
+    }
 
     exploration.villages.push({
         id: villageId,
-        name: `Village ${exploration.nextVillageIndex}`,
+        name: `${tier === 'city' ? 'City' : 'Village'} ${exploration.nextVillageIndex}`,
         distanceFromCamp,
         population,
         resistance,
@@ -461,7 +476,10 @@ function spawnNewVillage(exploration, { silent = false } = {}) {
         discovered: false,
         sermonsHeld: 0,
         prophetPresent: false,
-        resolutionType: null
+        resolutionType: null,
+        tier,
+        war: null,
+        unrest: 0
     });
 
     exploration.nextVillageIndex += 1;
@@ -1550,6 +1568,11 @@ export function conquerVillage(villageId) {
     const village = exploration.villages.find((candidate) => candidate.id === villageId && candidate.discovered);
     if (!village) return;
 
+    if (village.tier === 'city') {
+        addLog(`${village.name} is a city - it takes a real war to conquer, not a single raid. Declare War instead.`);
+        return;
+    }
+
     if (village.resolutionType) {
         addLog(`${village.name} has already been resolved.`);
         return;
@@ -1599,6 +1622,217 @@ export function conquerVillage(villageId) {
 
     updateUI();
     saveGame();
+}
+
+function findCity(villageId) {
+    const exploration = getExplorationState();
+    const village = exploration.villages.find((candidate) => candidate.id === villageId && candidate.discovered);
+    if (!village || village.tier !== 'city') return null;
+    return village;
+}
+
+function readWarbandInput(villageId) {
+    const inputEl = document.getElementById(`warbandInput-${villageId}`);
+    let size = inputEl ? parseInt(inputEl.value, 10) : 1;
+    if (!Number.isFinite(size)) size = 1;
+
+    const exploration = getExplorationState();
+    const limit = Number.isFinite(exploration.followerSendLimit) ? exploration.followerSendLimit : 10;
+    const unassigned = getUnassignedFollowers();
+    return { size: Math.max(1, Math.min(limit, unassigned, size)), unassigned };
+}
+
+export function declareWar(villageId) {
+    const village = findCity(villageId);
+    if (!village) return;
+    if (village.resolutionType) {
+        addLog(`${village.name} has already been resolved.`);
+        return;
+    }
+    if (village.war) {
+        addLog(`You are already at war with ${village.name}.`);
+        return;
+    }
+
+    const { size, unassigned } = readWarbandInput(villageId);
+    if (unassigned <= 0) {
+        addLog('No unassigned followers available to muster a warband.');
+        return;
+    }
+
+    const cost = getDeclareWarFaithCost(village);
+    if (gameState.progression.faith < cost) {
+        addLog(`Need ${cost} faith to muster a warband and declare war on ${village.name}.`);
+        return;
+    }
+    gameState.progression.faith -= cost;
+
+    village.war = {
+        warbandSent: size,
+        warbandAlive: size,
+        progress: 0,
+        resistanceAtStart: Number.isFinite(village.resistance) ? village.resistance : 50,
+        eventTimer: 0
+    };
+
+    addLog(`War declared on ${village.name}. ${size} follower${size === 1 ? '' : 's'} march to lay siege.`);
+    updateUI();
+    saveGame();
+}
+
+export function reinforceSiege(villageId) {
+    const village = findCity(villageId);
+    if (!village || !village.war) return;
+
+    const { size, unassigned } = readWarbandInput(villageId);
+    if (unassigned <= 0) {
+        addLog('No unassigned followers available to reinforce the siege.');
+        return;
+    }
+
+    const cost = getDeclareWarFaithCost(village);
+    if (gameState.progression.faith < cost) {
+        addLog(`Need ${cost} faith to send reinforcements to ${village.name}.`);
+        return;
+    }
+    gameState.progression.faith -= cost;
+
+    village.war.warbandSent += size;
+    village.war.warbandAlive += size;
+
+    addLog(`${size} reinforcement${size === 1 ? '' : 's'} sent to the siege of ${village.name}.`);
+    updateUI();
+    saveGame();
+}
+
+export function pacifyOutpost(villageId) {
+    const village = findCity(villageId);
+    if (!village) return;
+    if (village.resolutionType !== 'conquered' || !(Number.isFinite(village.unrest) && village.unrest > 0)) return;
+
+    const cost = Number.isFinite(gameState.costs.pacifyOutpostFaithCost) ? gameState.costs.pacifyOutpostFaithCost : 100;
+    if (gameState.progression.faith < cost) {
+        addLog(`Need ${cost} faith to send envoys to pacify ${village.name}.`);
+        return;
+    }
+    gameState.progression.faith -= cost;
+
+    const exploration = getExplorationState();
+    const reduction = Number.isFinite(exploration.pacifyOutpostUnrestReduction) ? exploration.pacifyOutpostUnrestReduction : 20;
+    village.unrest = Math.max(0, village.unrest - reduction);
+
+    addLog(`Envoys sent to pacify ${village.name}. Unrest now ${Math.floor(village.unrest)}.`);
+    updateUI();
+    saveGame();
+}
+
+function resolveSiegeVictory(village, exploration) {
+    const war = village.war;
+    const casualtyRatio = war.warbandSent > 0 ? Math.max(0, 1 - war.warbandAlive / war.warbandSent) : 0;
+    const brutality = Number.isFinite(exploration.siegeBrutalityPopulationFactor) ? exploration.siegeBrutalityPopulationFactor : 0.8;
+    const survivalFloor = Number.isFinite(exploration.siegePopulationSurvivalFloor) ? exploration.siegePopulationSurvivalFloor : 0.3;
+    const survivalRate = Math.max(survivalFloor, 1 - casualtyRatio * brutality);
+
+    const max = getMaxFollowers();
+    const capacity = Math.max(0, max - gameState.progression.followers);
+    const populationYield = Math.floor(village.population * survivalRate);
+    const grantedFollowers = Math.min(populationYield, capacity);
+    if (grantedFollowers > 0) {
+        gameState.progression.followers += grantedFollowers;
+    }
+
+    village.resolutionType = 'conquered';
+    village.convertedPercent = 0;
+    village.unrest = Number.isFinite(exploration.warOutpostUnrestInitial) ? exploration.warOutpostUnrestInitial : 50;
+    village.war = null;
+
+    game.alignment = Math.max(-100, Math.min(100, game.alignment - game.alignmentConquerLoss));
+    game.factionFavor.sekhmet += game.sekhmetFavorConquerGain;
+    if (!game.alignmentVisible) game.alignmentVisible = true;
+
+    return { grantedFollowers, survivalRate };
+}
+
+function resolveSiegeDefeat(village) {
+    village.war = null;
+}
+
+function processSiegeEvent(village, exploration) {
+    const war = village.war;
+    const roll = Math.random();
+
+    if (roll < 0.4) {
+        const min = Number.isFinite(exploration.siegeAmbushCasualtyMin) ? exploration.siegeAmbushCasualtyMin : 0.05;
+        const max = Number.isFinite(exploration.siegeAmbushCasualtyMax) ? exploration.siegeAmbushCasualtyMax : 0.15;
+        const fraction = randomInRange(min, max);
+        const casualties = Math.max(1, Math.floor(war.warbandAlive * fraction));
+        const actual = removeFollowersFromSettlement(casualties);
+        war.warbandAlive = Math.max(0, war.warbandAlive - actual);
+        return { type: 'ambush', casualties: actual };
+    }
+
+    if (roll < 0.7) {
+        const min = Number.isFinite(exploration.siegeAttritionCasualtyMin) ? exploration.siegeAttritionCasualtyMin : 0.01;
+        const max = Number.isFinite(exploration.siegeAttritionCasualtyMax) ? exploration.siegeAttritionCasualtyMax : 0.04;
+        const fraction = randomInRange(min, max);
+        const casualties = Math.max(0, Math.floor(war.warbandAlive * fraction));
+        if (casualties <= 0) return null;
+        const actual = removeFollowersFromSettlement(casualties);
+        war.warbandAlive = Math.max(0, war.warbandAlive - actual);
+        return { type: 'attrition', casualties: actual };
+    }
+
+    const bonus = Number.isFinite(exploration.siegeReinforcementProgressBonus) ? exploration.siegeReinforcementProgressBonus : 5;
+    war.progress = Math.min(100, war.progress + bonus);
+    return { type: 'breakthrough', bonus };
+}
+
+// Called from tick.js every simulated second: advances every active siege,
+// rolls periodic events, resolves win/loss, and decays unrest on war-won
+// outposts. Kept here (not in tick.js) alongside the rest of the settlement-
+// mutation logic; tick.js stays a thin driver, matching how the rest of this
+// module is organized.
+export function processSiegeTick(dtSeconds, onEvent) {
+    const exploration = game.exploration;
+    if (!exploration || !Array.isArray(exploration.villages)) return;
+
+    exploration.villages.forEach((village) => {
+        if (village.tier === 'city' && village.resolutionType === 'conquered' && Number.isFinite(village.unrest) && village.unrest > 0) {
+            const decay = Number.isFinite(exploration.warOutpostUnrestDecayPerSecond) ? exploration.warOutpostUnrestDecayPerSecond : 0.05;
+            village.unrest = Math.max(0, village.unrest - decay * dtSeconds);
+        }
+
+        const war = village.war;
+        if (!war) return;
+
+        if (war.warbandAlive <= 0) {
+            resolveSiegeDefeat(village);
+            onEvent('siege-defeat', { villageName: village.name });
+            return;
+        }
+
+        const progressRate = getSiegeProgressPerSecond(village);
+        war.progress = Math.min(100, (Number.isFinite(war.progress) ? war.progress : 0) + progressRate * dtSeconds);
+
+        war.eventTimer = (Number.isFinite(war.eventTimer) ? war.eventTimer : 0) + dtSeconds;
+        const checkInterval = Number.isFinite(exploration.siegeEventCheckIntervalSeconds) ? exploration.siegeEventCheckIntervalSeconds : 180;
+        while (war.eventTimer >= checkInterval && war.warbandAlive > 0 && war.progress < 100) {
+            war.eventTimer -= checkInterval;
+            const eventChance = Number.isFinite(exploration.siegeEventChance) ? exploration.siegeEventChance : 0.35;
+            if (Math.random() < eventChance) {
+                const result = processSiegeEvent(village, exploration);
+                if (result) onEvent('siege-event', { villageName: village.name, ...result });
+            }
+        }
+
+        if (war.warbandAlive <= 0) {
+            resolveSiegeDefeat(village);
+            onEvent('siege-defeat', { villageName: village.name });
+        } else if (war.progress >= 100) {
+            const result = resolveSiegeVictory(village, exploration);
+            onEvent('siege-victory', { villageName: village.name, ...result });
+        }
+    });
 }
 
 export function collectWildAreaResources(areaId) {

@@ -3,7 +3,8 @@ import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
-import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier, getWoodStoneCap, getFoodCap, getScribeFaithMultiplier, getFoodSpoilageRate, getGranaryPassiveFoodPerSecond, getHelFavorStarlightMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, checkFavorTierUnlocks } from './utils/helpers.js';
+import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier, getWoodStoneCap, getFoodCap, getScribeFaithMultiplier, getFoodSpoilageRate, getGranaryPassiveFoodPerSecond, getHelFavorStarlightMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, getWarOutpostProductionMultiplier, checkFavorTierUnlocks } from './utils/helpers.js';
+import { processSiegeTick } from './actions.js';
 
 const LIVE_TICK_CLAMP_SECONDS = 2;
 const CATCHUP_CHUNK_SECONDS = LIVE_TICK_CLAMP_SECONDS;
@@ -102,6 +103,17 @@ function defaultLiveEventHandler(eventType, payload) {
         const godLabel = FAVOR_GOD_LABELS[payload.godId] || payload.godId;
         addLog(`${godLabel}'s favor deepens (tier ${payload.tier}). A new blessing takes hold.`);
     }
+    else if (eventType === 'siege-event' && payload) {
+        if (payload.type === 'ambush') addLog(`${payload.villageName}: the defenders sortied out. Lost ${payload.casualties} to the ambush.`);
+        else if (payload.type === 'attrition') addLog(`${payload.villageName}: the siege grinds on. Lost ${payload.casualties} to attrition.`);
+        else if (payload.type === 'breakthrough') addLog(`${payload.villageName}: a breach opens in the walls! Siege progress +${payload.bonus}%.`);
+    }
+    else if (eventType === 'siege-defeat' && payload) {
+        addLog(`The siege of ${payload.villageName} has collapsed. Your warband was destroyed.`);
+    }
+    else if (eventType === 'siege-victory' && payload) {
+        addLog(`${payload.villageName} has fallen! ${payload.grantedFollowers} survivor${payload.grantedFollowers === 1 ? '' : 's'} join your cult as followers.`);
+    }
 }
 
 // Pure simulation step: mutates game state only, no DOM/localStorage I/O.
@@ -124,11 +136,20 @@ function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
         ? game.exploration.villageOutpostFaithPerSecond
         : 0.05;
     if (outpostFaithPerSecond > 0 && Array.isArray(game.exploration?.villages)) {
-        const outpostCount = game.exploration.villages.reduce((count, village) => count + (village.resolutionType === 'converted' ? 1 : 0), 0);
-        if (outpostCount > 0) {
-            gameState.progression.faith += outpostCount * outpostFaithPerSecond * dtSeconds;
+        // Every resolved settlement tithes forever now, not just the converted
+        // ones - conquered settlements (village raids and war-won cities alike)
+        // used to be a one-time burst with no ongoing value. War-won cities
+        // ramp back up to full output as their unrest decays.
+        const outpostRate = game.exploration.villages.reduce((sum, village) => {
+            if (village.resolutionType !== 'converted' && village.resolutionType !== 'conquered') return sum;
+            return sum + outpostFaithPerSecond * getWarOutpostProductionMultiplier(village);
+        }, 0);
+        if (outpostRate > 0) {
+            gameState.progression.faith += outpostRate * dtSeconds;
         }
     }
+
+    processSiegeTick(dtSeconds, onEvent);
 
     if (Array.isArray(game.worlds) && game.worlds.length > 0) {
         const worldStarlightPerSecond = game.worlds.reduce((sum, world) => {

@@ -58,7 +58,10 @@ export {
     buyFromSettlement,
     sellToSettlement,
     buySettlementGood,
-    hirePilgrims
+    hirePilgrims,
+    declareWar,
+    reinforceSiege,
+    pacifyOutpost
 } from './actions.js';
 
 export {

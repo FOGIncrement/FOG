@@ -861,6 +861,18 @@ button:disabled.doctrine-foreclosed {
     color: var(--good);
 }
 
+.settlement-tag {
+    display: inline-block;
+    font-size: 0.7em;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--sekhmet);
+    border: 1px solid var(--sekhmet);
+    border-radius: 4px;
+    padding: 1px 5px;
+    vertical-align: middle;
+}
+
 .area-empty {
     color: var(--ink-faint);
     font-style: italic;

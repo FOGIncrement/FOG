@@ -300,6 +300,32 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
         ]
     },
     {
+        title: 'War & Cities',
+        entries: [
+            { label: 'City Chance (base)', target: game.exploration, key: 'cityChanceBase', step: 0.01, min: 0 },
+            { label: 'City Chance / Distance Tier', target: game.exploration, key: 'cityChancePerDistanceTier', step: 0.005, min: 0 },
+            { label: 'City Chance Cap', target: game.exploration, key: 'cityChanceCap', step: 0.05, min: 0 },
+            { label: 'City Population Multiplier', target: game.exploration, key: 'cityPopulationMultiplier', step: 0.1, min: 1 },
+            { label: 'City Resistance Multiplier', target: game.exploration, key: 'cityResistanceMultiplier', step: 0.1, min: 1 },
+            { label: 'Declare War Faith Cost (base)', target: game.exploration, key: 'declareWarFaithCost', step: 5, min: 0 },
+            { label: 'Warband Power / Follower', target: game.exploration, key: 'warbandPowerPerFollower', step: 0.05, min: 0.01 },
+            { label: 'Siege Event Check Interval (s)', target: game.exploration, key: 'siegeEventCheckIntervalSeconds', step: 10, min: 1 },
+            { label: 'Siege Event Chance', target: game.exploration, key: 'siegeEventChance', step: 0.05, min: 0 },
+            { label: 'Siege Ambush Casualty Min', target: game.exploration, key: 'siegeAmbushCasualtyMin', step: 0.01, min: 0 },
+            { label: 'Siege Ambush Casualty Max', target: game.exploration, key: 'siegeAmbushCasualtyMax', step: 0.01, min: 0 },
+            { label: 'Siege Attrition Casualty Min', target: game.exploration, key: 'siegeAttritionCasualtyMin', step: 0.01, min: 0 },
+            { label: 'Siege Attrition Casualty Max', target: game.exploration, key: 'siegeAttritionCasualtyMax', step: 0.01, min: 0 },
+            { label: 'Siege Breakthrough Progress Bonus', target: game.exploration, key: 'siegeReinforcementProgressBonus', step: 1, min: 0 },
+            { label: 'Siege Brutality Population Factor', target: game.exploration, key: 'siegeBrutalityPopulationFactor', step: 0.05, min: 0 },
+            { label: 'Siege Population Survival Floor', target: game.exploration, key: 'siegePopulationSurvivalFloor', step: 0.05, min: 0 },
+            { label: 'War Outpost Unrest (initial)', target: game.exploration, key: 'warOutpostUnrestInitial', step: 5, min: 0 },
+            { label: 'War Outpost Unrest Decay / s', target: game.exploration, key: 'warOutpostUnrestDecayPerSecond', step: 0.01, min: 0 },
+            { label: 'War Outpost Unrest Production Penalty', target: game.exploration, key: 'warOutpostUnrestProductionPenalty', step: 0.05, min: 0 },
+            { label: 'Pacify Outpost Unrest Reduction', target: game.exploration, key: 'pacifyOutpostUnrestReduction', step: 5, min: 0 },
+            { label: 'Pacify Outpost Faith Cost', target: gameState.costs, key: 'pacifyOutpostFaithCost', step: 10, min: 0 }
+        ]
+    },
+    {
         title: 'Food System',
         entries: [
             { label: 'Farmer Food Per Second', target: gameState.rates, key: 'farmerFoodPerSecond', step: 0.1, min: 0 },
@@ -467,6 +493,33 @@ document.addEventListener("DOMContentLoaded", () => {
                 const villageId = conquerBtn.dataset.villageId;
                 if (villageId && typeof gameApi.conquerVillage === 'function') {
                     gameApi.conquerVillage(villageId);
+                }
+                return;
+            }
+
+            const declareWarBtn = target.closest('.city-declare-war-btn');
+            if (declareWarBtn) {
+                const villageId = declareWarBtn.dataset.villageId;
+                if (villageId && typeof gameApi.declareWar === 'function') {
+                    gameApi.declareWar(villageId);
+                }
+                return;
+            }
+
+            const reinforceBtn = target.closest('.city-reinforce-btn');
+            if (reinforceBtn) {
+                const villageId = reinforceBtn.dataset.villageId;
+                if (villageId && typeof gameApi.reinforceSiege === 'function') {
+                    gameApi.reinforceSiege(villageId);
+                }
+                return;
+            }
+
+            const pacifyBtn = target.closest('.city-pacify-btn');
+            if (pacifyBtn) {
+                const villageId = pacifyBtn.dataset.villageId;
+                if (villageId && typeof gameApi.pacifyOutpost === 'function') {
+                    gameApi.pacifyOutpost(villageId);
                 }
                 return;
             }

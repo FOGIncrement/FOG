@@ -1064,6 +1064,69 @@ export function loadGame() {
                 game.exploration.conquerStoneLootMax = game.exploration.conquerStoneLootMin + 200;
             }
 
+            // --- Cities and War ---
+            if (!Number.isFinite(game.exploration.cityChanceBase) || game.exploration.cityChanceBase < 0) {
+                game.exploration.cityChanceBase = 0.03;
+            }
+            if (!Number.isFinite(game.exploration.cityChancePerDistanceTier) || game.exploration.cityChancePerDistanceTier < 0) {
+                game.exploration.cityChancePerDistanceTier = 0.025;
+            }
+            if (!Number.isFinite(game.exploration.cityChanceCap) || game.exploration.cityChanceCap < 0 || game.exploration.cityChanceCap > 1) {
+                game.exploration.cityChanceCap = 0.5;
+            }
+            if (!Number.isFinite(game.exploration.cityPopulationMultiplier) || game.exploration.cityPopulationMultiplier < 1) {
+                game.exploration.cityPopulationMultiplier = 2.2;
+            }
+            if (!Number.isFinite(game.exploration.cityResistanceMultiplier) || game.exploration.cityResistanceMultiplier < 1) {
+                game.exploration.cityResistanceMultiplier = 1.4;
+            }
+            if (!Number.isFinite(game.exploration.declareWarFaithCost) || game.exploration.declareWarFaithCost < 0) {
+                game.exploration.declareWarFaithCost = 60;
+            }
+            if (!Number.isFinite(game.exploration.warbandPowerPerFollower) || game.exploration.warbandPowerPerFollower <= 0) {
+                game.exploration.warbandPowerPerFollower = 0.4;
+            }
+            if (!Number.isFinite(game.exploration.siegeEventCheckIntervalSeconds) || game.exploration.siegeEventCheckIntervalSeconds < 1) {
+                game.exploration.siegeEventCheckIntervalSeconds = 180;
+            }
+            game.exploration.siegeEventChance = clampProbability(game.exploration.siegeEventChance, 0.35);
+            if (!Number.isFinite(game.exploration.siegeAmbushCasualtyMin) || game.exploration.siegeAmbushCasualtyMin < 0) {
+                game.exploration.siegeAmbushCasualtyMin = 0.05;
+            }
+            if (!Number.isFinite(game.exploration.siegeAmbushCasualtyMax) || game.exploration.siegeAmbushCasualtyMax < game.exploration.siegeAmbushCasualtyMin) {
+                game.exploration.siegeAmbushCasualtyMax = game.exploration.siegeAmbushCasualtyMin + 0.1;
+            }
+            if (!Number.isFinite(game.exploration.siegeAttritionCasualtyMin) || game.exploration.siegeAttritionCasualtyMin < 0) {
+                game.exploration.siegeAttritionCasualtyMin = 0.01;
+            }
+            if (!Number.isFinite(game.exploration.siegeAttritionCasualtyMax) || game.exploration.siegeAttritionCasualtyMax < game.exploration.siegeAttritionCasualtyMin) {
+                game.exploration.siegeAttritionCasualtyMax = game.exploration.siegeAttritionCasualtyMin + 0.03;
+            }
+            if (!Number.isFinite(game.exploration.siegeReinforcementProgressBonus) || game.exploration.siegeReinforcementProgressBonus < 0) {
+                game.exploration.siegeReinforcementProgressBonus = 5;
+            }
+            if (!Number.isFinite(game.exploration.siegeBrutalityPopulationFactor) || game.exploration.siegeBrutalityPopulationFactor < 0 || game.exploration.siegeBrutalityPopulationFactor > 1) {
+                game.exploration.siegeBrutalityPopulationFactor = 0.8;
+            }
+            if (!Number.isFinite(game.exploration.siegePopulationSurvivalFloor) || game.exploration.siegePopulationSurvivalFloor < 0 || game.exploration.siegePopulationSurvivalFloor > 1) {
+                game.exploration.siegePopulationSurvivalFloor = 0.3;
+            }
+            if (!Number.isFinite(game.exploration.warOutpostUnrestInitial) || game.exploration.warOutpostUnrestInitial < 0 || game.exploration.warOutpostUnrestInitial > 100) {
+                game.exploration.warOutpostUnrestInitial = 50;
+            }
+            if (!Number.isFinite(game.exploration.warOutpostUnrestDecayPerSecond) || game.exploration.warOutpostUnrestDecayPerSecond < 0) {
+                game.exploration.warOutpostUnrestDecayPerSecond = 0.05;
+            }
+            if (!Number.isFinite(game.exploration.warOutpostUnrestProductionPenalty) || game.exploration.warOutpostUnrestProductionPenalty < 0 || game.exploration.warOutpostUnrestProductionPenalty > 1) {
+                game.exploration.warOutpostUnrestProductionPenalty = 0.6;
+            }
+            if (!Number.isFinite(game.exploration.pacifyOutpostUnrestReduction) || game.exploration.pacifyOutpostUnrestReduction < 0) {
+                game.exploration.pacifyOutpostUnrestReduction = 20;
+            }
+            if (!Number.isFinite(gameState.costs.pacifyOutpostFaithCost) || gameState.costs.pacifyOutpostFaithCost < 0) {
+                gameState.costs.pacifyOutpostFaithCost = 100;
+            }
+
             migrateLegacyWildAreaDistances(game.exploration);
             syncDiscoveredAreasByDistance(game.exploration);
             applyDiscoveredAreaPassiveEffects(game.exploration);
@@ -1089,6 +1152,21 @@ export function loadGame() {
                 if (!resolutionType && convertedPercent >= 100) {
                     resolutionType = 'converted';
                 }
+                const tier = village?.tier === 'city' ? 'city' : 'village';
+                let war = null;
+                if (tier === 'city' && village?.war && typeof village.war === 'object' && !resolutionType) {
+                    const warbandSent = Number.isFinite(village.war.warbandSent) ? Math.max(0, Math.floor(village.war.warbandSent)) : 0;
+                    const warbandAlive = Number.isFinite(village.war.warbandAlive) ? Math.max(0, Math.min(warbandSent, Math.floor(village.war.warbandAlive))) : 0;
+                    if (warbandSent > 0 && warbandAlive > 0) {
+                        war = {
+                            warbandSent,
+                            warbandAlive,
+                            progress: Number.isFinite(village.war.progress) ? Math.max(0, Math.min(100, village.war.progress)) : 0,
+                            resistanceAtStart: Number.isFinite(village.war.resistanceAtStart) ? Math.max(1, village.war.resistanceAtStart) : 50,
+                            eventTimer: Number.isFinite(village.war.eventTimer) ? Math.max(0, village.war.eventTimer) : 0
+                        };
+                    }
+                }
                 return {
                     id: village?.id || `village-${index + 1}`,
                     name: village?.name || `Village ${index + 1}`,
@@ -1099,7 +1177,10 @@ export function loadGame() {
                     discovered: Boolean(village?.discovered),
                     sermonsHeld: Number.isFinite(village?.sermonsHeld) ? Math.max(0, Math.floor(village.sermonsHeld)) : 0,
                     prophetPresent: Boolean(village?.prophetPresent),
-                    resolutionType
+                    resolutionType,
+                    tier,
+                    war,
+                    unrest: Number.isFinite(village?.unrest) ? Math.max(0, Math.min(100, village.unrest)) : 0
                 };
             });
             if (!Number.isFinite(game.exploration.nextVillageIndex) || game.exploration.nextVillageIndex < 2) {

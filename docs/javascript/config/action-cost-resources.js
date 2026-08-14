@@ -101,5 +101,8 @@ export const CARD_ACTION_COST_RESOURCES = {
     'ruins-search-btn': ['followersContainer'],
     'settlement-buy-resource-btn': ['faithContainer'],
     'settlement-sell-resource-btn': ['woodContainer', 'stoneContainer', 'foodContainer'],
-    'settlement-buy-good-btn': ['faithContainer']
+    'settlement-buy-good-btn': ['faithContainer'],
+    'city-declare-war-btn': ['faithContainer', 'followersContainer'],
+    'city-reinforce-btn': ['faithContainer', 'followersContainer'],
+    'city-pacify-btn': ['faithContainer']
 };
