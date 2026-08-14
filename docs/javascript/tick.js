@@ -48,7 +48,7 @@ function applyRoleProduction(roleDefinition, roleCount, dtSeconds) {
         if (output.target === 'resource') {
             const resource = gameState.resources?.[output.key];
             if (resource && Number.isFinite(resource.amount)) {
-                resource.amount += delta;
+                resource.add(delta);
             }
             return;
         }
