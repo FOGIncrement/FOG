@@ -3,6 +3,7 @@ import { createRoleCountMap, createRoleUnlockMap, createRoleAccumulatorMap } fro
 import { createFactionFavorMap } from '../config/factions.js';
 import { createDoctrineChoiceMap } from '../config/doctrines.js';
 import { createAscensionUpgradeRankMap } from '../config/ascension.js';
+import { createFavorTierClaimedMap } from '../config/favor-tiers.js';
 
 // ===== GAME STATE =====
 export const gameState = {
@@ -157,6 +158,16 @@ export const game = {
     alignmentHelOfferingLoss: 5,
     helFavorOfferingGain: 10,
     factionFavor: createFactionFavorMap(0),
+    factionFavorTiersSeen: createFavorTierClaimedMap(0),
+    heliosFavorCostReductionPerTier: 0.05,
+    heliosFavorCapacityBonusPerTier: 0.05,
+    sekhmetFavorYieldBonusPerTier: 0.08,
+    sekhmetFavorHazardReductionPerTier: 0.03,
+    danuFavorOutputBonusPerTier: 0.06,
+    danuFavorCapBonusPerTier: 0.08,
+    helFavorConsumptionReductionPerTier: 0.04,
+    helFavorStarlightBonusPerTier: 0.10,
+    helFavorEchoesBonusPerTier: 0.08,
     doctrinesUnlocked: false,
     doctrineChoices: createDoctrineChoiceMap(null),
     councilFollowerRequirement: 10,
@@ -187,6 +198,7 @@ export const game = {
     worldsUnlockMetersExploredRequirement: 3000,
     worldVillagesResolvedToChartBase: 1,
     worldTierCostMultiplierStep: 0.25,
+    settlementTier: 0,
     storehouse: 0,
     woodStoneCapBase: 2000,
     storehouseCapPerLevel: 1000,

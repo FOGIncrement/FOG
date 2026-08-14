@@ -1,9 +1,18 @@
+import { getFavorTierCount } from './favor-tiers.js';
+
 const ABUNDANCE_ROLE_IDS = ['hunters', 'gatherers', 'farmers'];
 
 export function getRoleOutputMultiplier(roleId, game) {
     let multiplier = 1;
     if (ABUNDANCE_ROLE_IDS.includes(roleId) && game.danuBlessingUnlocked && Number.isFinite(game.danuBlessingMultiplier)) {
         multiplier *= game.danuBlessingMultiplier;
+    }
+    if (ABUNDANCE_ROLE_IDS.includes(roleId)) {
+        const danuTiers = getFavorTierCount('danu', game);
+        if (danuTiers > 0) {
+            const perTier = Number.isFinite(game.danuFavorOutputBonusPerTier) ? game.danuFavorOutputBonusPerTier : 0.06;
+            multiplier *= 1 + danuTiers * perTier;
+        }
     }
     if (
         (ABUNDANCE_ROLE_IDS.includes(roleId) || roleId === 'ritualists') &&

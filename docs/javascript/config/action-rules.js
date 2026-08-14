@@ -1,5 +1,5 @@
 import { setTooltipContent } from '../utils/tooltip.js';
-import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap } from '../utils/helpers.js';
+import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getNextSettlementTier, canAffordSettlementTier, getFavorTierCount, getNextFavorTierThreshold } from '../utils/helpers.js';
 import { DOCTRINE_GROUP_BY_ID } from './doctrines.js';
 import { TEMPLE_OPTION_BY_GOD } from './temples.js';
 import { ASCENSION_UPGRADE_BY_ID } from './ascension.js';
@@ -404,6 +404,42 @@ export function getActionUiRules(context) {
             setButtonLabel(el, 'Build Altar');
             el.classList.toggle('purchased', !canAfford);
             applyTooltip(el, 'Build Altar\nConstruct a sacred altar to empower preaching.', `Cost: ${woodCost} wood, ${stoneCost} stone, ${faithCost} faith\nEffect: Preach rolls gain +1`);
+        },
+        advanceSettlementTier(el) {
+            if (!ritualBuilt) {
+                setVisible(el, false);
+                return;
+            }
+            const tier = getNextSettlementTier();
+            if (!tier) {
+                setVisible(el, true);
+                el.disabled = true;
+                setButtonLabel(el, 'Settlement Fully Grown');
+                el.classList.add('purchased');
+                applyTooltip(el, 'Advance Settlement\nYour settlement has reached its final known form.', 'Status: maxed');
+                return;
+            }
+
+            setVisible(el, true);
+            const canAfford = canAffordSettlementTier(tier);
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Advance to ${tier.name}`);
+            el.classList.toggle('purchased', !canAfford);
+
+            const costParts = [];
+            if (tier.faithCost) costParts.push(`${tier.faithCost} faith`);
+            if (tier.woodCost) costParts.push(`${tier.woodCost} wood`);
+            if (tier.stoneCost) costParts.push(`${tier.stoneCost} stone`);
+            if (tier.starlightCost) costParts.push(`${tier.starlightCost} starlight`);
+            const reqParts = [`${tier.followerRequirement.toLocaleString()} followers`];
+            if (tier.requiresTemple) reqParts.push('Temple built');
+            if (tier.requiresWorlds) reqParts.push('Worlds unlocked');
+
+            applyTooltip(
+                el,
+                `Advance to ${tier.name}\n${tier.description}`,
+                `Requires: ${reqParts.join(', ')}\nCost: ${costParts.join(', ')}\nEffect: Max follower capacity x${tier.capacityMultiplier}`
+            );
         },
         buildStorehouse(el) {
             if (!ritualBuilt) {

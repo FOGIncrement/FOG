@@ -25,6 +25,7 @@ export const ACTION_COST_RESOURCES = {
     buildRitualCircle: ['faithContainer'],
     buildShelter: ['woodContainer', 'stoneContainer'],
     buildAltar: ['woodContainer', 'stoneContainer', 'faithContainer'],
+    advanceSettlementTier: ['faithContainer', 'woodContainer', 'stoneContainer', 'starlightContainer'],
     buildStorehouse: ['faithContainer'],
     buildGranary: ['woodContainer', 'stoneContainer'],
     buildScriptorium: ['faithContainer'],

@@ -11,6 +11,7 @@ export {
     feedFollowers,
     buildRitualCircle,
     buildAltar,
+    advanceSettlementTier,
     holdFeast,
     unlockShelterUpgrade,
     unlockExploration,

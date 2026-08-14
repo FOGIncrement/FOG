@@ -1,6 +1,6 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus, getFavorTierCount, getNextFavorTierThreshold, getNextSettlementTier, getSettlementTierCapacityMultiplier } from './utils/helpers.js';
 import { ROLE_DEFINITIONS, getRoleOutputMultiplier } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
@@ -9,6 +9,7 @@ import { buildingRegistry, actionRegistry } from './registries/index.js';
 import { setTooltipContent } from './utils/tooltip.js';
 import { getAscensionTitle } from './config/ascension.js';
 import { getNextUniverseConquestTier } from './config/universe-conquest.js';
+import { FAVOR_GOD_DESCRIPTIONS, FAVOR_TIER_THRESHOLDS } from './config/favor-tiers.js';
 
 function getExplorationCapacityRequirement() {
     return Number.isFinite(game.prophetUnlockCapacityRequirement)
@@ -25,6 +26,22 @@ function describeAlignment(value) {
     if (value > 10) return 'Good';
     if (value < -10) return 'Evil';
     return 'Neutral';
+}
+
+const BIG_NUMBER_UNITS = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
+
+// Kittens-Game-style abbreviated large numbers, since capacity/faith/etc.
+// are now designed to scale into the billions and beyond.
+export function formatBigNumber(value) {
+    if (!Number.isFinite(value)) return '0';
+    const sign = value < 0 ? '-' : '';
+    const abs = Math.abs(value);
+    if (abs < 1000) return `${sign}${abs % 1 === 0 ? abs.toFixed(0) : abs.toFixed(2)}`;
+
+    const tier = Math.min(BIG_NUMBER_UNITS.length - 1, Math.floor(Math.log10(abs) / 3));
+    const scaled = abs / Math.pow(1000, tier);
+    const decimals = scaled < 10 ? 2 : scaled < 100 ? 1 : 0;
+    return `${sign}${scaled.toFixed(decimals)}${BIG_NUMBER_UNITS[tier]}`;
 }
 
 function applyRateClass(el, value) {
@@ -83,12 +100,17 @@ export function updateUI() {
 
     if (followersEl) {
         const maxFollowers = getMaxFollowers();
-        followersEl.innerText = `${gameState.progression.followers}/${maxFollowers}`;
+        followersEl.innerText = `${formatBigNumber(gameState.progression.followers)}/${formatBigNumber(maxFollowers)}`;
         const perShelter = (game.shelterCapacityPerShelter || 3) * (game.shelterCapacityMultiplier || 1);
+        const nextTier = getNextSettlementTier();
+        const tierMultiplier = getSettlementTierCapacityMultiplier();
+        const nextTierLine = nextTier
+            ? `\nNext settlement tier: ${nextTier.name} (x${nextTier.capacityMultiplier}) — see Build tab`
+            : '';
         setTooltipContent(
             followersEl,
             'Followers\nThe faithful you have converted or trained.',
-            `Capacity: 1 base + ${game.shelter} shelter${game.shelter === 1 ? '' : 's'} × ${perShelter} = ${maxFollowers}\nUnassigned: ${getUnassignedFollowers()}`
+            `Base: 1 + ${game.shelter} shelter${game.shelter === 1 ? '' : 's'} × ${perShelter}\nSettlement tier multiplier: x${formatBigNumber(tierMultiplier)}\nCapacity: ${Math.floor(maxFollowers).toLocaleString()}\nUnassigned: ${formatBigNumber(getUnassignedFollowers())}${nextTierLine}`
         );
     }
     if (faithEl) {
@@ -96,7 +118,7 @@ export function updateUI() {
         const ritualistFaithRate = getRoleCount('ritualists') * gameState.rates.ritualistFaithPerSecond * getRoleOutputMultiplier('ritualists', game);
         const outpostFaithRate = getOutpostFaithRate();
         const totalFaithRate = followerFaithRate + ritualistFaithRate + outpostFaithRate;
-        faithEl.innerText = `${gameState.progression.faith.toFixed(2)} (+${totalFaithRate.toFixed(3)}/s)`;
+        faithEl.innerText = `${formatBigNumber(gameState.progression.faith)} (+${formatBigNumber(totalFaithRate)}/s)`;
         setTooltipContent(
             faithEl,
             'Faith\nSpent on nearly everything.',
@@ -329,11 +351,27 @@ export function updateUI() {
         const el = document.getElementById(`${faction.id}FavorValue`);
         if (!el) return;
         const favorValue = game.factionFavor[faction.id];
-        el.innerText = `${favorValue.toFixed(0)}`;
+        const tierCount = getFavorTierCount(faction.id, game);
+        const nextThreshold = getNextFavorTierThreshold(faction.id, game);
+        el.innerText = `${favorValue.toFixed(0)} (tier ${tierCount}/${FAVOR_TIER_THRESHOLDS.length})`;
         const row = el.closest('p');
         if (row) {
-            const fillPercent = Math.max(0, Math.min(100, (favorValue / 500) * 100));
+            const tierFloor = tierCount > 0 ? FAVOR_TIER_THRESHOLDS[tierCount - 1] : 0;
+            const tierCeiling = nextThreshold != null ? nextThreshold : tierFloor;
+            const span = Math.max(1, tierCeiling - tierFloor);
+            const fillPercent = nextThreshold != null
+                ? Math.max(0, Math.min(100, ((favorValue - tierFloor) / span) * 100))
+                : 100;
             row.style.setProperty('--favor-fill', `${fillPercent}%`);
+
+            const nextLine = nextThreshold != null
+                ? `Next tier at ${nextThreshold} favor (${(nextThreshold - favorValue).toFixed(0)} to go).`
+                : 'All favor tiers reached.';
+            setTooltipContent(
+                row,
+                `${faction.label} Favor\n${FAVOR_GOD_DESCRIPTIONS[faction.id] || ''}`,
+                `Current: ${favorValue.toFixed(0)} (tier ${tierCount}/${FAVOR_TIER_THRESHOLDS.length})\n${nextLine}`
+            );
         }
     });
 

@@ -3,7 +3,7 @@ import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
-import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier, getWoodStoneCap, getFoodCap, getScribeFaithMultiplier, getFoodSpoilageRate, getGranaryPassiveFoodPerSecond } from './utils/helpers.js';
+import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier, getWoodStoneCap, getFoodCap, getScribeFaithMultiplier, getFoodSpoilageRate, getGranaryPassiveFoodPerSecond, getHelFavorStarlightMultiplier, checkFavorTierUnlocks } from './utils/helpers.js';
 
 const LIVE_TICK_CLAMP_SECONDS = 2;
 const CATCHUP_CHUNK_SECONDS = LIVE_TICK_CLAMP_SECONDS;
@@ -93,9 +93,15 @@ function processRoleSimulation(dtSeconds) {
     });
 }
 
-function defaultLiveEventHandler(eventType) {
+const FAVOR_GOD_LABELS = { helios: 'Helios', sekhmet: 'Sekhmet', danu: 'Danu', hel: 'Hel' };
+
+function defaultLiveEventHandler(eventType, payload) {
     if (eventType === 'hunger-critical') addLog('The faithful are starving.');
     else if (eventType === 'hunger-weak') addLog('The faithful grow weak.');
+    else if (eventType === 'favor-tier' && payload) {
+        const godLabel = FAVOR_GOD_LABELS[payload.godId] || payload.godId;
+        addLog(`${godLabel}'s favor deepens (tier ${payload.tier}). A new blessing takes hold.`);
+    }
 }
 
 // Pure simulation step: mutates game state only, no DOM/localStorage I/O.
@@ -107,6 +113,8 @@ function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
     gameState.resources.wood.cap = woodStoneCap;
     gameState.resources.stone.cap = woodStoneCap;
     gameState.resources.food.cap = getFoodCap();
+
+    checkFavorTierUnlocks().forEach((event) => onEvent('favor-tier', event));
 
     gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * getAscensionFaithMultiplier() * getScribeFaithMultiplier() * dtSeconds;
 
@@ -126,7 +134,7 @@ function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
             return sum + convertedCount * (Number.isFinite(world.outpostStarlightPerSecond) ? world.outpostStarlightPerSecond : 0);
         }, 0);
         if (worldStarlightPerSecond > 0) {
-            gameState.progression.starlight += worldStarlightPerSecond * dtSeconds;
+            gameState.progression.starlight += worldStarlightPerSecond * getHelFavorStarlightMultiplier() * dtSeconds;
         }
     }
 

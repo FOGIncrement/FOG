@@ -252,6 +252,20 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Feast Food Cost', target: game, key: 'feastFoodCost', step: 5, min: 0 },
             { label: 'Feast Faith Bonus Per Food', target: game, key: 'feastFaithBonusPerFood', step: 0.1, min: 0 }
         ]
+    },
+    {
+        title: 'Favor Tiers',
+        entries: [
+            { label: 'Helios: Cost Reduction / Tier', target: game, key: 'heliosFavorCostReductionPerTier', step: 0.01, min: 0 },
+            { label: 'Helios: Capacity Bonus / Tier', target: game, key: 'heliosFavorCapacityBonusPerTier', step: 0.01, min: 0 },
+            { label: 'Sekhmet: Yield Bonus / Tier', target: game, key: 'sekhmetFavorYieldBonusPerTier', step: 0.01, min: 0 },
+            { label: 'Sekhmet: Hazard Reduction / Tier', target: game, key: 'sekhmetFavorHazardReductionPerTier', step: 0.01, min: 0 },
+            { label: 'Danu: Output Bonus / Tier', target: game, key: 'danuFavorOutputBonusPerTier', step: 0.01, min: 0 },
+            { label: 'Danu: Cap Bonus / Tier', target: game, key: 'danuFavorCapBonusPerTier', step: 0.01, min: 0 },
+            { label: 'Hel: Consumption Reduction / Tier', target: game, key: 'helFavorConsumptionReductionPerTier', step: 0.01, min: 0 },
+            { label: 'Hel: Starlight Bonus / Tier', target: game, key: 'helFavorStarlightBonusPerTier', step: 0.01, min: 0 },
+            { label: 'Hel: Echoes Bonus / Tier', target: game, key: 'helFavorEchoesBonusPerTier', step: 0.01, min: 0 }
+        ]
     }
 ];
 

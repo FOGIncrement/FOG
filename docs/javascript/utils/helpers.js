@@ -1,6 +1,8 @@
 import { gameState, game } from '../classes/GameState.js';
 import { ROLE_DEFINITIONS } from '../config/roles.js';
 import { resolveUniverseConquestTier } from '../config/universe-conquest.js';
+import { getFavorTierCount, getNextFavorTierThreshold } from '../config/favor-tiers.js';
+import { SETTLEMENT_TIERS } from '../config/settlement-tiers.js';
 
 function normalizeRoleCount(value) {
     if (!Number.isFinite(value) || value < 0) return 0;
@@ -32,6 +34,110 @@ export function setRoleCount(roleId, count) {
     gameState.progression[roleId] = normalized;
 }
 
+export { getFavorTierCount, getNextFavorTierThreshold };
+
+const FAVOR_GOD_IDS = ['helios', 'sekhmet', 'danu', 'hel'];
+
+// Favor bonuses are always derived live from current favor - this only
+// tracks which tier-crossings the player has already been told about, so
+// tick.js can log a one-time notification without re-announcing on reload.
+export function checkFavorTierUnlocks() {
+    if (!game.factionFavorTiersSeen || typeof game.factionFavorTiersSeen !== 'object') {
+        game.factionFavorTiersSeen = {};
+    }
+    const newlyUnlocked = [];
+    FAVOR_GOD_IDS.forEach((godId) => {
+        const currentTiers = getFavorTierCount(godId, game);
+        const seenTiers = Number.isFinite(game.factionFavorTiersSeen[godId]) ? game.factionFavorTiersSeen[godId] : 0;
+        if (currentTiers > seenTiers) {
+            game.factionFavorTiersSeen[godId] = currentTiers;
+            newlyUnlocked.push({ godId, tier: currentTiers });
+        }
+    });
+    return newlyUnlocked;
+}
+
+export function getHeliosFavorCostMultiplier() {
+    const tiers = getFavorTierCount('helios', game);
+    if (tiers <= 0) return 1;
+    const perTier = Number.isFinite(game.heliosFavorCostReductionPerTier) ? game.heliosFavorCostReductionPerTier : 0.05;
+    return Math.max(0.3, 1 - tiers * perTier);
+}
+
+export function getHeliosFavorCapacityMultiplier() {
+    const tiers = getFavorTierCount('helios', game);
+    if (tiers <= 0) return 1;
+    const perTier = Number.isFinite(game.heliosFavorCapacityBonusPerTier) ? game.heliosFavorCapacityBonusPerTier : 0.05;
+    return 1 + tiers * perTier;
+}
+
+export function getSekhmetFavorYieldMultiplier() {
+    const tiers = getFavorTierCount('sekhmet', game);
+    if (tiers <= 0) return 1;
+    const perTier = Number.isFinite(game.sekhmetFavorYieldBonusPerTier) ? game.sekhmetFavorYieldBonusPerTier : 0.08;
+    return 1 + tiers * perTier;
+}
+
+export function getSekhmetFavorHazardMultiplier() {
+    const tiers = getFavorTierCount('sekhmet', game);
+    if (tiers <= 0) return 1;
+    const perTier = Number.isFinite(game.sekhmetFavorHazardReductionPerTier) ? game.sekhmetFavorHazardReductionPerTier : 0.03;
+    return Math.max(0.3, 1 - tiers * perTier);
+}
+
+export function getDanuFavorCapMultiplier() {
+    const tiers = getFavorTierCount('danu', game);
+    if (tiers <= 0) return 1;
+    const perTier = Number.isFinite(game.danuFavorCapBonusPerTier) ? game.danuFavorCapBonusPerTier : 0.08;
+    return 1 + tiers * perTier;
+}
+
+export function getHelFavorConsumptionMultiplier() {
+    const tiers = getFavorTierCount('hel', game);
+    if (tiers <= 0) return 1;
+    const perTier = Number.isFinite(game.helFavorConsumptionReductionPerTier) ? game.helFavorConsumptionReductionPerTier : 0.04;
+    return Math.max(0.2, 1 - tiers * perTier);
+}
+
+export function getHelFavorStarlightMultiplier() {
+    const tiers = getFavorTierCount('hel', game);
+    if (tiers <= 0) return 1;
+    const perTier = Number.isFinite(game.helFavorStarlightBonusPerTier) ? game.helFavorStarlightBonusPerTier : 0.10;
+    return 1 + tiers * perTier;
+}
+
+export function getHelFavorEchoesMultiplier() {
+    const tiers = getFavorTierCount('hel', game);
+    if (tiers <= 0) return 1;
+    const perTier = Number.isFinite(game.helFavorEchoesBonusPerTier) ? game.helFavorEchoesBonusPerTier : 0.08;
+    return 1 + tiers * perTier;
+}
+
+export function getSettlementTierCapacityMultiplier() {
+    let multiplier = 1;
+    const currentTier = Number.isFinite(game.settlementTier) ? game.settlementTier : 0;
+    for (let i = 0; i < currentTier && i < SETTLEMENT_TIERS.length; i += 1) {
+        multiplier *= SETTLEMENT_TIERS[i].capacityMultiplier;
+    }
+    return multiplier;
+}
+
+export function getNextSettlementTier() {
+    const currentTier = Number.isFinite(game.settlementTier) ? game.settlementTier : 0;
+    return SETTLEMENT_TIERS[currentTier] || null;
+}
+
+export function canAffordSettlementTier(tier) {
+    if (!tier) return false;
+    if (gameState.progression.followers < tier.followerRequirement) return false;
+    if (tier.requiresTemple && !game.temple?.built) return false;
+    if (tier.requiresWorlds && !game.worldsUnlocked) return false;
+    return gameState.progression.faith >= (tier.faithCost || 0)
+        && gameState.resources.wood.amount >= (tier.woodCost || 0)
+        && gameState.resources.stone.amount >= (tier.stoneCost || 0)
+        && gameState.progression.starlight >= (tier.starlightCost || 0);
+}
+
 export function getTempleCapacityMultiplier() {
     if (game.temple?.built && game.temple.godId === 'helios' && Number.isFinite(game.templeHeliosCapacityMultiplier)) {
         return game.templeHeliosCapacityMultiplier;
@@ -55,7 +161,11 @@ export function getTempleConsumptionMultiplier() {
 
 export function getMaxFollowers() {
     const perShelter = (game.shelterCapacityPerShelter || 3) * (game.shelterCapacityMultiplier || 1);
-    return (1 + game.shelter * perShelter) * getTempleCapacityMultiplier();
+    const base = 1 + game.shelter * perShelter;
+    return base
+        * getTempleCapacityMultiplier()
+        * getSettlementTierCapacityMultiplier()
+        * getHeliosFavorCapacityMultiplier();
 }
 
 export function getAssignedFollowers() {
@@ -69,6 +179,11 @@ export function getUnassignedFollowers() {
 }
 
 export function getNextGoal() {
+    // The guiding hand only ever accompanies your very first incarnation.
+    // Once you've Ascended, you're expected to know the way yourself.
+    if (Number.isFinite(game.ascension?.totalAscensions) && game.ascension.totalAscensions > 0) {
+        return null;
+    }
     if (game.ritualCircleBuilt < 1) {
         return { label: 'Build the Ritual Circle', detail: `Costs ${gameState.costs.ritualBtnCost} faith and unlocks the rest of the settlement.` };
     }
@@ -212,14 +327,14 @@ export function getWoodStoneCap() {
     const base = Number.isFinite(game.woodStoneCapBase) ? game.woodStoneCapBase : 2000;
     const perLevel = Number.isFinite(game.storehouseCapPerLevel) ? game.storehouseCapPerLevel : 1000;
     const level = Number.isFinite(game.storehouse) ? game.storehouse : 0;
-    return base + level * perLevel;
+    return (base + level * perLevel) * getDanuFavorCapMultiplier();
 }
 
 export function getFoodCap() {
     const base = Number.isFinite(game.foodCapBase) ? game.foodCapBase : 1000;
     const perLevel = Number.isFinite(game.granaryCapPerLevel) ? game.granaryCapPerLevel : 500;
     const level = Number.isFinite(game.granary) ? game.granary : 0;
-    return base + level * perLevel;
+    return (base + level * perLevel) * getDanuFavorCapMultiplier();
 }
 
 export function getStorehouseCost() {
@@ -281,16 +396,18 @@ function isDoctrineChosen(groupId, optionId) {
 
 export function getPreachFaithCost() {
     const base = Number.isFinite(gameState.costs.preachFaithCost) ? gameState.costs.preachFaithCost : 20;
-    if (!isDoctrineChosen('flock', 'shepherdsCreed')) return base;
-    const multiplier = Number.isFinite(game.shepherdsCreedCostMultiplier) ? game.shepherdsCreedCostMultiplier : 1;
-    return Math.max(0, Math.floor(base * multiplier));
+    const doctrineMultiplier = isDoctrineChosen('flock', 'shepherdsCreed') && Number.isFinite(game.shepherdsCreedCostMultiplier)
+        ? game.shepherdsCreedCostMultiplier
+        : 1;
+    return Math.max(0, Math.floor(base * doctrineMultiplier * getHeliosFavorCostMultiplier()));
 }
 
 export function getConvertFollowerCost() {
     const base = Number.isFinite(game.convertCost) ? game.convertCost : 10;
-    if (!isDoctrineChosen('flock', 'shepherdsCreed')) return base;
-    const multiplier = Number.isFinite(game.shepherdsCreedCostMultiplier) ? game.shepherdsCreedCostMultiplier : 1;
-    return Math.max(1, Math.floor(base * multiplier));
+    const doctrineMultiplier = isDoctrineChosen('flock', 'shepherdsCreed') && Number.isFinite(game.shepherdsCreedCostMultiplier)
+        ? game.shepherdsCreedCostMultiplier
+        : 1;
+    return Math.max(1, Math.floor(base * doctrineMultiplier * getHeliosFavorCostMultiplier()));
 }
 
 export function getConquerVillageFaithCost() {
@@ -304,7 +421,7 @@ export function getConquerYieldMultiplier() {
     const doctrineMultiplier = isDoctrineChosen('flock', 'ironFist') && Number.isFinite(game.ironFistYieldMultiplier)
         ? game.ironFistYieldMultiplier
         : 1;
-    return doctrineMultiplier * getTempleConquerYieldMultiplier();
+    return doctrineMultiplier * getTempleConquerYieldMultiplier() * getSekhmetFavorYieldMultiplier();
 }
 
 export function getExpeditionRollFaithCost() {
@@ -326,7 +443,7 @@ export function getFollowerFoodConsumptionMultiplier() {
     let multiplier = 1;
     if (choice === 'abundantTable' && Number.isFinite(game.abundantTableConsumptionMultiplier)) multiplier = game.abundantTableConsumptionMultiplier;
     else if (choice === 'leanYears' && Number.isFinite(game.leanYearsConsumptionMultiplier)) multiplier = game.leanYearsConsumptionMultiplier;
-    return multiplier * getTempleConsumptionMultiplier();
+    return multiplier * getTempleConsumptionMultiplier() * getHelFavorConsumptionMultiplier();
 }
 
 export function getHungerStarvationDrainMultiplier() {
@@ -431,7 +548,7 @@ export function canAscendNow() {
 export function getEchoesOfDivinityPreview() {
     const tierInfo = getUniverseConquestTier();
     const tierBonus = tierInfo.id === 'universe' ? 50 + 25 * tierInfo.pantheonRank : 0;
-    return Math.floor(5 * tierInfo.domainsClaimed + tierBonus);
+    return Math.floor((5 * tierInfo.domainsClaimed + tierBonus) * getHelFavorEchoesMultiplier());
 }
 
 export function getAscensionUpgradeRank(upgradeId) {

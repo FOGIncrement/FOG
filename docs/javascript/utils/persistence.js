@@ -9,6 +9,8 @@ import {
 import { FACTION_DEFINITIONS, createFactionFavorMap } from '../config/factions.js';
 import { DOCTRINE_GROUPS, createDoctrineChoiceMap } from '../config/doctrines.js';
 import { ASCENSION_UPGRADES, createAscensionUpgradeRankMap } from '../config/ascension.js';
+import { createFavorTierClaimedMap } from '../config/favor-tiers.js';
+import { SETTLEMENT_TIERS } from '../config/settlement-tiers.js';
 
 let resetInProgress = false;
 
@@ -560,6 +562,49 @@ export function loadGame() {
             }
             if (!Number.isFinite(gameState.costs.undyingFlockBaseEchoesCost) || gameState.costs.undyingFlockBaseEchoesCost < 0) {
                 gameState.costs.undyingFlockBaseEchoesCost = 20;
+            }
+
+            // --- Settlement tiers ---
+            if (!Number.isFinite(game.settlementTier) || game.settlementTier < 0) {
+                game.settlementTier = 0;
+            }
+            game.settlementTier = Math.min(SETTLEMENT_TIERS.length, Math.floor(game.settlementTier));
+
+            // --- Favor tiers ---
+            const mergedFavorTiersSeen = createFavorTierClaimedMap(0);
+            const savedFavorTiersSeen = game.factionFavorTiersSeen && typeof game.factionFavorTiersSeen === 'object' ? game.factionFavorTiersSeen : {};
+            Object.keys(mergedFavorTiersSeen).forEach((godId) => {
+                const saved = savedFavorTiersSeen[godId];
+                mergedFavorTiersSeen[godId] = Number.isFinite(saved) && saved >= 0 ? Math.floor(saved) : 0;
+            });
+            game.factionFavorTiersSeen = mergedFavorTiersSeen;
+
+            if (!Number.isFinite(game.heliosFavorCostReductionPerTier) || game.heliosFavorCostReductionPerTier < 0) {
+                game.heliosFavorCostReductionPerTier = 0.05;
+            }
+            if (!Number.isFinite(game.heliosFavorCapacityBonusPerTier) || game.heliosFavorCapacityBonusPerTier < 0) {
+                game.heliosFavorCapacityBonusPerTier = 0.05;
+            }
+            if (!Number.isFinite(game.sekhmetFavorYieldBonusPerTier) || game.sekhmetFavorYieldBonusPerTier < 0) {
+                game.sekhmetFavorYieldBonusPerTier = 0.08;
+            }
+            if (!Number.isFinite(game.sekhmetFavorHazardReductionPerTier) || game.sekhmetFavorHazardReductionPerTier < 0) {
+                game.sekhmetFavorHazardReductionPerTier = 0.03;
+            }
+            if (!Number.isFinite(game.danuFavorOutputBonusPerTier) || game.danuFavorOutputBonusPerTier < 0) {
+                game.danuFavorOutputBonusPerTier = 0.06;
+            }
+            if (!Number.isFinite(game.danuFavorCapBonusPerTier) || game.danuFavorCapBonusPerTier < 0) {
+                game.danuFavorCapBonusPerTier = 0.08;
+            }
+            if (!Number.isFinite(game.helFavorConsumptionReductionPerTier) || game.helFavorConsumptionReductionPerTier < 0) {
+                game.helFavorConsumptionReductionPerTier = 0.04;
+            }
+            if (!Number.isFinite(game.helFavorStarlightBonusPerTier) || game.helFavorStarlightBonusPerTier < 0) {
+                game.helFavorStarlightBonusPerTier = 0.10;
+            }
+            if (!Number.isFinite(game.helFavorEchoesBonusPerTier) || game.helFavorEchoesBonusPerTier < 0) {
+                game.helFavorEchoesBonusPerTier = 0.08;
             }
 
             // --- Storage buildings ---

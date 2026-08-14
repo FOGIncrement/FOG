@@ -17,7 +17,9 @@ import {
     getExpeditionRollBonus,
     getAscensionHazardMultiplier,
     getAscensionWorldHeadstartMultiplier,
-    getConquerYieldMultiplier
+    getConquerYieldMultiplier,
+    getSekhmetFavorHazardMultiplier,
+    getHelFavorStarlightMultiplier
 } from './utils/helpers.js';
 import { createWorld } from './config/worlds.js';
 import { removeFollowersFromSettlement } from './actions.js';
@@ -111,7 +113,7 @@ function processWorldHazard(world, expedition) {
     const alive = Math.max(0, Math.floor(expedition.followersAlive));
     if (alive <= 0) return { casualties: 0, ended: true, prophetDied: false };
 
-    const scale = (Number.isFinite(world.hazardScale) ? world.hazardScale : 1) * getAscensionHazardMultiplier();
+    const scale = (Number.isFinite(world.hazardScale) ? world.hazardScale : 1) * getAscensionHazardMultiplier() * getSekhmetFavorHazardMultiplier();
     const homeExploration = game.exploration || {};
     const wipeoutThreshold = (Number.isFinite(homeExploration.hazardWipeoutChance) ? homeExploration.hazardWipeoutChance : 0.08) * scale;
     const heavyLossThreshold = wipeoutThreshold + (Number.isFinite(homeExploration.hazardHeavyLossChance) ? homeExploration.hazardHeavyLossChance : 0.17) * scale;
@@ -264,7 +266,7 @@ export function conquerWorldVillage(villageId) {
     if (grantedFollowers > 0) gameState.progression.followers += grantedFollowers;
 
     const tuning = { min: 80, max: 220 };
-    const starlightLoot = Math.floor(randomIntInRange(tuning.min, tuning.max) * Math.pow(1.4, world.tier - 1) * conquerScale * yieldMultiplier);
+    const starlightLoot = Math.floor(randomIntInRange(tuning.min, tuning.max) * Math.pow(1.4, world.tier - 1) * conquerScale * yieldMultiplier * getHelFavorStarlightMultiplier());
     gameState.progression.starlight += starlightLoot;
 
     village.resolutionType = 'conquered';
@@ -289,7 +291,8 @@ export function collectWorldWildAreaResources(areaId) {
     const cache = area.resourceCache;
     if (!cache || cache.collected) return;
 
-    const starlight = Number.isFinite(cache.starlight) ? Math.max(0, Math.floor(cache.starlight)) : 0;
+    const baseStarlight = Number.isFinite(cache.starlight) ? Math.max(0, Math.floor(cache.starlight)) : 0;
+    const starlight = Math.floor(baseStarlight * getHelFavorStarlightMultiplier());
     if (starlight > 0) gameState.progression.starlight += starlight;
     cache.collected = true;
 

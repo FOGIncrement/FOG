@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
@@ -397,7 +397,7 @@ function processExpeditionHazard(expedition) {
     if (alive <= 0) return { casualties: 0, ended: true, prophetDied: false };
 
     const exploration = getExplorationState();
-    const hazardMultiplier = getAscensionHazardMultiplier();
+    const hazardMultiplier = getAscensionHazardMultiplier() * getSekhmetFavorHazardMultiplier();
     const wipeoutThreshold = exploration.hazardWipeoutChance * hazardMultiplier;
     const heavyLossThreshold = wipeoutThreshold + exploration.hazardHeavyLossChance * hazardMultiplier;
     const ambushThreshold = heavyLossThreshold + exploration.hazardAmbushChance * hazardMultiplier;
@@ -853,6 +853,23 @@ export function buildAltar() {
     game.altarBuilt = true;
     game.diceBonuses.preach = Math.max(1, Number.isFinite(game.diceBonuses.preach) ? Math.trunc(game.diceBonuses.preach) : 0);
     addLog('Altar built. Preach rolls now gain +1 (1d4 + 1).');
+
+    updateUI();
+    saveGame();
+}
+
+export function advanceSettlementTier() {
+    const tier = getNextSettlementTier();
+    if (!tier) return;
+    if (!canAffordSettlementTier(tier)) return;
+
+    gameState.progression.faith -= (tier.faithCost || 0);
+    if (tier.woodCost > 0) gameState.resources.wood.spend(tier.woodCost);
+    if (tier.stoneCost > 0) gameState.resources.stone.spend(tier.stoneCost);
+    if (tier.starlightCost > 0) gameState.progression.starlight -= tier.starlightCost;
+
+    game.settlementTier = (Number.isFinite(game.settlementTier) ? game.settlementTier : 0) + 1;
+    addLog(`Your settlement grows into a ${tier.name}. Capacity multiplied ${tier.capacityMultiplier}x.`);
 
     updateUI();
     saveGame();
