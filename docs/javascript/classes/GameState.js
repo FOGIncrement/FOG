@@ -108,6 +108,9 @@ export const gameState = {
         monumentFaithCost: 4000,
         monumentWoodCost: 1500,
         monumentStoneCost: 1500,
+        digWellVillageWoodCost: 60,
+        digWellVillageStoneCost: 60,
+        holdFeastVillageFoodCost: 80,
         settlementBuyResourceFaithCost: 30,
         settlementSellResourceFaithYield: 25,
         settlementBuyGoodFaithCost: 250,
@@ -323,6 +326,9 @@ export const game = {
         conquerWoodLootMax: 300,
         conquerStoneLootMin: 100,
         conquerStoneLootMax: 300,
+        digWellGoodwillGain: 12,
+        holdFeastGoodwillGain: 10,
+        goodwillTaskCostGrowthRate: 1.12,
         cityChanceBase: 0.03,
         cityChancePerDistanceTier: 0.025,
         cityChanceCap: 0.5,
@@ -443,7 +449,8 @@ export const game = {
                 resolutionType: null,
                 tier: 'village',
                 war: null,
-                unrest: 0
+                unrest: 0,
+                goodwillTasksCompleted: 0
             }
         ],
         villageDistanceRange: {

@@ -1127,6 +1127,26 @@ export function loadGame() {
                 gameState.costs.pacifyOutpostFaithCost = 100;
             }
 
+            // --- Goodwill Tasks ---
+            if (!Number.isFinite(game.exploration.digWellGoodwillGain) || game.exploration.digWellGoodwillGain < 0) {
+                game.exploration.digWellGoodwillGain = 12;
+            }
+            if (!Number.isFinite(game.exploration.holdFeastGoodwillGain) || game.exploration.holdFeastGoodwillGain < 0) {
+                game.exploration.holdFeastGoodwillGain = 10;
+            }
+            if (!Number.isFinite(game.exploration.goodwillTaskCostGrowthRate) || game.exploration.goodwillTaskCostGrowthRate <= 1) {
+                game.exploration.goodwillTaskCostGrowthRate = 1.12;
+            }
+            if (!Number.isFinite(gameState.costs.digWellVillageWoodCost) || gameState.costs.digWellVillageWoodCost < 0) {
+                gameState.costs.digWellVillageWoodCost = 60;
+            }
+            if (!Number.isFinite(gameState.costs.digWellVillageStoneCost) || gameState.costs.digWellVillageStoneCost < 0) {
+                gameState.costs.digWellVillageStoneCost = 60;
+            }
+            if (!Number.isFinite(gameState.costs.holdFeastVillageFoodCost) || gameState.costs.holdFeastVillageFoodCost < 0) {
+                gameState.costs.holdFeastVillageFoodCost = 80;
+            }
+
             // --- Catechism Hall and War Camp ---
             if (!Number.isFinite(game.catechismHall) || game.catechismHall < 0) {
                 game.catechismHall = 0;
@@ -1217,7 +1237,8 @@ export function loadGame() {
                     resolutionType,
                     tier,
                     war,
-                    unrest: Number.isFinite(village?.unrest) ? Math.max(0, Math.min(100, village.unrest)) : 0
+                    unrest: Number.isFinite(village?.unrest) ? Math.max(0, Math.min(100, village.unrest)) : 0,
+                    goodwillTasksCompleted: Number.isFinite(village?.goodwillTasksCompleted) ? Math.max(0, Math.floor(village.goodwillTasksCompleted)) : 0
                 };
             });
             if (!Number.isFinite(game.exploration.nextVillageIndex) || game.exploration.nextVillageIndex < 2) {

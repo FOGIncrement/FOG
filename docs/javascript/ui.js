@@ -1,6 +1,6 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus, getFavorTierCount, getNextFavorTierThreshold, getNextSettlementTier, getSettlementTierCapacityMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getWarOutpostProductionMultiplier, getDeclareWarFaithCost, getSiegeProgressPerSecond, isDoctrineGroupUnlocked, getDoctrineGroupUnlockHint, getMaxWarbandSize } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus, getFavorTierCount, getNextFavorTierThreshold, getNextSettlementTier, getSettlementTierCapacityMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getWarOutpostProductionMultiplier, getDeclareWarFaithCost, getSiegeProgressPerSecond, isDoctrineGroupUnlocked, getDoctrineGroupUnlockHint, getMaxWarbandSize, getDigWellCost, getHoldFeastForVillageCost } from './utils/helpers.js';
 import { getSettlementReputationTier, SETTLEMENT_SPECIALTY_BY_ID, TRADE_GOODS, SETTLEMENT_REPUTATION_TIER_THRESHOLDS } from './config/trade-settlements.js';
 import { ROLE_DEFINITIONS, getRoleOutputMultiplier } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
@@ -540,7 +540,7 @@ let lastDiscoveredAreasSignature = null;
 function getVillageSignature(village) {
     const war = village.war;
     const warSig = war ? `${Math.floor(war.progress)}:${Math.floor(war.warbandAlive)}:${Math.floor(war.warbandSent)}` : 'n';
-    return `${village.id}:${village.discovered ? 1 : 0}:${Math.floor(village.convertedPercent)}:${village.resolutionType || ''}:${village.sermonsHeld}:${village.prophetPresent ? 1 : 0}:${village.tier || 'village'}:${warSig}:${Math.floor(village.unrest || 0)}`;
+    return `${village.id}:${village.discovered ? 1 : 0}:${Math.floor(village.convertedPercent)}:${village.resolutionType || ''}:${village.sermonsHeld}:${village.prophetPresent ? 1 : 0}:${village.tier || 'village'}:${warSig}:${Math.floor(village.unrest || 0)}:${village.goodwillTasksCompleted || 0}`;
 }
 
 function getWildAreaSignature(area) {
@@ -631,8 +631,12 @@ function renderDiscoveredAreas(hasExplorationAccess) {
             } else if (isCity) {
                 statusLine = `<p>Goodwill: ${converted}%</p>`;
                 const warCost = getDeclareWarFaithCost(village);
+                const wellCost = getDigWellCost(village);
+                const feastCost = getHoldFeastForVillageCost(village);
                 actionsLine = `
                     <button class="village-sermon-btn" data-village-id="${village.id}" ${converted >= 100 || !village.prophetPresent ? 'disabled' : ''}>Hold Sermon</button>
+                    <button class="city-dig-well-btn" data-village-id="${village.id}">Dig a Well (${wellCost.wood} wood, ${wellCost.stone} stone)</button>
+                    <button class="city-hold-feast-btn" data-village-id="${village.id}">Hold a Feast (${feastCost} food)</button>
                     ${warbandInputHtml(village.id)}
                     <button class="city-declare-war-btn" data-village-id="${village.id}">Declare War (${warCost} faith)</button>
                 `;

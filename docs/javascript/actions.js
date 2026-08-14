@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument, getManualActionYieldMultiplier, getConquestRollBonus, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getDeclareWarFaithCost, getSiegeProgressPerSecond, isDoctrineGroupUnlocked, getCatechismHallCost, getWarCampCost, getMaxWarbandSize, getGoodwillTricklePerSecond } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument, getManualActionYieldMultiplier, getConquestRollBonus, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost, getDeclareWarFaithCost, getSiegeProgressPerSecond, isDoctrineGroupUnlocked, getCatechismHallCost, getWarCampCost, getMaxWarbandSize, getGoodwillTricklePerSecond, getDigWellCost, getHoldFeastForVillageCost } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
@@ -1591,6 +1591,73 @@ export function holdVillageSermon(villageId) {
         village.resolutionType = 'converted';
         addLog(`${village.name} is now a permanent outpost, tithing faith to your cause.`);
     }
+
+    updateUI();
+    saveGame();
+}
+
+// Shared by both Goodwill Task actions below - mirrors holdVillageSermon()'s
+// own shape exactly (proportional followers per call, alignment/favor per
+// call, resolutionType flips once convertedPercent crosses 100) so the two
+// peaceful-path mechanisms feel like the same system, not two different ones
+// bolted together.
+function applyGoodwillGain(village, gainPercent, taskLabel) {
+    const totalRemaining = 100 - (Number.isFinite(village.convertedPercent) ? village.convertedPercent : 0);
+    const actualGain = Math.max(0, Math.min(totalRemaining, gainPercent));
+    village.convertedPercent = Math.min(100, (Number.isFinite(village.convertedPercent) ? village.convertedPercent : 0) + actualGain);
+    village.goodwillTasksCompleted = (Number.isFinite(village.goodwillTasksCompleted) ? village.goodwillTasksCompleted : 0) + 1;
+
+    const convertedPeople = Math.floor(village.population * (actualGain / 100));
+    const capacity = Math.max(0, getMaxFollowers() - gameState.progression.followers);
+    const grantedFollowers = Math.min(convertedPeople, capacity);
+    if (grantedFollowers > 0) gameState.progression.followers += grantedFollowers;
+
+    game.alignment = Math.max(-100, Math.min(100, game.alignment + game.alignmentConvertGain));
+    game.factionFavor.helios += game.heliosFavorConvertGain;
+    if (!game.alignmentVisible) game.alignmentVisible = true;
+
+    addLog(`${taskLabel} for ${village.name}. Goodwill +${actualGain}% (now ${Math.floor(village.convertedPercent)}%), +${grantedFollowers} follower${grantedFollowers === 1 ? '' : 's'}.`);
+
+    if (village.convertedPercent >= 100 && !village.resolutionType) {
+        village.resolutionType = 'converted';
+        addLog(`${village.name} is now a permanent outpost, tithing faith to your cause.`);
+    }
+}
+
+// Goodwill Tasks: unlike Sermon, these need no Prophet - your people can dig
+// a well or hold a feast whether or not the Prophet is off on expedition.
+// City-only, matching the "villages stay quick, cities get real depth" call.
+// Each use escalates in cost per-target (same anti-spam pattern as the
+// Marketplace/Hire Pilgrims fixes earlier this session), so this is a real
+// contribution alongside Sermon, not a way to trivially spam to 100%.
+export function digWellForVillage(villageId) {
+    const exploration = getExplorationState();
+    const village = exploration.villages.find((candidate) => candidate.id === villageId && candidate.discovered && candidate.tier === 'city');
+    if (!village || village.resolutionType || village.war) return;
+
+    const cost = getDigWellCost(village);
+    if (gameState.resources.wood.amount < cost.wood || gameState.resources.stone.amount < cost.stone) return;
+
+    gameState.resources.wood.spend(cost.wood);
+    gameState.resources.stone.spend(cost.stone);
+    const gain = Number.isFinite(exploration.digWellGoodwillGain) ? exploration.digWellGoodwillGain : 12;
+    applyGoodwillGain(village, gain, 'Dug a well');
+
+    updateUI();
+    saveGame();
+}
+
+export function holdFeastForVillage(villageId) {
+    const exploration = getExplorationState();
+    const village = exploration.villages.find((candidate) => candidate.id === villageId && candidate.discovered && candidate.tier === 'city');
+    if (!village || village.resolutionType || village.war) return;
+
+    const cost = getHoldFeastForVillageCost(village);
+    if (gameState.resources.food.amount < cost) return;
+
+    gameState.resources.food.spend(cost);
+    const gain = Number.isFinite(exploration.holdFeastGoodwillGain) ? exploration.holdFeastGoodwillGain : 10;
+    applyGoodwillGain(village, gain, 'Held a feast');
 
     updateUI();
     saveGame();

@@ -641,6 +641,28 @@ export function getConquestRollBonus() {
     return getBarracksConquerRollBonus() + getIronConquestRollBonus();
 }
 
+// --- Goodwill Tasks: the "doing stuff for them" peaceful path for Cities ---
+
+export function getGoodwillTaskCostMultiplier(village) {
+    const completed = Number.isFinite(village?.goodwillTasksCompleted) ? village.goodwillTasksCompleted : 0;
+    const growth = Number.isFinite(game.exploration?.goodwillTaskCostGrowthRate) && game.exploration.goodwillTaskCostGrowthRate > 1
+        ? game.exploration.goodwillTaskCostGrowthRate
+        : 1.12;
+    return Math.pow(growth, completed);
+}
+
+export function getDigWellCost(village) {
+    const woodBase = Number.isFinite(gameState.costs.digWellVillageWoodCost) ? gameState.costs.digWellVillageWoodCost : 60;
+    const stoneBase = Number.isFinite(gameState.costs.digWellVillageStoneCost) ? gameState.costs.digWellVillageStoneCost : 60;
+    const multiplier = getGoodwillTaskCostMultiplier(village);
+    return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
+}
+
+export function getHoldFeastForVillageCost(village) {
+    const base = Number.isFinite(gameState.costs.holdFeastVillageFoodCost) ? gameState.costs.holdFeastVillageFoodCost : 80;
+    return Math.ceil(base * getGoodwillTaskCostMultiplier(village));
+}
+
 export function getCatechismHallCost() {
     const faithBase = Number.isFinite(gameState.costs.catechismHallFaithCost) ? gameState.costs.catechismHallFaithCost : 300;
     const woodBase = Number.isFinite(gameState.costs.catechismHallWoodCost) ? gameState.costs.catechismHallWoodCost : 200;

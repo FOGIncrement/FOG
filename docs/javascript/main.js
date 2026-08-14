@@ -302,6 +302,12 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
     {
         title: 'War & Cities',
         entries: [
+            { label: 'Dig Well Goodwill Gain', target: game.exploration, key: 'digWellGoodwillGain', step: 1, min: 0 },
+            { label: 'Hold Feast Goodwill Gain', target: game.exploration, key: 'holdFeastGoodwillGain', step: 1, min: 0 },
+            { label: 'Goodwill Task Cost Growth Rate', target: game.exploration, key: 'goodwillTaskCostGrowthRate', step: 0.01, min: 1 },
+            { label: 'Dig Well Wood Cost', target: gameState.costs, key: 'digWellVillageWoodCost', step: 5, min: 0 },
+            { label: 'Dig Well Stone Cost', target: gameState.costs, key: 'digWellVillageStoneCost', step: 5, min: 0 },
+            { label: 'Hold Feast Food Cost', target: gameState.costs, key: 'holdFeastVillageFoodCost', step: 5, min: 0 },
             { label: 'City Chance (base)', target: game.exploration, key: 'cityChanceBase', step: 0.01, min: 0 },
             { label: 'City Chance / Distance Tier', target: game.exploration, key: 'cityChancePerDistanceTier', step: 0.005, min: 0 },
             { label: 'City Chance Cap', target: game.exploration, key: 'cityChanceCap', step: 0.05, min: 0 },
@@ -502,6 +508,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 const villageId = conquerBtn.dataset.villageId;
                 if (villageId && typeof gameApi.conquerVillage === 'function') {
                     gameApi.conquerVillage(villageId);
+                }
+                return;
+            }
+
+            const digWellBtn = target.closest('.city-dig-well-btn');
+            if (digWellBtn) {
+                const villageId = digWellBtn.dataset.villageId;
+                if (villageId && typeof gameApi.digWellForVillage === 'function') {
+                    gameApi.digWellForVillage(villageId);
+                }
+                return;
+            }
+
+            const holdFeastBtn = target.closest('.city-hold-feast-btn');
+            if (holdFeastBtn) {
+                const villageId = holdFeastBtn.dataset.villageId;
+                if (villageId && typeof gameApi.holdFeastForVillage === 'function') {
+                    gameApi.holdFeastForVillage(villageId);
                 }
                 return;
             }

@@ -63,7 +63,9 @@ export {
     reinforceSiege,
     pacifyOutpost,
     buildCatechismHall,
-    buildWarCamp
+    buildWarCamp,
+    digWellForVillage,
+    holdFeastForVillage
 } from './actions.js';
 
 export {
