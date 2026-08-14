@@ -112,6 +112,7 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Ambush Loss Min Percent', target: game.exploration, key: 'hazardAmbushMinLossPercent', step: 1, min: 1 },
             { label: 'Ambush Loss Max Percent', target: game.exploration, key: 'hazardAmbushMaxLossPercent', step: 1, min: 1 },
             { label: 'Wild Area Seed Count', target: game.exploration, key: 'wildAreaSeedCount', step: 1, min: 1 },
+            { label: 'Wild Area Min Buffer (frontier)', target: game.exploration, key: 'wildAreaMinBuffer', step: 1, min: 1 },
             { label: 'Wild Area Distance Min Step', target: game.exploration, key: 'wildAreaDistanceMinStep', step: 1, min: 1 },
             { label: 'Wild Area Distance Max Step', target: game.exploration, key: 'wildAreaDistanceMaxStep', step: 1, min: 1 },
             { label: 'Wild Area Resource Cache Chance', target: game.exploration, key: 'wildAreaResourceCacheChance', step: 0.01, min: 0 },
@@ -869,6 +870,10 @@ function normalizeBalanceSettings() {
         game.exploration.wildAreaSeedCount = 1;
     }
     game.exploration.wildAreaSeedCount = Math.max(1, Math.floor(game.exploration.wildAreaSeedCount));
+    if (!Number.isFinite(game.exploration.wildAreaMinBuffer) || game.exploration.wildAreaMinBuffer < 1) {
+        game.exploration.wildAreaMinBuffer = 6;
+    }
+    game.exploration.wildAreaMinBuffer = Math.max(1, Math.floor(game.exploration.wildAreaMinBuffer));
     if (!Number.isFinite(game.exploration.wildAreaDistanceMinStep) || game.exploration.wildAreaDistanceMinStep < 1) {
         game.exploration.wildAreaDistanceMinStep = 1;
     }

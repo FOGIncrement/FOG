@@ -255,6 +255,7 @@ export const game = {
         conquerStoneLootMin: 100,
         conquerStoneLootMax: 300,
         wildAreaSeedCount: 8,
+        wildAreaMinBuffer: 6,
         wildAreaDistanceMinStep: 30,
         wildAreaDistanceMaxStep: 120,
         wildAreaResourceCacheChance: 0.45,

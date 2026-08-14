@@ -782,6 +782,9 @@ export function loadGame() {
             game.exploration.wildAreaSeedCount = Number.isFinite(game.exploration.wildAreaSeedCount)
                 ? Math.max(1, Math.floor(game.exploration.wildAreaSeedCount))
                 : 8;
+            game.exploration.wildAreaMinBuffer = Number.isFinite(game.exploration.wildAreaMinBuffer)
+                ? Math.max(1, Math.floor(game.exploration.wildAreaMinBuffer))
+                : 6;
             game.exploration.wildAreaDistanceMinStep = Number.isFinite(game.exploration.wildAreaDistanceMinStep)
                 ? Math.max(1, Math.floor(game.exploration.wildAreaDistanceMinStep))
                 : 30;

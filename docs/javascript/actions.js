@@ -72,6 +72,8 @@ function getExplorationState() {
     }
 
     ensureWildAreaSeeds(game.exploration);
+    extendWildAreaFrontier(game.exploration);
+    ensureUpcomingVillage(game.exploration);
     syncDiscoveredAreasByDistance(game.exploration, { logDiscoveries: false });
 
     return game.exploration;
@@ -148,10 +150,16 @@ function createWildArea(index, distanceFromCamp, exploration) {
         landmarkResolved: false
     };
 
+    // Rewards scale with how far the area is from camp, so a wild area
+    // discovered deep into a long-running settlement still matters instead
+    // of handing out the same trickle of wood/stone it did on day one.
+    const distanceTier = Math.max(1, Math.floor(distanceFromCamp / 1000) + 1);
+    const rewardScale = Math.pow(1.15, distanceTier - 1);
+
     if (Math.random() < exploration.wildAreaResourceCacheChance) {
         area.resourceCache = {
-            wood: randomIntInRange(exploration.wildAreaResourceCacheWoodMin, exploration.wildAreaResourceCacheWoodMax),
-            stone: randomIntInRange(exploration.wildAreaResourceCacheStoneMin, exploration.wildAreaResourceCacheStoneMax),
+            wood: Math.floor(randomIntInRange(exploration.wildAreaResourceCacheWoodMin, exploration.wildAreaResourceCacheWoodMax) * rewardScale),
+            stone: Math.floor(randomIntInRange(exploration.wildAreaResourceCacheStoneMin, exploration.wildAreaResourceCacheStoneMax) * rewardScale),
             collected: false
         };
     }
@@ -283,6 +291,31 @@ function initializeWildAreaSeedIfNeeded(exploration) {
     exploration.wildAreaSeedInitialized = true;
 }
 
+// Wild areas were originally a fixed, one-time seed of 8-20 nodes - once
+// discovered, exploration had nothing left to offer. This keeps a rolling
+// buffer of undiscovered areas ahead of the frontier forever, so there is
+// always somewhere further to send an expedition.
+function extendWildAreaFrontier(exploration) {
+    const minBuffer = Number.isFinite(exploration.wildAreaMinBuffer) ? exploration.wildAreaMinBuffer : 6;
+    const undiscoveredCount = exploration.discoveredAreas.filter((area) => !area.discovered).length;
+    if (undiscoveredCount >= minBuffer) return;
+
+    const furthest = exploration.discoveredAreas.reduce(
+        (max, area) => Math.max(max, Number.isFinite(area.distanceFromCamp) ? area.distanceFromCamp : 0),
+        Number.isFinite(exploration.totalMetersExplored) ? exploration.totalMetersExplored : 0
+    );
+
+    let distance = furthest;
+    const toGenerate = (minBuffer - undiscoveredCount) + 3;
+    for (let i = 0; i < toGenerate; i += 1) {
+        const step = randomIntInRange(exploration.wildAreaDistanceMinStep, exploration.wildAreaDistanceMaxStep);
+        distance += Math.max(1, step);
+        const index = exploration.nextAreaIndex;
+        exploration.discoveredAreas.push(createWildArea(index, distance, exploration));
+        exploration.nextAreaIndex += 1;
+    }
+}
+
 function applyWildAreaPassiveEffect(area) {
     const effect = area?.passiveEffect;
     if (!effect || effect.applied) return;
@@ -339,17 +372,16 @@ export function removeFollowersFromSettlement(losses, includeProphetLoss = false
     return casualtyCount;
 }
 
-function maybeCreateNewVillage(exploration) {
-    const discoveredVillages = exploration.villages.filter((village) => village.discovered).length;
-    if (discoveredVillages < 1) return;
-
-    const shouldSpawn = Math.random() < exploration.villageSpawnChance;
-    if (!shouldSpawn) return;
-
+function spawnNewVillage(exploration, { silent = false } = {}) {
     const villageId = `village-${exploration.nextVillageIndex}`;
     const distanceFromCamp = getNextVillageDistance();
-    const population = Math.floor(Math.random() * 1001) + 800;
-    const resistance = Math.floor(Math.random() * 41) + 35;
+    // Villages further from camp are bigger and tougher, so the raid/sermon
+    // loop keeps mattering instead of flattening out once you've outgrown
+    // the numbers from the first few settlements.
+    const distanceTier = Math.max(1, Math.floor(distanceFromCamp / 1000) + 1);
+    const populationBase = Math.floor(Math.random() * 1001) + 800;
+    const population = Math.floor(populationBase * Math.pow(1.12, distanceTier - 1));
+    const resistance = Math.floor((Math.random() * 41) + 35 + (distanceTier - 1) * 3);
 
     exploration.villages.push({
         id: villageId,
@@ -365,7 +397,29 @@ function maybeCreateNewVillage(exploration) {
     });
 
     exploration.nextVillageIndex += 1;
-    addLog(`Scouts charted rumors of another settlement around ${distanceFromCamp}m from camp.`);
+    if (!silent) {
+        addLog(`Scouts charted rumors of another settlement around ${Math.floor(distanceFromCamp)}m from camp.`);
+    }
+}
+
+// Guarantees there is always at least one undiscovered village to march
+// toward - without this, a single failed spawn roll after discovering the
+// last known village would leave startExpedition() with nothing to target,
+// permanently dead-ending exploration.
+function ensureUpcomingVillage(exploration) {
+    const hasUndiscovered = exploration.villages.some((village) => !village.discovered);
+    if (hasUndiscovered) return;
+    spawnNewVillage(exploration, { silent: true });
+}
+
+function maybeCreateNewVillage(exploration) {
+    const discoveredVillages = exploration.villages.filter((village) => village.discovered).length;
+    if (discoveredVillages < 1) return;
+
+    const shouldSpawn = Math.random() < exploration.villageSpawnChance;
+    if (!shouldSpawn) return;
+
+    spawnNewVillage(exploration);
 }
 
 function syncDiscoveredAreasByDistance(exploration, { logDiscoveries = false } = {}) {
@@ -1259,8 +1313,9 @@ export function conquerVillage(villageId) {
         gameState.progression.followers += grantedFollowers;
     }
 
-    const woodLoot = Math.floor(randomIntInRange(exploration.conquerWoodLootMin, exploration.conquerWoodLootMax) * conquerScale * yieldMultiplier);
-    const stoneLoot = Math.floor(randomIntInRange(exploration.conquerStoneLootMin, exploration.conquerStoneLootMax) * conquerScale * yieldMultiplier);
+    const villageRewardScale = getDistanceRewardScale(village.distanceFromCamp);
+    const woodLoot = Math.floor(randomIntInRange(exploration.conquerWoodLootMin, exploration.conquerWoodLootMax) * conquerScale * yieldMultiplier * villageRewardScale);
+    const stoneLoot = Math.floor(randomIntInRange(exploration.conquerStoneLootMin, exploration.conquerStoneLootMax) * conquerScale * yieldMultiplier * villageRewardScale);
     gameState.resources.wood.add(woodLoot);
     gameState.resources.stone.add(stoneLoot);
 
@@ -1300,6 +1355,11 @@ export function collectWildAreaResources(areaId) {
     saveGame();
 }
 
+function getDistanceRewardScale(distanceFromCamp) {
+    const distanceTier = Math.max(1, Math.floor((distanceFromCamp || 0) / 1000) + 1);
+    return Math.pow(1.15, distanceTier - 1);
+}
+
 export function prayAtShrine(areaId) {
     const exploration = getExplorationState();
     const area = (exploration.discoveredAreas || []).find((candidate) => candidate.id === areaId && candidate.discovered);
@@ -1308,7 +1368,7 @@ export function prayAtShrine(areaId) {
     area.landmarkResolved = true;
     const minFaith = Number.isFinite(exploration.shrineFaithMin) ? exploration.shrineFaithMin : 40;
     const maxFaith = Number.isFinite(exploration.shrineFaithMax) ? exploration.shrineFaithMax : 120;
-    const faithGain = randomIntInRange(minFaith, maxFaith);
+    const faithGain = Math.floor(randomIntInRange(minFaith, maxFaith) * getDistanceRewardScale(area.distanceFromCamp));
     gameState.progression.faith += faithGain;
 
     game.alignment = Math.max(-100, Math.min(100, game.alignment + 1));
@@ -1326,10 +1386,11 @@ export function searchRuins(areaId) {
 
     area.landmarkResolved = true;
     const goodOutcomeChance = Number.isFinite(exploration.ruinsGoodOutcomeChance) ? exploration.ruinsGoodOutcomeChance : 0.65;
+    const rewardScale = getDistanceRewardScale(area.distanceFromCamp);
 
     if (Math.random() < goodOutcomeChance) {
-        const wood = randomIntInRange(50, 200);
-        const stone = randomIntInRange(50, 200);
+        const wood = Math.floor(randomIntInRange(50, 200) * rewardScale);
+        const stone = Math.floor(randomIntInRange(50, 200) * rewardScale);
         const woodGained = gameState.resources.wood.add(wood);
         const stoneGained = gameState.resources.stone.add(stone);
         addLog(`The ${area.name} yield treasure: +${woodGained} wood, +${stoneGained} stone.`);
