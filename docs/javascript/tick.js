@@ -3,7 +3,7 @@ import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
-import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier } from './utils/helpers.js';
+import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier } from './utils/helpers.js';
 
 const LIVE_TICK_CLAMP_SECONDS = 2;
 const CATCHUP_CHUNK_SECONDS = LIVE_TICK_CLAMP_SECONDS;
@@ -103,7 +103,7 @@ function defaultLiveEventHandler(eventType) {
 function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
     if (!Number.isFinite(dtSeconds) || dtSeconds <= 0) return;
 
-    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * dtSeconds;
+    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * getAscensionFaithMultiplier() * dtSeconds;
 
     const outpostFaithPerSecond = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond)
         ? game.exploration.villageOutpostFaithPerSecond
@@ -112,6 +112,16 @@ function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
         const outpostCount = game.exploration.villages.reduce((count, village) => count + (village.resolutionType === 'converted' ? 1 : 0), 0);
         if (outpostCount > 0) {
             gameState.progression.faith += outpostCount * outpostFaithPerSecond * dtSeconds;
+        }
+    }
+
+    if (Array.isArray(game.worlds) && game.worlds.length > 0) {
+        const worldStarlightPerSecond = game.worlds.reduce((sum, world) => {
+            const convertedCount = world.villages.reduce((count, village) => count + (village.resolutionType === 'converted' ? 1 : 0), 0);
+            return sum + convertedCount * (Number.isFinite(world.outpostStarlightPerSecond) ? world.outpostStarlightPerSecond : 0);
+        }, 0);
+        if (worldStarlightPerSecond > 0) {
+            gameState.progression.starlight += worldStarlightPerSecond * dtSeconds;
         }
     }
 

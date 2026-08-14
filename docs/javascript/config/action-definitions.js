@@ -39,7 +39,8 @@ export const ACTION_GROUPS = {
         { id: 'unlockAltar', buttonId: 'unlockAltarBtn', handlerExport: 'unlockAltar', tab: 'unlocks', category: 'buildingUpgrade' },
         { id: 'trainZealousPreaching', buttonId: 'zealousPreachingBtn', handlerExport: 'trainZealousPreaching', tab: 'unlocks', category: 'upgrade' },
         { id: 'blessTheHarvest', buttonId: 'blessHarvestBtn', handlerExport: 'blessTheHarvest', tab: 'unlocks', category: 'buildingUpgrade' },
-        { id: 'conveneCouncil', buttonId: 'conveneCouncilBtn', handlerExport: 'conveneCouncil', tab: 'unlocks', category: 'buildingUpgrade' }
+        { id: 'conveneCouncil', buttonId: 'conveneCouncilBtn', handlerExport: 'conveneCouncil', tab: 'unlocks', category: 'buildingUpgrade' },
+        { id: 'unlockWorlds', buttonId: 'unlockWorldsBtn', handlerExport: 'unlockWorlds', tab: 'unlocks', category: 'progression' }
     ],
     doctrines: [
         { id: 'chooseShepherdsCreed', buttonId: 'chooseShepherdsCreedBtn', handlerExport: 'chooseShepherdsCreed', tab: 'doctrines', category: 'flock' },
@@ -53,6 +54,19 @@ export const ACTION_GROUPS = {
         { id: 'buildTempleDanu', buttonId: 'buildTempleDanuBtn', handlerExport: 'buildTempleDanu', tab: 'doctrines', category: 'temple' },
         { id: 'buildTempleHel', buttonId: 'buildTempleHelBtn', handlerExport: 'buildTempleHel', tab: 'doctrines', category: 'temple' }
     ],
+    worlds: [
+        { id: 'startWorldExpedition', buttonId: 'startWorldExpeditionBtn', handlerExport: 'startWorldExpedition', tab: 'worlds', category: 'expedition' },
+        { id: 'resolveWorldExpedition', buttonId: 'resolveWorldExpeditionBtn', handlerExport: 'resolveWorldExpedition', tab: 'worlds', category: 'expedition' },
+        { id: 'cancelWorldExpedition', buttonId: 'cancelWorldExpeditionBtn', handlerExport: 'cancelWorldExpedition', tab: 'worlds', category: 'expedition' },
+        { id: 'chartNewWorld', buttonId: 'chartNewWorldBtn', handlerExport: 'chartNewWorld', tab: 'worlds', category: 'progression' }
+    ],
+    ascension: [
+        { id: 'ascend', buttonId: 'ascendBtn', handlerExport: 'ascend', tab: 'ascension', category: 'reset' },
+        { id: 'buyEchoingFaith', buttonId: 'buyEchoingFaithBtn', handlerExport: 'buyEchoingFaith', tab: 'ascension', category: 'upgrade' },
+        { id: 'buySwiftFoundations', buttonId: 'buySwiftFoundationsBtn', handlerExport: 'buySwiftFoundations', tab: 'ascension', category: 'upgrade' },
+        { id: 'buyStarlitMemory', buttonId: 'buyStarlitMemoryBtn', handlerExport: 'buyStarlitMemory', tab: 'ascension', category: 'upgrade' },
+        { id: 'buyUndyingFlock', buttonId: 'buyUndyingFlockBtn', handlerExport: 'buyUndyingFlock', tab: 'ascension', category: 'upgrade' }
+    ],
     followerManager: [
         { id: 'trainHunters', buttonId: 'trainHuntersBtn', handlerExport: 'trainHunters', tab: 'followerManager', category: 'roles' },
         { id: 'trainRitualists', buttonId: 'trainRitualistsBtn', handlerExport: 'trainRitualists', tab: 'followerManager', category: 'roles' },
@@ -62,6 +76,6 @@ export const ACTION_GROUPS = {
     ]
 };
 
-export const ACTION_TAB_ORDER = ['actions', 'explore', 'build', 'food', 'unlocks', 'doctrines', 'followerManager'];
+export const ACTION_TAB_ORDER = ['actions', 'explore', 'build', 'food', 'unlocks', 'doctrines', 'worlds', 'ascension', 'followerManager'];
 
 export const ACTION_DEFINITIONS = Object.values(ACTION_GROUPS).flat();

@@ -195,6 +195,31 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Temple Danu Output Multiplier', target: game, key: 'templeDanuOutputMultiplier', step: 0.05, min: 1 },
             { label: 'Temple Hel Consumption Multiplier', target: game, key: 'templeHelConsumptionMultiplier', step: 0.05, min: 0 }
         ]
+    },
+    {
+        title: 'Worlds',
+        entries: [
+            { label: 'Unlock Worlds Faith Cost', target: gameState.costs, key: 'unlockWorldsFaithCost', step: 100, min: 0 },
+            { label: 'Worlds Follower Capacity Requirement', target: game, key: 'worldsUnlockFollowerCapacityRequirement', step: 10, min: 1 },
+            { label: 'Worlds Villages Resolved Requirement', target: game, key: 'worldsUnlockVillagesResolvedRequirement', step: 1, min: 0 },
+            { label: 'Worlds Meters Explored Requirement', target: game, key: 'worldsUnlockMetersExploredRequirement', step: 100, min: 0 },
+            { label: 'Chart World Starlight Base Cost', target: gameState.costs, key: 'chartWorldStarlightBaseCost', step: 50, min: 0 },
+            { label: 'Chart World Faith Base Cost', target: gameState.costs, key: 'chartWorldFaithBaseCost', step: 100, min: 0 },
+            { label: 'World Expedition Roll Base Cost', target: gameState.costs, key: 'worldExpeditionRollFaithBaseCost', step: 5, min: 0 },
+            { label: 'World Sermon Base Cost', target: gameState.costs, key: 'worldSermonFaithBaseCost', step: 1, min: 0 },
+            { label: 'World Conquer Base Cost', target: gameState.costs, key: 'worldConquerFaithBaseCost', step: 1, min: 0 },
+            { label: 'World Tier Cost Multiplier Step', target: game, key: 'worldTierCostMultiplierStep', step: 0.05, min: 0 },
+            { label: 'World Villages Resolved To Chart (base)', target: game, key: 'worldVillagesResolvedToChartBase', step: 1, min: 0 }
+        ]
+    },
+    {
+        title: 'Ascension',
+        entries: [
+            { label: 'Echoing Faith Base Cost', target: gameState.costs, key: 'echoingFaithBaseEchoesCost', step: 1, min: 0 },
+            { label: 'Swift Foundations Base Cost', target: gameState.costs, key: 'swiftFoundationsBaseEchoesCost', step: 1, min: 0 },
+            { label: 'Starlit Memory Base Cost', target: gameState.costs, key: 'starlitMemoryBaseEchoesCost', step: 1, min: 0 },
+            { label: 'Undying Flock Base Cost', target: gameState.costs, key: 'undyingFlockBaseEchoesCost', step: 1, min: 0 }
+        ]
     }
 ];
 
@@ -276,6 +301,40 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!villageId) return;
             if (typeof gameApi.conquerVillage === 'function') {
                 gameApi.conquerVillage(villageId);
+            }
+        });
+    }
+
+    const worldDiscoveredAreasList = document.getElementById('worldDiscoveredAreasList');
+    if (worldDiscoveredAreasList) {
+        worldDiscoveredAreasList.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+
+            const collectBtn = target.closest('.wild-area-collect-btn');
+            if (collectBtn) {
+                const areaId = collectBtn.dataset.areaId;
+                if (areaId && typeof gameApi.collectWorldWildAreaResources === 'function') {
+                    gameApi.collectWorldWildAreaResources(areaId);
+                }
+                return;
+            }
+
+            const sermonBtn = target.closest('.village-sermon-btn');
+            if (sermonBtn) {
+                const villageId = sermonBtn.dataset.villageId;
+                if (villageId && typeof gameApi.holdWorldVillageSermon === 'function') {
+                    gameApi.holdWorldVillageSermon(villageId);
+                }
+                return;
+            }
+
+            const conquerBtn = target.closest('.village-conquer-btn');
+            if (!conquerBtn) return;
+            const villageId = conquerBtn.dataset.villageId;
+            if (!villageId) return;
+            if (typeof gameApi.conquerWorldVillage === 'function') {
+                gameApi.conquerWorldVillage(villageId);
             }
         });
     }
@@ -385,6 +444,27 @@ function initCheatMenu() {
         cheatStoneBtn.addEventListener('click', () => {
             gameState.resources.stone.amount += MILLION;
             addLog('Cheat used: +1,000,000 stone.');
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
+
+    const cheatStarlightBtn = document.getElementById('cheatStarlightBtn');
+    if (cheatStarlightBtn) {
+        cheatStarlightBtn.addEventListener('click', () => {
+            gameState.progression.starlight += MILLION;
+            addLog('Cheat used: +1,000,000 starlight.');
+            gameApi.updateUI();
+            saveGame();
+        });
+    }
+
+    const cheatEchoesBtn = document.getElementById('cheatEchoesBtn');
+    if (cheatEchoesBtn) {
+        cheatEchoesBtn.addEventListener('click', () => {
+            if (!game.ascension) game.ascension = { echoesOfDivinity: 0, upgradeRanks: {}, totalAscensions: 0 };
+            game.ascension.echoesOfDivinity += 100;
+            addLog('Cheat used: +100 Echoes of Divinity.');
             gameApi.updateUI();
             saveGame();
         });

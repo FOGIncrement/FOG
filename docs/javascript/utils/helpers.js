@@ -1,5 +1,6 @@
 import { gameState, game } from '../classes/GameState.js';
 import { ROLE_DEFINITIONS } from '../config/roles.js';
+import { resolveUniverseConquestTier } from '../config/universe-conquest.js';
 
 function normalizeRoleCount(value) {
     if (!Number.isFinite(value) || value < 0) return 0;
@@ -188,10 +189,11 @@ export function getShelterBuildCosts() {
     const scale = 1 + (scalePerBuilt * sheltersBuilt);
     const woodBase = Number.isFinite(gameState.costs.shelterWoodCost) ? gameState.costs.shelterWoodCost : 0;
     const stoneBase = Number.isFinite(gameState.costs.shelterStoneCost) ? gameState.costs.shelterStoneCost : 0;
+    const ascensionMultiplier = getAscensionEarlyCostMultiplier();
 
     return {
-        wood: woodBase * scale,
-        stone: stoneBase * scale
+        wood: woodBase * scale * ascensionMultiplier,
+        stone: stoneBase * scale * ascensionMultiplier
     };
 }
 
@@ -254,6 +256,130 @@ export function getHungerStarvationDrainMultiplier() {
         return game.leanYearsStarvationMultiplier;
     }
     return 1;
+}
+
+export function getActiveWorld() {
+    if (!game.activeWorldId || !Array.isArray(game.worlds)) return null;
+    return game.worlds.find((world) => world.id === game.activeWorldId) || null;
+}
+
+export function getResolvedHomeVillageCount() {
+    const villages = Array.isArray(game.exploration?.villages) ? game.exploration.villages : [];
+    return villages.filter((village) => village.resolutionType).length;
+}
+
+export function canUnlockWorlds() {
+    if (game.worldsUnlocked) return true;
+
+    const capacityReq = Number.isFinite(game.worldsUnlockFollowerCapacityRequirement) ? game.worldsUnlockFollowerCapacityRequirement : 500;
+    const villagesReq = Number.isFinite(game.worldsUnlockVillagesResolvedRequirement) ? game.worldsUnlockVillagesResolvedRequirement : 5;
+    const metersReq = Number.isFinite(game.worldsUnlockMetersExploredRequirement) ? game.worldsUnlockMetersExploredRequirement : 3000;
+    const metersExplored = Number.isFinite(game.exploration?.totalMetersExplored) ? game.exploration.totalMetersExplored : 0;
+    const doctrinesComplete = game.doctrineChoices ? Object.values(game.doctrineChoices).every(Boolean) : false;
+
+    return getMaxFollowers() >= capacityReq
+        && getResolvedHomeVillageCount() >= villagesReq
+        && metersExplored >= metersReq
+        && doctrinesComplete
+        && hasProphetAssigned();
+}
+
+export function getWorldTierCostMultiplier(tier) {
+    const step = Number.isFinite(game.worldTierCostMultiplierStep) ? game.worldTierCostMultiplierStep : 0.25;
+    return 1 + step * Math.max(0, (tier || 1) - 1);
+}
+
+export function getWorldExpeditionRollFaithCost(world) {
+    const base = Number.isFinite(gameState.costs.worldExpeditionRollFaithBaseCost) ? gameState.costs.worldExpeditionRollFaithBaseCost : 60;
+    return Math.max(1, Math.floor(base * getWorldTierCostMultiplier(world?.tier)));
+}
+
+export function getWorldSermonFaithCost(world) {
+    const base = Number.isFinite(gameState.costs.worldSermonFaithBaseCost) ? gameState.costs.worldSermonFaithBaseCost : 8;
+    return Math.max(0, Math.floor(base * getWorldTierCostMultiplier(world?.tier)));
+}
+
+export function getWorldConquerFaithCost(world) {
+    const base = Number.isFinite(gameState.costs.worldConquerFaithBaseCost) ? gameState.costs.worldConquerFaithBaseCost : 15;
+    return Math.max(0, Math.floor(base * getWorldTierCostMultiplier(world?.tier)));
+}
+
+export function getChartNewWorldCost(nextTier) {
+    const starlightBase = Number.isFinite(gameState.costs.chartWorldStarlightBaseCost) ? gameState.costs.chartWorldStarlightBaseCost : 500;
+    const faithBase = Number.isFinite(gameState.costs.chartWorldFaithBaseCost) ? gameState.costs.chartWorldFaithBaseCost : 2000;
+    return {
+        starlight: Math.max(0, Math.floor(starlightBase * nextTier)),
+        faith: Math.max(0, Math.floor(faithBase * nextTier))
+    };
+}
+
+export function getWorldChartRequirement(tier) {
+    const base = Number.isFinite(game.worldVillagesResolvedToChartBase) ? game.worldVillagesResolvedToChartBase : 1;
+    // Capped one below the villageCount cap in config/worlds.js's getWorldTierTuning
+    // (min(8, 2+tier)) so the requirement can never exceed how many villages a
+    // world actually has, no matter how high the tier climbs.
+    return Math.min(7, base + (tier || 1));
+}
+
+export function getWorldDominationScore(world) {
+    if (!world) return 0;
+    const villages = Array.isArray(world.villages) ? world.villages : [];
+    const resolvedPercent = villages.length
+        ? (villages.filter((village) => village.resolutionType).length / villages.length) * 100
+        : 0;
+    const discoveredAreas = Array.isArray(world.wildAreas) ? world.wildAreas.filter((area) => area.discovered) : [];
+    const collectedPercent = discoveredAreas.length
+        ? (discoveredAreas.filter((area) => !area.resourceCache || area.resourceCache.collected).length / discoveredAreas.length) * 100
+        : 100;
+    return (resolvedPercent + collectedPercent) / 2;
+}
+
+export function getDomainsClaimed() {
+    let count = game.worldsUnlocked ? 1 : 0;
+    if (Array.isArray(game.worlds)) {
+        count += game.worlds.filter((world) => world.frozen && Number.isFinite(world.finalDominationScore) && world.finalDominationScore >= 80).length;
+    }
+    return count;
+}
+
+export function getUniverseConquestTier() {
+    return resolveUniverseConquestTier(getDomainsClaimed());
+}
+
+export function canAscendNow() {
+    return getUniverseConquestTier().id === 'universe';
+}
+
+export function getEchoesOfDivinityPreview() {
+    const tierInfo = getUniverseConquestTier();
+    const tierBonus = tierInfo.id === 'universe' ? 50 + 25 * tierInfo.pantheonRank : 0;
+    return Math.floor(5 * tierInfo.domainsClaimed + tierBonus);
+}
+
+export function getAscensionUpgradeRank(upgradeId) {
+    const ranks = game.ascension?.upgradeRanks;
+    return Number.isFinite(ranks?.[upgradeId]) ? ranks[upgradeId] : 0;
+}
+
+export function getAscensionFaithMultiplier() {
+    return 1 + 0.05 * getAscensionUpgradeRank('echoingFaith');
+}
+
+export function getAscensionEarlyCostMultiplier() {
+    return Math.max(0.5, 1 - 0.03 * getAscensionUpgradeRank('swiftFoundations'));
+}
+
+export function getAscensionWorldHeadstartMultiplier() {
+    return 0.05 * getAscensionUpgradeRank('starlitMemory');
+}
+
+export function getAscensionHazardMultiplier() {
+    return Math.max(0.2, 1 - 0.04 * getAscensionUpgradeRank('undyingFlock'));
+}
+
+export function getTrainingUnlockFaithCost() {
+    const base = Number.isFinite(gameState.costs.trainingTechCost) ? gameState.costs.trainingTechCost : 50;
+    return Math.max(0, Math.floor(base * getAscensionEarlyCostMultiplier()));
 }
 
 export function rollPreachConversions() {

@@ -51,6 +51,8 @@
             <button id="cheatFoodBtn" type="button">+1,000,000 Food</button>
             <button id="cheatWoodBtn" type="button">+1,000,000 Wood</button>
             <button id="cheatStoneBtn" type="button">+1,000,000 Stone</button>
+            <button id="cheatStarlightBtn" type="button">+1,000,000 Starlight</button>
+            <button id="cheatEchoesBtn" type="button">+100 Echoes of Divinity</button>
             <button id="cheatAlignmentGoodBtn" type="button">+10 Alignment (Good)</button>
             <button id="cheatAlignmentEvilBtn" type="button">-10 Alignment (Evil)</button>
             <button id="cheatFavorHeliosBtn" type="button">+100 Favor: Helios</button>
@@ -125,6 +127,13 @@
                 <p id="alignmentContainer" style="display: none;">
                     Alignment: <span id="alignmentValue">0 (Neutral)</span>
                 </p>
+                <p id="starlightContainer" style="display: none;">
+                    Starlight: <span id="starlightValue">0</span>
+                    <span id="starlightRate" class="rate-value" style="margin-left: 1em;"></span>
+                </p>
+                <p id="echoesContainer" style="display: none;">
+                    Echoes of Divinity: <span id="echoesValue">0</span>
+                </p>
                 <p id="nextGoalHint" class="next-goal-callout" style="display: none;"></p>
             </div>
 
@@ -158,6 +167,8 @@
                         <button class="tab-btn" data-tab="food" style="display:none;">Food<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="unlocks" style="display:none;">Unlocks<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="doctrines" style="display:none;">Doctrines<span class="tab-badge" style="display:none;"></span></button>
+                        <button class="tab-btn" data-tab="worlds" style="display:none;">Worlds<span class="tab-badge" style="display:none;"></span></button>
+                        <button class="tab-btn" data-tab="ascension" style="display:none;">Ascension<span class="tab-badge" style="display:none;"></span></button>
                         <button class="tab-btn" data-tab="followerManager" style="display:none;">Followers<span class="tab-badge" style="display:none;"></span></button>
                     </div>
 
@@ -301,6 +312,12 @@
                                 </button>
                                 <p class="unlock-desc"></p>
                             </div>
+                            <div class="unlock-item">
+                                <button id="unlockWorldsBtn" data-tab="unlocks" style="display: none;">
+                                    Reach Beyond the Sky<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
                         </div>
 
                         <div id="tab-doctrines" class="tab-content" style="display: none;">
@@ -374,6 +391,69 @@
                             <div class="unlock-item doctrine-option">
                                 <button id="buildTempleHelBtn" data-tab="doctrines" style="display: none;">
                                     Temple of Hel<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                        </div>
+
+                        <div id="tab-worlds" class="tab-content" style="display: none;">
+                            <p id="worldsSummaryTitle" class="faction-favor-title">Claimed Domains</p>
+                            <div id="worldsSummaryList"></div>
+
+                            <h3>Active World</h3>
+                            <p>Explored: <span id="worldExploredMetersValue">0</span>m</p>
+                            <p>
+                                Followers to send (max <span id="worldPartySizeLimitValue">10</span>):
+                                <input type="number" id="worldExpeditionFollowersInput" min="1" max="10" value="1" style="width: 90px; margin-left: 8px;">
+                            </p>
+                            <p>
+                                <label>
+                                    <input type="checkbox" id="includeProphetWorldCheckbox">
+                                    Include Prophet
+                                </label>
+                            </p>
+                            <p id="worldExpeditionStatus">No active expedition.</p>
+                            <button id="startWorldExpeditionBtn" style="display: none;">Send Expedition</button>
+                            <button id="resolveWorldExpeditionBtn" style="display: none;">Advance Expedition</button>
+                            <button id="cancelWorldExpeditionBtn" style="display: none;">Recall Expedition</button>
+
+                            <h3>Chart the Next World</h3>
+                            <button id="chartNewWorldBtn" style="display: none;">Chart a New World</button>
+
+                            <h3>Discovered on This World</h3>
+                            <div id="worldDiscoveredAreasList">
+                                <p class="area-empty">No discoveries yet.</p>
+                            </div>
+                        </div>
+
+                        <div id="tab-ascension" class="tab-content" style="display: none;">
+                            <p id="universeConquestSummary" class="next-goal-callout"></p>
+                            <p>Title: <span id="ascensionTitleValue">Prophet</span> — Ascensions: <span id="totalAscensionsValue">0</span></p>
+
+                            <button id="ascendBtn" style="display: none;">Ascend</button>
+
+                            <h3>Permanent Upgrades</h3>
+                            <div class="unlock-item">
+                                <button id="buyEchoingFaithBtn" data-tab="ascension" style="display: none;">
+                                    Echoing Faith<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                            <div class="unlock-item">
+                                <button id="buySwiftFoundationsBtn" data-tab="ascension" style="display: none;">
+                                    Swift Foundations<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                            <div class="unlock-item">
+                                <button id="buyStarlitMemoryBtn" data-tab="ascension" style="display: none;">
+                                    Starlit Memory<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                            <div class="unlock-item">
+                                <button id="buyUndyingFlockBtn" data-tab="ascension" style="display: none;">
+                                    Undying Flock<span class="btn-badge" style="display:none;"></span>
                                 </button>
                                 <p class="unlock-desc"></p>
                             </div>

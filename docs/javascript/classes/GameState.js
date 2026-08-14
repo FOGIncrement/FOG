@@ -2,6 +2,7 @@ import { Resource } from './Resource.js';
 import { createRoleCountMap, createRoleUnlockMap, createRoleAccumulatorMap } from '../config/roles.js';
 import { createFactionFavorMap } from '../config/factions.js';
 import { createDoctrineChoiceMap } from '../config/doctrines.js';
+import { createAscensionUpgradeRankMap } from '../config/ascension.js';
 
 // ===== GAME STATE =====
 export const gameState = {
@@ -15,7 +16,8 @@ export const gameState = {
         faith: 0,
         faithPerFollower: 0.02,
         prophet: 0,
-        prophetSway: 12
+        prophetSway: 12,
+        starlight: 0
     },
     resources: {
         wood: new Resource('wood', 0, 8, 5,() => {
@@ -71,7 +73,17 @@ export const gameState = {
         councilFaithCost: 100,
         templeFaithCost: 2000,
         templeWoodCost: 800,
-        templeStoneCost: 800
+        templeStoneCost: 800,
+        unlockWorldsFaithCost: 5000,
+        chartWorldStarlightBaseCost: 500,
+        chartWorldFaithBaseCost: 2000,
+        worldExpeditionRollFaithBaseCost: 60,
+        worldSermonFaithBaseCost: 8,
+        worldConquerFaithBaseCost: 15,
+        echoingFaithBaseEchoesCost: 10,
+        swiftFoundationsBaseEchoesCost: 15,
+        starlitMemoryBaseEchoesCost: 25,
+        undyingFlockBaseEchoesCost: 20
     },
     rates: {
         hunterFoodPerSecond: 2.0,
@@ -157,6 +169,20 @@ export const game = {
     templeSekhmetConquerYieldMultiplier: 1.75,
     templeDanuOutputMultiplier: 1.5,
     templeHelConsumptionMultiplier: 0.1,
+    worldsUnlocked: false,
+    activeWorldId: null,
+    worlds: [],
+    nextWorldIndex: 1,
+    worldsUnlockFollowerCapacityRequirement: 500,
+    worldsUnlockVillagesResolvedRequirement: 5,
+    worldsUnlockMetersExploredRequirement: 3000,
+    worldVillagesResolvedToChartBase: 1,
+    worldTierCostMultiplierStep: 0.25,
+    ascension: {
+        echoesOfDivinity: 0,
+        upgradeRanks: createAscensionUpgradeRankMap(0),
+        totalAscensions: 0
+    },
     trainingUnlocked: false,
     roleUnlocks: createRoleUnlockMap(false),
     roleBulkAssignAmount: 1,

@@ -41,6 +41,25 @@ export {
 } from './actions.js';
 
 export {
+    unlockWorlds,
+    startWorldExpedition,
+    resolveWorldExpedition,
+    cancelWorldExpedition,
+    holdWorldVillageSermon,
+    conquerWorldVillage,
+    collectWorldWildAreaResources,
+    chartNewWorld
+} from './worlds.js';
+
+export {
+    ascend,
+    buyEchoingFaith,
+    buySwiftFoundations,
+    buyStarlitMemory,
+    buyUndyingFlock
+} from './ascension.js';
+
+export {
     training,
     trainHunters,
     trainRitualists,

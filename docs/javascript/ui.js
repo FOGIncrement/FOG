@@ -1,12 +1,14 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement } from './utils/helpers.js';
 import { ROLE_DEFINITIONS, getRoleOutputMultiplier } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
 import { getActionUiRules } from './config/action-rules.js';
 import { buildingRegistry, actionRegistry } from './registries/index.js';
 import { setTooltipContent } from './utils/tooltip.js';
+import { getAscensionTitle } from './config/ascension.js';
+import { getNextUniverseConquestTier } from './config/universe-conquest.js';
 
 function getExplorationCapacityRequirement() {
     return Number.isFinite(game.prophetUnlockCapacityRequirement)
@@ -306,6 +308,34 @@ export function updateUI() {
     renderExplorationPanel(explorationAccess);
     renderDiscoveredAreas(explorationAccess);
 
+    const starlightContainer = document.getElementById('starlightContainer');
+    const starlightValue = document.getElementById('starlightValue');
+    const starlightRate = document.getElementById('starlightRate');
+    if (starlightContainer && starlightValue) {
+        starlightContainer.style.display = game.worldsUnlocked ? 'block' : 'none';
+        starlightValue.innerText = gameState.progression.starlight.toFixed(2);
+        if (starlightRate) {
+            const rate = Array.isArray(game.worlds)
+                ? game.worlds.reduce((sum, world) => {
+                    const convertedCount = world.villages.filter((village) => village.resolutionType === 'converted').length;
+                    return sum + convertedCount * (Number.isFinite(world.outpostStarlightPerSecond) ? world.outpostStarlightPerSecond : 0);
+                }, 0)
+                : 0;
+            starlightRate.innerText = rate > 0 ? `(+${rate.toFixed(3)}/s)` : '';
+            applyRateClass(starlightRate, rate);
+        }
+    }
+
+    const echoesContainer = document.getElementById('echoesContainer');
+    const echoesValue = document.getElementById('echoesValue');
+    if (echoesContainer && echoesValue) {
+        echoesContainer.style.display = (game.worldsUnlocked || game.ascension?.totalAscensions > 0) ? 'block' : 'none';
+        echoesValue.innerText = `${Math.floor(game.ascension?.echoesOfDivinity || 0)}`;
+    }
+
+    renderWorldsPanel();
+    renderAscensionPanel();
+
     updateButtons();
 }
 
@@ -495,6 +525,155 @@ function renderDiscoveredAreas(hasExplorationAccess) {
     container.innerHTML = `${villageCards}${areaCards}`;
 }
 
+function renderWorldsPanel() {
+    if (!game.worldsUnlocked) return;
+
+    const summaryContainer = document.getElementById('worldsSummaryList');
+    if (summaryContainer) {
+        const rows = (Array.isArray(game.worlds) ? game.worlds : []).map((world) => {
+            const score = Math.round(getWorldDominationScore(world));
+            const status = world.frozen
+                ? `Claimed (${Math.round(world.finalDominationScore)}% dominion)`
+                : (world.id === game.activeWorldId ? `Active — ${score}% dominion` : `${score}% dominion`);
+            const favorClass = world.favorAlignment ? `favor-${world.favorAlignment}` : '';
+            return `<p><span class="favor-label ${favorClass}">${world.name}</span> — Tier ${world.tier} — ${status} — +${(world.outpostStarlightPerSecond || 0).toFixed(2)} starlight/s</p>`;
+        }).join('');
+        summaryContainer.innerHTML = rows || '<p class="area-empty">No Worlds charted yet.</p>';
+    }
+
+    const activeWorld = getActiveWorld();
+    const followersInput = document.getElementById('worldExpeditionFollowersInput');
+    const includeProphetEl = document.getElementById('includeProphetWorldCheckbox');
+    const statusEl = document.getElementById('worldExpeditionStatus');
+    const metersEl = document.getElementById('worldExploredMetersValue');
+    const limitEl = document.getElementById('worldPartySizeLimitValue');
+    const chartBtn = document.getElementById('chartNewWorldBtn');
+
+    if (!activeWorld) return;
+
+    const limit = Number.isFinite(game.exploration?.followerSendLimit) ? Math.floor(game.exploration.followerSendLimit) : 10;
+    if (limitEl) limitEl.innerText = `${limit}`;
+
+    if (followersInput) {
+        const maxValue = Math.max(1, Math.min(limit, getUnassignedFollowers()));
+        followersInput.max = `${maxValue}`;
+        if (!followersInput.value) followersInput.value = '1';
+        const current = parseInt(followersInput.value, 10);
+        if (!Number.isFinite(current) || current < 1) followersInput.value = '1';
+        if (Number.isFinite(current) && current > maxValue) followersInput.value = `${maxValue}`;
+    }
+
+    if (includeProphetEl) {
+        const hasProphet = getRoleCount('prophet') > 0;
+        includeProphetEl.disabled = !hasProphet;
+        if (!hasProphet) includeProphetEl.checked = false;
+    }
+
+    if (metersEl) metersEl.innerText = `${Math.floor(activeWorld.totalMetersExplored)}`;
+
+    if (statusEl) {
+        const expedition = activeWorld.activeExpedition;
+        if (activeWorld.frozen) {
+            statusEl.innerText = `${activeWorld.name} has been claimed and left behind.`;
+        } else if (!expedition) {
+            statusEl.innerText = `No active expedition. Roll cost: ${getWorldExpeditionRollFaithCost(activeWorld)} faith.`;
+        } else {
+            const targetVillage = activeWorld.villages.find((village) => village.id === expedition.targetVillageId);
+            const villageText = targetVillage ? `${targetVillage.name} at ${Math.floor(targetVillage.distanceFromCamp)}m` : 'unknown destination';
+            statusEl.innerText = `Expedition active: ${expedition.followersAlive}/${expedition.followersSent} alive, distance ${Math.floor(expedition.distanceCovered)}m, target ${villageText}.`;
+        }
+    }
+
+    if (chartBtn) {
+        const requirement = getWorldChartRequirement(activeWorld.tier);
+        const resolvedCount = activeWorld.villages.filter((village) => village.resolutionType).length;
+        const cost = getChartNewWorldCost(activeWorld.tier + 1);
+        setButtonLabel(chartBtn, `Chart a New World (${resolvedCount}/${requirement} resolved, ${cost.starlight} starlight + ${cost.faith} faith)`);
+    }
+
+    renderWorldDiscoveredAreas(activeWorld);
+}
+
+function renderWorldDiscoveredAreas(world) {
+    const container = document.getElementById('worldDiscoveredAreasList');
+    if (!container) return;
+
+    const villages = world.villages.filter((village) => village.discovered);
+    const wildAreas = world.wildAreas.filter((area) => area.discovered);
+
+    if (villages.length === 0 && wildAreas.length === 0) {
+        container.innerHTML = '<p class="area-empty">No discoveries yet.</p>';
+        return;
+    }
+
+    const villageCards = villages.map((village) => {
+        const converted = Math.floor(village.convertedPercent);
+        let statusLine;
+        let actionsLine = '';
+        if (village.resolutionType === 'converted') {
+            statusLine = `<p class="village-resolved">Outpost — tithing +${(world.outpostStarlightPerSecond || 0).toFixed(2)} starlight/s</p>`;
+        } else if (village.resolutionType === 'conquered') {
+            statusLine = `<p class="village-resolved">Ransacked — conquered</p>`;
+        } else {
+            const conquerCost = getWorldConquerFaithCost(world);
+            const sermonCost = getWorldSermonFaithCost(world);
+            statusLine = `<p>Converted: ${converted}%</p>`;
+            actionsLine = `
+                <button class="village-sermon-btn" data-village-id="${village.id}" ${converted >= 100 || !village.prophetPresent ? 'disabled' : ''}>Hold Sermon (${sermonCost} faith)</button>
+                <button class="village-conquer-btn" data-village-id="${village.id}">Conquer (${conquerCost} faith)</button>
+            `;
+        }
+        return `
+            <div class="area-card village-card">
+                <h4>${village.name}</h4>
+                <p>Distance: ${Math.floor(village.distanceFromCamp)}m</p>
+                <p>Population: ${Math.floor(village.population).toLocaleString()}</p>
+                <p>Resistance: ${village.resistance}</p>
+                ${statusLine}
+                <p>Prophet: ${village.prophetPresent ? 'Present' : 'Not present'}</p>
+                ${actionsLine}
+            </div>
+        `;
+    }).join('');
+
+    const areaCards = wildAreas.map((area) => {
+        const cache = area.resourceCache;
+        const hasCache = Boolean(cache);
+        const cacheCollected = Boolean(cache?.collected);
+        const starlight = Number.isFinite(cache?.starlight) ? Math.floor(cache.starlight) : 0;
+        return `
+            <div class="area-card">
+                <h4>${area.name}</h4>
+                <p>Distance: ${Math.floor(area.distanceFromCamp)}m</p>
+                ${hasCache ? `<p>Cache: ${starlight} starlight ${cacheCollected ? '(collected)' : ''}</p>` : '<p>Cache: none</p>'}
+                ${hasCache && !cacheCollected ? `<button class="wild-area-collect-btn" data-area-id="${area.id}">Collect Resources</button>` : ''}
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `${villageCards}${areaCards}`;
+}
+
+function renderAscensionPanel() {
+    const summaryEl = document.getElementById('universeConquestSummary');
+    const titleEl = document.getElementById('ascensionTitleValue');
+    const countEl = document.getElementById('totalAscensionsValue');
+
+    const totalAscensions = Number.isFinite(game.ascension?.totalAscensions) ? game.ascension.totalAscensions : 0;
+    if (titleEl) titleEl.innerText = getAscensionTitle(totalAscensions);
+    if (countEl) countEl.innerText = `${totalAscensions}`;
+
+    if (summaryEl) {
+        const tierInfo = getUniverseConquestTier();
+        const domains = getDomainsClaimed();
+        const nextTier = getNextUniverseConquestTier(domains);
+        const nextLine = nextTier
+            ? ` Next: ${nextTier.label} at ${nextTier.threshold} domains claimed.`
+            : ' You have reached the Universe tier — Ascend whenever you are ready, or press onward for a greater Pantheon Rank.';
+        summaryEl.innerText = `Domains claimed: ${domains} (${tierInfo.label}).${nextLine}`;
+    }
+}
+
 function updateButtons() {
     const ritualDefinition = buildingRegistry.get('ritualCircle');
     const shelterDefinition = buildingRegistry.get('shelter');
@@ -558,6 +737,16 @@ function updateButtons() {
     const doctrinesHeader = document.querySelector('.tab-btn[data-tab="doctrines"]');
     if (doctrinesHeader) {
         doctrinesHeader.style.display = tabHeaderVisibility.doctrines ? 'inline-block' : 'none';
+    }
+
+    const worldsHeader = document.querySelector('.tab-btn[data-tab="worlds"]');
+    if (worldsHeader) {
+        worldsHeader.style.display = tabHeaderVisibility.worlds ? 'inline-block' : 'none';
+    }
+
+    const ascensionHeader = document.querySelector('.tab-btn[data-tab="ascension"]');
+    if (ascensionHeader) {
+        ascensionHeader.style.display = tabHeaderVisibility.ascension ? 'inline-block' : 'none';
     }
 
     const activeTabHeader = document.querySelector('.tab-btn.active');

@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
@@ -290,7 +290,7 @@ function applyWildAreaPassiveEffect(area) {
     }
 }
 
-function removeFollowersFromSettlement(losses, includeProphetLoss = false) {
+export function removeFollowersFromSettlement(losses, includeProphetLoss = false) {
     if (!Number.isFinite(losses) || losses <= 0) return 0;
 
     const currentFollowers = Math.max(0, Math.floor(gameState.progression.followers));
@@ -386,9 +386,10 @@ function processExpeditionHazard(expedition) {
     if (alive <= 0) return { casualties: 0, ended: true, prophetDied: false };
 
     const exploration = getExplorationState();
-    const wipeoutThreshold = exploration.hazardWipeoutChance;
-    const heavyLossThreshold = wipeoutThreshold + exploration.hazardHeavyLossChance;
-    const ambushThreshold = heavyLossThreshold + exploration.hazardAmbushChance;
+    const hazardMultiplier = getAscensionHazardMultiplier();
+    const wipeoutThreshold = exploration.hazardWipeoutChance * hazardMultiplier;
+    const heavyLossThreshold = wipeoutThreshold + exploration.hazardHeavyLossChance * hazardMultiplier;
+    const ambushThreshold = heavyLossThreshold + exploration.hazardAmbushChance * hazardMultiplier;
 
     if (hazardRoll < wipeoutThreshold) {
         const prophetDied = Boolean(expedition.includesProphet);
@@ -911,6 +912,8 @@ export function offerToTheVeil() {
 export function startExpedition() {
     const { exploration, limit } = getExpeditionConfig();
     if (exploration.activeExpedition) return;
+    const activeWorld = game.activeWorldId ? (game.worlds || []).find((world) => world.id === game.activeWorldId) : null;
+    if (activeWorld?.activeExpedition) return;
 
     const inputEl = document.getElementById('expeditionFollowersInput');
     const includeProphetEl = document.getElementById('includeProphetCheckbox');

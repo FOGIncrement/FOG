@@ -8,6 +8,7 @@ import {
 } from '../config/roles.js';
 import { FACTION_DEFINITIONS, createFactionFavorMap } from '../config/factions.js';
 import { DOCTRINE_GROUPS, createDoctrineChoiceMap } from '../config/doctrines.js';
+import { ASCENSION_UPGRADES, createAscensionUpgradeRankMap } from '../config/ascension.js';
 
 let resetInProgress = false;
 
@@ -434,6 +435,131 @@ export function loadGame() {
             }
             if (!Number.isFinite(game.templeHelConsumptionMultiplier) || game.templeHelConsumptionMultiplier <= 0 || game.templeHelConsumptionMultiplier > 1) {
                 game.templeHelConsumptionMultiplier = 0.1;
+            }
+
+            // --- Worlds ---
+            if (!Number.isFinite(gameState.progression.starlight) || gameState.progression.starlight < 0) {
+                gameState.progression.starlight = 0;
+            }
+            if (typeof game.worldsUnlocked !== 'boolean') {
+                game.worldsUnlocked = false;
+            }
+            if (!Number.isFinite(gameState.costs.unlockWorldsFaithCost) || gameState.costs.unlockWorldsFaithCost < 0) {
+                gameState.costs.unlockWorldsFaithCost = 5000;
+            }
+            if (!Number.isFinite(gameState.costs.chartWorldStarlightBaseCost) || gameState.costs.chartWorldStarlightBaseCost < 0) {
+                gameState.costs.chartWorldStarlightBaseCost = 500;
+            }
+            if (!Number.isFinite(gameState.costs.chartWorldFaithBaseCost) || gameState.costs.chartWorldFaithBaseCost < 0) {
+                gameState.costs.chartWorldFaithBaseCost = 2000;
+            }
+            if (!Number.isFinite(gameState.costs.worldExpeditionRollFaithBaseCost) || gameState.costs.worldExpeditionRollFaithBaseCost < 1) {
+                gameState.costs.worldExpeditionRollFaithBaseCost = 60;
+            }
+            if (!Number.isFinite(gameState.costs.worldSermonFaithBaseCost) || gameState.costs.worldSermonFaithBaseCost < 0) {
+                gameState.costs.worldSermonFaithBaseCost = 8;
+            }
+            if (!Number.isFinite(gameState.costs.worldConquerFaithBaseCost) || gameState.costs.worldConquerFaithBaseCost < 0) {
+                gameState.costs.worldConquerFaithBaseCost = 15;
+            }
+            if (!Number.isFinite(game.worldsUnlockFollowerCapacityRequirement) || game.worldsUnlockFollowerCapacityRequirement < 1) {
+                game.worldsUnlockFollowerCapacityRequirement = 500;
+            }
+            if (!Number.isFinite(game.worldsUnlockVillagesResolvedRequirement) || game.worldsUnlockVillagesResolvedRequirement < 0) {
+                game.worldsUnlockVillagesResolvedRequirement = 5;
+            }
+            if (!Number.isFinite(game.worldsUnlockMetersExploredRequirement) || game.worldsUnlockMetersExploredRequirement < 0) {
+                game.worldsUnlockMetersExploredRequirement = 3000;
+            }
+            if (!Number.isFinite(game.worldVillagesResolvedToChartBase) || game.worldVillagesResolvedToChartBase < 0) {
+                game.worldVillagesResolvedToChartBase = 1;
+            }
+            if (!Number.isFinite(game.worldTierCostMultiplierStep) || game.worldTierCostMultiplierStep < 0) {
+                game.worldTierCostMultiplierStep = 0.25;
+            }
+            if (!Number.isFinite(game.nextWorldIndex) || game.nextWorldIndex < 1) {
+                game.nextWorldIndex = 1;
+            }
+
+            const sanitizeWorldVillage = (village, index) => ({
+                id: village?.id || `world-village-${index + 1}`,
+                name: village?.name || `Settlement ${index + 1}`,
+                distanceFromCamp: Number.isFinite(village?.distanceFromCamp) ? Math.max(1, Math.floor(village.distanceFromCamp)) : 500,
+                population: Number.isFinite(village?.population) ? Math.max(1, Math.floor(village.population)) : 1500,
+                resistance: Number.isFinite(village?.resistance) ? Math.max(0, Math.floor(village.resistance)) : 42,
+                convertedPercent: Number.isFinite(village?.convertedPercent) ? Math.max(0, Math.min(100, Math.floor(village.convertedPercent))) : 0,
+                discovered: Boolean(village?.discovered),
+                sermonsHeld: Number.isFinite(village?.sermonsHeld) ? Math.max(0, Math.floor(village.sermonsHeld)) : 0,
+                prophetPresent: Boolean(village?.prophetPresent),
+                resolutionType: village?.resolutionType === 'converted' || village?.resolutionType === 'conquered' ? village.resolutionType : null
+            });
+
+            const sanitizeWorldArea = (area, index) => ({
+                id: area?.id || `world-area-${index + 1}`,
+                name: area?.name || `Reach ${index + 1}`,
+                distanceFromCamp: Number.isFinite(area?.distanceFromCamp) ? Math.max(1, Math.floor(area.distanceFromCamp)) : 0,
+                discovered: Boolean(area?.discovered),
+                resourceCache: area?.resourceCache && typeof area.resourceCache === 'object'
+                    ? {
+                        starlight: Number.isFinite(area.resourceCache.starlight) ? Math.max(0, Math.floor(area.resourceCache.starlight)) : 0,
+                        collected: Boolean(area.resourceCache.collected)
+                    }
+                    : null
+            });
+
+            const validFavorGods = ['helios', 'hel', 'danu', 'sekhmet'];
+            const sanitizedWorlds = (Array.isArray(game.worlds) ? game.worlds : [])
+                .filter((world) => world && typeof world === 'object')
+                .map((world, index) => ({
+                    id: world.id || `world-${index + 1}`,
+                    name: world.name || `Unnamed World ${index + 1}`,
+                    tier: Number.isFinite(world.tier) ? Math.max(1, Math.floor(world.tier)) : 1,
+                    favorAlignment: validFavorGods.includes(world.favorAlignment) ? world.favorAlignment : null,
+                    outpostStarlightPerSecond: Number.isFinite(world.outpostStarlightPerSecond) ? Math.max(0, world.outpostStarlightPerSecond) : 0.08,
+                    frozen: Boolean(world.frozen),
+                    finalDominationScore: Number.isFinite(world.finalDominationScore) ? Math.max(0, Math.min(100, world.finalDominationScore)) : null,
+                    totalMetersExplored: Number.isFinite(world.totalMetersExplored) ? Math.max(0, Math.floor(world.totalMetersExplored)) : 0,
+                    hazardScale: Number.isFinite(world.hazardScale) ? Math.max(0, world.hazardScale) : 1,
+                    activeExpedition: world.activeExpedition && typeof world.activeExpedition === 'object' ? world.activeExpedition : null,
+                    wildAreas: Array.isArray(world.wildAreas) ? world.wildAreas.map(sanitizeWorldArea) : [],
+                    villages: Array.isArray(world.villages) && world.villages.length > 0
+                        ? world.villages.map(sanitizeWorldVillage)
+                        : [sanitizeWorldVillage(null, 0)],
+                    nextVillageIndex: Number.isFinite(world.nextVillageIndex) ? Math.max(2, Math.floor(world.nextVillageIndex)) : 2,
+                    nextAreaIndex: Number.isFinite(world.nextAreaIndex) ? Math.max(1, Math.floor(world.nextAreaIndex)) : 1
+                }));
+            game.worlds = sanitizedWorlds;
+
+            if (typeof game.activeWorldId !== 'string' || !sanitizedWorlds.some((world) => world.id === game.activeWorldId)) {
+                game.activeWorldId = sanitizedWorlds.length > 0 ? sanitizedWorlds[sanitizedWorlds.length - 1].id : null;
+            }
+
+            // --- Ascension ---
+            if (!game.ascension || typeof game.ascension !== 'object') {
+                game.ascension = { echoesOfDivinity: 0, upgradeRanks: createAscensionUpgradeRankMap(0), totalAscensions: 0 };
+            } else {
+                game.ascension.echoesOfDivinity = Number.isFinite(game.ascension.echoesOfDivinity) ? Math.max(0, game.ascension.echoesOfDivinity) : 0;
+                game.ascension.totalAscensions = Number.isFinite(game.ascension.totalAscensions) ? Math.max(0, Math.floor(game.ascension.totalAscensions)) : 0;
+
+                const mergedUpgradeRanks = createAscensionUpgradeRankMap(0);
+                const savedRanks = game.ascension.upgradeRanks && typeof game.ascension.upgradeRanks === 'object' ? game.ascension.upgradeRanks : {};
+                ASCENSION_UPGRADES.forEach((upgrade) => {
+                    const savedRank = savedRanks[upgrade.id];
+                    mergedUpgradeRanks[upgrade.id] = Number.isFinite(savedRank) && savedRank >= 0 ? Math.floor(savedRank) : 0;
+                });
+                game.ascension.upgradeRanks = mergedUpgradeRanks;
+            }
+            if (!Number.isFinite(gameState.costs.echoingFaithBaseEchoesCost) || gameState.costs.echoingFaithBaseEchoesCost < 0) {
+                gameState.costs.echoingFaithBaseEchoesCost = 10;
+            }
+            if (!Number.isFinite(gameState.costs.swiftFoundationsBaseEchoesCost) || gameState.costs.swiftFoundationsBaseEchoesCost < 0) {
+                gameState.costs.swiftFoundationsBaseEchoesCost = 15;
+            }
+            if (!Number.isFinite(gameState.costs.starlitMemoryBaseEchoesCost) || gameState.costs.starlitMemoryBaseEchoesCost < 0) {
+                gameState.costs.starlitMemoryBaseEchoesCost = 25;
+            }
+            if (!Number.isFinite(gameState.costs.undyingFlockBaseEchoesCost) || gameState.costs.undyingFlockBaseEchoesCost < 0) {
+                gameState.costs.undyingFlockBaseEchoesCost = 20;
             }
 
             if (!Number.isFinite(gameState.costs.unlockAltarFaithCost) || gameState.costs.unlockAltarFaithCost < 0) {

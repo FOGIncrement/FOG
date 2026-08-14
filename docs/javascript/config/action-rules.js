@@ -1,7 +1,9 @@
 import { setTooltipContent } from '../utils/tooltip.js';
-import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus } from '../utils/helpers.js';
+import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank } from '../utils/helpers.js';
 import { DOCTRINE_GROUP_BY_ID } from './doctrines.js';
 import { TEMPLE_OPTION_BY_GOD } from './temples.js';
+import { ASCENSION_UPGRADE_BY_ID } from './ascension.js';
+import { getNextUniverseConquestTier } from './universe-conquest.js';
 
 function applyTooltip(el, summary, stats = '') {
     setTooltipContent(el, summary, stats);
@@ -15,8 +17,11 @@ function applyUnlockExtras(el, { isPurchased, description }) {
     if (descEl) descEl.textContent = description || '';
 }
 
-function applyRepeatableUpgradeButton(el, { purchases, maxPurchases, baseCost, label, summary, effectLine, gameState, setVisible, setAffordability, setButtonLabel }) {
+function applyRepeatableUpgradeButton(el, { purchases, maxPurchases, baseCost, label, summary, effectLine, gameState, setVisible, setAffordability, setButtonLabel, currencyAmount, currencyLabel }) {
     setVisible(el, true);
+
+    const resolvedCurrencyAmount = Number.isFinite(currencyAmount) ? currencyAmount : gameState.progression.faith;
+    const resolvedCurrencyLabel = currencyLabel || 'faith';
 
     if (purchases >= maxPurchases) {
         el.disabled = true;
@@ -27,11 +32,11 @@ function applyRepeatableUpgradeButton(el, { purchases, maxPurchases, baseCost, l
     }
 
     const cost = getUpgradeCost(baseCost, purchases);
-    const canAfford = gameState.progression.faith >= cost;
+    const canAfford = resolvedCurrencyAmount >= cost;
     setAffordability(el, canAfford);
     setButtonLabel(el, `${label} (${purchases}/${maxPurchases})`);
     el.classList.toggle('purchased', !canAfford);
-    applyTooltip(el, `${label}\n${summary}`, `Cost: ${cost} faith\nRank: ${purchases}/${maxPurchases}\n${effectLine}`);
+    applyTooltip(el, `${label}\n${summary}`, `Cost: ${cost} ${resolvedCurrencyLabel}\nRank: ${purchases}/${maxPurchases}\n${effectLine}`);
 }
 
 function applyDoctrineOptionButton(el, { groupId, optionId, label, summary, effectLine, game, setVisible, setButtonLabel }) {
@@ -503,12 +508,13 @@ export function getActionUiRules(context) {
                     applyTooltip(el, 'Unlock Training\nTraining program already unlocked.', 'Status: unlocked');
                     applyUnlockExtras(el, { isPurchased: true, description: 'Training program active. Role specialization enabled.' });
                 } else {
-                    const canAfford = gameState.progression.faith >= gameState.costs.trainingTechCost;
+                    const trainingCost = getTrainingUnlockFaithCost();
+                    const canAfford = gameState.progression.faith >= trainingCost;
                     setAffordability(el, canAfford);
                     setButtonLabel(el, 'Unlock Training');
                     el.classList.toggle('purchased', !canAfford);
-                    applyTooltip(el, 'Unlock Training\nEnable follower role specialization.', `Cost: ${gameState.costs.trainingTechCost} faith`);
-                    applyUnlockExtras(el, { isPurchased: false, description: `Costs ${gameState.costs.trainingTechCost} faith. Enables follower role specialization.` });
+                    applyTooltip(el, 'Unlock Training\nEnable follower role specialization.', `Cost: ${trainingCost} faith`);
+                    applyUnlockExtras(el, { isPurchased: false, description: `Costs ${trainingCost} faith. Enables follower role specialization.` });
                 }
             }
         },
@@ -560,6 +566,8 @@ export function getActionUiRules(context) {
                 unlocks: Boolean(game.unlocksTabUnlocked),
                 food: Boolean(game.hasGatheredFood),
                 doctrines: Boolean(game.doctrinesUnlocked),
+                worlds: Boolean(game.worldsUnlocked),
+                ascension: Boolean(game.worldsUnlocked || game.ascension?.totalAscensions > 0),
                 followerManager: roleDefinitions.some((role) => game.roleUnlocks[role.id])
             };
         },
@@ -775,6 +783,39 @@ export function getActionUiRules(context) {
             applyTooltip(el, 'Convene the Council\nGather your followers to decide the fundamental doctrines of your faith.', `Requirement: ${requirement} followers\nCost: ${cost} faith`);
             applyUnlockExtras(el, { isPurchased: false, description: `Requires ${requirement} followers. Costs ${cost} faith. Unlocks the Doctrines tab.` });
         },
+        unlockWorlds(el) {
+            if (!game.unlocksTabUnlocked) {
+                setVisible(el, false);
+                return;
+            }
+            if (!game.worldsUnlocked && !canUnlockWorlds()) {
+                setVisible(el, false);
+                return;
+            }
+
+            setVisible(el, true);
+
+            if (game.worldsUnlocked) {
+                el.disabled = true;
+                setButtonLabel(el, 'Reach Beyond the Sky (Unlocked)');
+                el.classList.add('purchased');
+                applyTooltip(el, 'Reach Beyond the Sky\nThe first World has been charted.', 'Status: unlocked');
+                applyUnlockExtras(el, { isPurchased: true, description: 'The Worlds tab is unlocked — your cult now reaches beyond one planet.' });
+                return;
+            }
+
+            const cost = Number.isFinite(gameState.costs.unlockWorldsFaithCost) ? gameState.costs.unlockWorldsFaithCost : 5000;
+            const canAfford = gameState.progression.faith >= cost;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, 'Reach Beyond the Sky');
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Reach Beyond the Sky\nOpen a rift to the first World beyond your own.',
+                `Cost: ${cost} faith\nRequires: ${Math.floor(game.worldsUnlockFollowerCapacityRequirement)} follower capacity, ${game.worldsUnlockVillagesResolvedRequirement} Home villages resolved, ${Math.floor(game.worldsUnlockMetersExploredRequirement)}m explored, all Doctrines chosen, a Prophet assigned`
+            );
+            applyUnlockExtras(el, { isPurchased: false, description: `Costs ${cost} faith once all requirements are met. Opens the Worlds tab — the path to conquering the universe.` });
+        },
         chooseShepherdsCreed(el) {
             const option = DOCTRINE_GROUP_BY_ID.flock.options.find((o) => o.id === 'shepherdsCreed');
             const discountPercent = Math.round((1 - game.shepherdsCreedCostMultiplier) * 100);
@@ -845,6 +886,128 @@ export function getActionUiRules(context) {
         buildTempleHel(el) {
             const option = TEMPLE_OPTION_BY_GOD.hel;
             applyTempleButton(el, { godId: 'hel', label: option.label, summary: option.summary, effectLine: option.effectLabel, game, gameState, setVisible, setButtonLabel, setAffordability });
+        },
+        startWorldExpedition(el) {
+            if (!game.worldsUnlocked) { setVisible(el, false); return; }
+            const world = getActiveWorld();
+            setVisible(el, true);
+            const hasParty = getUnassignedFollowers() > 0;
+            const idle = world && !world.activeExpedition && !world.frozen;
+            setAffordability(el, Boolean(hasParty && idle));
+            const rollCost = world ? getWorldExpeditionRollFaithCost(world) : 0;
+            applyTooltip(
+                el,
+                'Send Expedition\nSend followers into the unknown reaches of this World.',
+                `Party limit: ${Math.floor(game.exploration?.followerSendLimit || 10)} followers\nRoll cost: ${rollCost} faith per advance`
+            );
+        },
+        resolveWorldExpedition(el) {
+            if (!game.worldsUnlocked) { setVisible(el, false); return; }
+            const world = getActiveWorld();
+            setVisible(el, true);
+            const active = Boolean(world?.activeExpedition);
+            const rollCost = world ? getWorldExpeditionRollFaithCost(world) : 0;
+            const canAfford = gameState.progression.faith >= rollCost;
+            setAffordability(el, active && canAfford);
+            applyTooltip(
+                el,
+                'Advance Expedition\nPush the active expedition forward by one roll.',
+                `Roll: 1d6 + followers sent\nCost: ${rollCost} faith\nHazard risk applies each advance.`
+            );
+        },
+        cancelWorldExpedition(el) {
+            if (!game.worldsUnlocked) { setVisible(el, false); return; }
+            const world = getActiveWorld();
+            setVisible(el, true);
+            setAffordability(el, Boolean(world?.activeExpedition));
+            applyTooltip(el, 'Recall Expedition\nCall the active World expedition back immediately.', 'Cost: none');
+        },
+        chartNewWorld(el) {
+            if (!game.worldsUnlocked) { setVisible(el, false); return; }
+            const world = getActiveWorld();
+            if (!world) { setVisible(el, false); return; }
+
+            setVisible(el, true);
+            const resolvedCount = world.villages.filter((village) => village.resolutionType).length;
+            const requirement = getWorldChartRequirement(world.tier);
+            const cost = getChartNewWorldCost(world.tier + 1);
+            const meetsRequirement = resolvedCount >= requirement && !world.activeExpedition;
+            const canAfford = meetsRequirement && gameState.progression.starlight >= cost.starlight && gameState.progression.faith >= cost.faith;
+            setAffordability(el, canAfford);
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Chart a New World\nLeave this World behind, claimed, and open a path to the next.',
+                `Requirement: ${requirement} settlements resolved (have ${resolvedCount}), no active expedition\nCost: ${cost.starlight} starlight, ${cost.faith} faith\nPrevious World keeps tithing Starlight forever.`
+            );
+        },
+        ascend(el) {
+            const domainsClaimed = getDomainsClaimed();
+            const tierInfo = getUniverseConquestTier();
+            setVisible(el, true);
+            const eligible = canAscendNow();
+            setAffordability(el, eligible);
+            el.classList.toggle('purchased', !eligible);
+            if (eligible) {
+                const preview = getEchoesOfDivinityPreview();
+                applyTooltip(
+                    el,
+                    'Ascend\nEnd this incarnation and begin anew, stronger.',
+                    `Domains claimed: ${domainsClaimed} (${tierInfo.label})\nEchoes of Divinity gained: ${preview}\nDoctrines persist. Everything else resets.`
+                );
+            } else {
+                const nextTier = getNextUniverseConquestTier(domainsClaimed);
+                const remaining = nextTier ? Math.max(0, nextTier.threshold - domainsClaimed) : 0;
+                applyTooltip(
+                    el,
+                    'Ascend\nRequires claiming dominion across the universe.',
+                    `Domains claimed: ${domainsClaimed} (${tierInfo.label})\nAscension unlocks at Universe tier (20 domains) — ${remaining} more needed.`
+                );
+            }
+        },
+        buyEchoingFaith(el) {
+            const upgrade = ASCENSION_UPGRADE_BY_ID.echoingFaith;
+            const rank = getAscensionUpgradeRank('echoingFaith');
+            const maxRank = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+            applyRepeatableUpgradeButton(el, {
+                purchases: rank, maxPurchases: maxRank, baseCost: gameState.costs[upgrade.baseCostKey],
+                label: upgrade.label, summary: upgrade.summary, effectLine: `Current: +${Math.round(rank * upgrade.effectPerRank * 100)}% faith income`,
+                gameState, setVisible, setAffordability, setButtonLabel,
+                currencyAmount: game.ascension?.echoesOfDivinity, currencyLabel: 'Echoes'
+            });
+        },
+        buySwiftFoundations(el) {
+            const upgrade = ASCENSION_UPGRADE_BY_ID.swiftFoundations;
+            const rank = getAscensionUpgradeRank('swiftFoundations');
+            const maxRank = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+            applyRepeatableUpgradeButton(el, {
+                purchases: rank, maxPurchases: maxRank, baseCost: gameState.costs[upgrade.baseCostKey],
+                label: upgrade.label, summary: upgrade.summary, effectLine: `Current: -${Math.round(rank * upgrade.effectPerRank * 100)}% early costs`,
+                gameState, setVisible, setAffordability, setButtonLabel,
+                currencyAmount: game.ascension?.echoesOfDivinity, currencyLabel: 'Echoes'
+            });
+        },
+        buyStarlitMemory(el) {
+            const upgrade = ASCENSION_UPGRADE_BY_ID.starlitMemory;
+            const rank = getAscensionUpgradeRank('starlitMemory');
+            const maxRank = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+            applyRepeatableUpgradeButton(el, {
+                purchases: rank, maxPurchases: maxRank, baseCost: gameState.costs[upgrade.baseCostKey],
+                label: upgrade.label, summary: upgrade.summary, effectLine: `Current: +${Math.round(rank * upgrade.effectPerRank * 100)}% headstart on new Worlds`,
+                gameState, setVisible, setAffordability, setButtonLabel,
+                currencyAmount: game.ascension?.echoesOfDivinity, currencyLabel: 'Echoes'
+            });
+        },
+        buyUndyingFlock(el) {
+            const upgrade = ASCENSION_UPGRADE_BY_ID.undyingFlock;
+            const rank = getAscensionUpgradeRank('undyingFlock');
+            const maxRank = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+            applyRepeatableUpgradeButton(el, {
+                purchases: rank, maxPurchases: maxRank, baseCost: gameState.costs[upgrade.baseCostKey],
+                label: upgrade.label, summary: upgrade.summary, effectLine: `Current: -${Math.round(rank * upgrade.effectPerRank * 100)}% hazard severity`,
+                gameState, setVisible, setAffordability, setButtonLabel,
+                currencyAmount: game.ascension?.echoesOfDivinity, currencyLabel: 'Echoes'
+            });
         }
     };
 }

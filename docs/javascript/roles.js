@@ -2,14 +2,15 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getMaxFollowers, getUnassignedFollowers, getRoleCount, setRoleCount, getRoleBulkCost } from './utils/helpers.js';
+import { getMaxFollowers, getUnassignedFollowers, getRoleCount, setRoleCount, getRoleBulkCost, getTrainingUnlockFaithCost } from './utils/helpers.js';
 import { ROLE_DEFINITION_BY_ID } from './config/roles.js';
 
 export function training() {
     if (game.trainingUnlocked) return;
-    if (gameState.progression.faith < gameState.costs.trainingTechCost) return;
+    const cost = getTrainingUnlockFaithCost();
+    if (gameState.progression.faith < cost) return;
 
-    gameState.progression.faith -= gameState.costs.trainingTechCost;
+    gameState.progression.faith -= cost;
     game.trainingUnlocked = true;
     addLog('Training program purchased.');
     updateUI();
