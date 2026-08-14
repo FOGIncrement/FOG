@@ -359,6 +359,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            const shrineBtn = target.closest('.shrine-pray-btn');
+            if (shrineBtn) {
+                const areaId = shrineBtn.dataset.areaId;
+                if (areaId && typeof gameApi.prayAtShrine === 'function') {
+                    gameApi.prayAtShrine(areaId);
+                }
+                return;
+            }
+
+            const ruinsBtn = target.closest('.ruins-search-btn');
+            if (ruinsBtn) {
+                const areaId = ruinsBtn.dataset.areaId;
+                if (areaId && typeof gameApi.searchRuins === 'function') {
+                    gameApi.searchRuins(areaId);
+                }
+                return;
+            }
+
             const sermonBtn = target.closest('.village-sermon-btn');
             if (sermonBtn) {
                 const villageId = sermonBtn.dataset.villageId;

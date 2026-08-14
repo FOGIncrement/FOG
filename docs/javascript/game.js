@@ -28,6 +28,8 @@ export {
     holdVillageSermon,
     conquerVillage,
     collectWildAreaResources,
+    prayAtShrine,
+    searchRuins,
     conveneCouncil,
     chooseShepherdsCreed,
     chooseIronFist,

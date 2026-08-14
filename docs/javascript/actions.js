@@ -143,7 +143,9 @@ function createWildArea(index, distanceFromCamp, exploration) {
         discovered: false,
         discoveredAtMeters: null,
         resourceCache: null,
-        passiveEffect: null
+        passiveEffect: null,
+        landmark: null,
+        landmarkResolved: false
     };
 
     if (Math.random() < exploration.wildAreaResourceCacheChance) {
@@ -168,6 +170,16 @@ function createWildArea(index, distanceFromCamp, exploration) {
             amount: Number(amount.toFixed(4)),
             applied: false
         };
+    }
+
+    const shrineChance = Number.isFinite(exploration.wildAreaShrineChance) ? exploration.wildAreaShrineChance : 0.12;
+    const ruinsChance = Number.isFinite(exploration.wildAreaRuinsChance) ? exploration.wildAreaRuinsChance : 0.15;
+    if (Math.random() < shrineChance) {
+        area.landmark = 'shrine';
+        area.name = `Shrine ${index}`;
+    } else if (Math.random() < ruinsChance) {
+        area.landmark = 'ruins';
+        area.name = `Ruins ${index}`;
     }
 
     return area;
@@ -1267,6 +1279,49 @@ export function collectWildAreaResources(areaId) {
 
     cache.collected = true;
     addLog(`Recovered supplies from ${area.name}: +${woodGained} wood, +${stoneGained} stone.`);
+    updateUI();
+    saveGame();
+}
+
+export function prayAtShrine(areaId) {
+    const exploration = getExplorationState();
+    const area = (exploration.discoveredAreas || []).find((candidate) => candidate.id === areaId && candidate.discovered);
+    if (!area || area.landmark !== 'shrine' || area.landmarkResolved) return;
+
+    area.landmarkResolved = true;
+    const minFaith = Number.isFinite(exploration.shrineFaithMin) ? exploration.shrineFaithMin : 40;
+    const maxFaith = Number.isFinite(exploration.shrineFaithMax) ? exploration.shrineFaithMax : 120;
+    const faithGain = randomIntInRange(minFaith, maxFaith);
+    gameState.progression.faith += faithGain;
+
+    game.alignment = Math.max(-100, Math.min(100, game.alignment + 1));
+    if (!game.alignmentVisible) game.alignmentVisible = true;
+
+    addLog(`You pray at the ${area.name}. +${faithGain} faith.`);
+    updateUI();
+    saveGame();
+}
+
+export function searchRuins(areaId) {
+    const exploration = getExplorationState();
+    const area = (exploration.discoveredAreas || []).find((candidate) => candidate.id === areaId && candidate.discovered);
+    if (!area || area.landmark !== 'ruins' || area.landmarkResolved) return;
+
+    area.landmarkResolved = true;
+    const goodOutcomeChance = Number.isFinite(exploration.ruinsGoodOutcomeChance) ? exploration.ruinsGoodOutcomeChance : 0.65;
+
+    if (Math.random() < goodOutcomeChance) {
+        const wood = randomIntInRange(50, 200);
+        const stone = randomIntInRange(50, 200);
+        const woodGained = gameState.resources.wood.add(wood);
+        const stoneGained = gameState.resources.stone.add(stone);
+        addLog(`The ${area.name} yield treasure: +${woodGained} wood, +${stoneGained} stone.`);
+    } else {
+        const losses = randomIntInRange(1, 3);
+        const actualLosses = removeFollowersFromSettlement(losses, false);
+        addLog(`The ${area.name} collapse beneath your followers! ${actualLosses} follower${actualLosses === 1 ? '' : 's'} lost.`);
+    }
+
     updateUI();
     saveGame();
 }

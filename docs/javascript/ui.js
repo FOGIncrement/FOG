@@ -1,6 +1,6 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus } from './utils/helpers.js';
 import { ROLE_DEFINITIONS, getRoleOutputMultiplier } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
@@ -46,6 +46,14 @@ function getOutpostFaithRate() {
 export function updateUI() {
     if (!Number.isFinite(gameState.progression.followers) || gameState.progression.followers < 0) {
         gameState.progression.followers = 0;
+    }
+
+    const cultStatusValue = document.getElementById('cultStatusValue');
+    if (cultStatusValue) {
+        const status = getCultStatus();
+        cultStatusValue.innerText = status.label;
+        cultStatusValue.className = `cult-status-${status.id}`;
+        setTooltipContent(cultStatusValue, `Cult Status: ${status.label}`, status.description);
     }
 
     const followersEl = document.getElementById('followers');
@@ -483,7 +491,7 @@ function getVillageSignature(village) {
 }
 
 function getWildAreaSignature(area) {
-    return `${area.id}:${area.discovered ? 1 : 0}:${area.resourceCache ? (area.resourceCache.collected ? 1 : 0) : 'n'}:${area.passiveEffect?.applied ? 1 : 0}`;
+    return `${area.id}:${area.discovered ? 1 : 0}:${area.resourceCache ? (area.resourceCache.collected ? 1 : 0) : 'n'}:${area.passiveEffect?.applied ? 1 : 0}:${area.landmarkResolved ? 1 : 0}`;
 }
 
 function renderDiscoveredAreas(hasExplorationAccess) {
@@ -570,6 +578,17 @@ function renderDiscoveredAreas(hasExplorationAccess) {
                 effectLine = `<p>Effect: +${Number(area.passiveEffect.amount || 0).toFixed(4)} food consumption/follower/s ${area.passiveEffect.applied ? '(active)' : ''}</p>`;
             }
 
+            let landmarkLine = '';
+            if (area.landmark === 'shrine') {
+                landmarkLine = area.landmarkResolved
+                    ? '<p class="village-resolved">The shrine has been prayed at.</p>'
+                    : `<p>A quiet shrine stands here.</p><button class="shrine-pray-btn" data-area-id="${area.id}">Pray at Shrine</button>`;
+            } else if (area.landmark === 'ruins') {
+                landmarkLine = area.landmarkResolved
+                    ? '<p class="village-resolved">The ruins have been searched.</p>'
+                    : `<p>Crumbling ruins — searching them is a gamble.</p><button class="ruins-search-btn" data-area-id="${area.id}">Search Ruins</button>`;
+            }
+
             return `
                 <div class="area-card">
                     <h4>${area.name}</h4>
@@ -577,6 +596,7 @@ function renderDiscoveredAreas(hasExplorationAccess) {
                     ${effectLine}
                     ${hasCache ? `<p>Cache: ${wood} wood, ${stone} stone ${cacheCollected ? '(collected)' : ''}</p>` : '<p>Cache: none</p>'}
                     ${hasCache && !cacheCollected ? `<button class="wild-area-collect-btn" data-area-id="${area.id}">Collect Resources</button>` : ''}
+                    ${landmarkLine}
                 </div>
             `;
         })

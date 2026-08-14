@@ -84,5 +84,7 @@ export const ACTION_COST_RESOURCES = {
 export const CARD_ACTION_COST_RESOURCES = {
     'village-sermon-btn': ['faithContainer'],
     'village-conquer-btn': ['faithContainer'],
-    'wild-area-collect-btn': []
+    'wild-area-collect-btn': [],
+    'shrine-pray-btn': [],
+    'ruins-search-btn': ['followersContainer']
 };

@@ -181,6 +181,33 @@ export function getRoleTrainingCost(baseCost, currentlyOwned) {
     return getRoleBulkCost(baseCost, currentlyOwned, toTrain);
 }
 
+export function getCultStatus() {
+    if (game.hungerVisible) {
+        const foodEmpty = gameState.resources.food.amount <= 0;
+        if (game.hungerPercent < 20) {
+            return { id: 'famine', label: 'Famine', description: 'Your people are starving. Food production must recover immediately.' };
+        }
+        if (game.hungerPercent < 50 || foodEmpty) {
+            return { id: 'hungry', label: 'Hungry', description: 'Food stores are thin and hunger is creeping up.' };
+        }
+    }
+
+    const maxFollowers = getMaxFollowers();
+    if (maxFollowers > 0 && gameState.progression.followers / maxFollowers >= 0.95) {
+        return { id: 'overcrowded', label: 'Overcrowded', description: 'Your settlement has outgrown its shelter. More capacity is needed.' };
+    }
+
+    if (game.temple?.built || game.worldsUnlocked) {
+        return { id: 'ascendant', label: 'Ascendant', description: 'Your cult reaches beyond the mortal world.' };
+    }
+
+    if (game.hungerVisible && game.hungerPercent >= 80) {
+        return { id: 'thriving', label: 'Thriving', description: 'The cult flourishes. Followers are well-fed and faithful.' };
+    }
+
+    return { id: 'stable', label: 'Stable', description: 'The cult grows steadily.' };
+}
+
 export function getWoodStoneCap() {
     const base = Number.isFinite(game.woodStoneCapBase) ? game.woodStoneCapBase : 2000;
     const perLevel = Number.isFinite(game.storehouseCapPerLevel) ? game.storehouseCapPerLevel : 1000;

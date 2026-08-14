@@ -770,6 +770,15 @@ export function loadGame() {
             game.exploration.wildAreaHungerDrainPenaltyMax = Number.isFinite(game.exploration.wildAreaHungerDrainPenaltyMax)
                 ? Math.max(game.exploration.wildAreaHungerDrainPenaltyMin, game.exploration.wildAreaHungerDrainPenaltyMax)
                 : 0.05;
+            game.exploration.wildAreaShrineChance = clampProbability(game.exploration.wildAreaShrineChance, 0.12);
+            game.exploration.wildAreaRuinsChance = clampProbability(game.exploration.wildAreaRuinsChance, 0.15);
+            game.exploration.ruinsGoodOutcomeChance = clampProbability(game.exploration.ruinsGoodOutcomeChance, 0.65);
+            game.exploration.shrineFaithMin = Number.isFinite(game.exploration.shrineFaithMin)
+                ? Math.max(0, game.exploration.shrineFaithMin)
+                : 40;
+            game.exploration.shrineFaithMax = Number.isFinite(game.exploration.shrineFaithMax)
+                ? Math.max(game.exploration.shrineFaithMin, game.exploration.shrineFaithMax)
+                : 120;
 
             game.exploration.discoveredAreas = game.exploration.discoveredAreas.map((area, index) => ({
                 id: area?.id || `wild-area-${index + 1}`,
@@ -790,7 +799,9 @@ export function loadGame() {
                         amount: Number.isFinite(area.passiveEffect.amount) ? Math.max(0, area.passiveEffect.amount) : 0,
                         applied: Boolean(area.passiveEffect.applied)
                     }
-                    : null
+                    : null,
+                landmark: area?.landmark === 'shrine' || area?.landmark === 'ruins' ? area.landmark : null,
+                landmarkResolved: Boolean(area?.landmarkResolved)
             }));
 
             if (game.exploration.discoveredAreas.length === 0 || game.exploration.discoveredAreas.every((area) => !Number.isFinite(area.distanceFromCamp) || area.distanceFromCamp <= 0)) {
@@ -826,14 +837,26 @@ export function loadGame() {
                         };
                     }
 
+                    let landmark = null;
+                    let areaName = `Wild Area ${index}`;
+                    if (Math.random() < game.exploration.wildAreaShrineChance) {
+                        landmark = 'shrine';
+                        areaName = `Shrine ${index}`;
+                    } else if (Math.random() < game.exploration.wildAreaRuinsChance) {
+                        landmark = 'ruins';
+                        areaName = `Ruins ${index}`;
+                    }
+
                     seededAreas.push({
                         id: `wild-area-${index}`,
-                        name: `Wild Area ${index}`,
+                        name: areaName,
                         distanceFromCamp: distance,
                         discovered: false,
                         discoveredAtMeters: null,
                         resourceCache,
-                        passiveEffect
+                        passiveEffect,
+                        landmark,
+                        landmarkResolved: false
                     });
                 }
                 game.exploration.discoveredAreas = seededAreas;

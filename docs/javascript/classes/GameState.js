@@ -256,6 +256,11 @@ export const game = {
         wildAreaHungerDrainPenaltyChance: 0.18,
         wildAreaHungerDrainPenaltyMin: 0.01,
         wildAreaHungerDrainPenaltyMax: 0.05,
+        wildAreaShrineChance: 0.12,
+        wildAreaRuinsChance: 0.15,
+        shrineFaithMin: 40,
+        shrineFaithMax: 120,
+        ruinsGoodOutcomeChance: 0.65,
         discoveredAreas: (() => {
             const areas = [];
             let distance = 0;
@@ -293,14 +298,26 @@ export const game = {
                     };
                 }
 
+                let landmark = null;
+                let name = `Wild Area ${i}`;
+                if (Math.random() < 0.12) {
+                    landmark = 'shrine';
+                    name = `Shrine ${i}`;
+                } else if (Math.random() < 0.15) {
+                    landmark = 'ruins';
+                    name = `Ruins ${i}`;
+                }
+
                 areas.push({
                     id: `wild-area-${i}`,
-                    name: `Wild Area ${i}`,
+                    name,
                     distanceFromCamp: distance,
                     discovered: false,
                     discoveredAtMeters: null,
                     resourceCache,
-                    passiveEffect
+                    passiveEffect,
+                    landmark,
+                    landmarkResolved: false
                 });
             }
             return areas;
