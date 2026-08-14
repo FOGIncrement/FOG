@@ -618,7 +618,7 @@ export function getConquestRollBonus() {
 export function getHirePilgrimsCost() {
     const base = Number.isFinite(gameState.costs.hirePilgrimsBaseFaithCost) ? gameState.costs.hirePilgrimsBaseFaithCost : 500;
     const purchased = Number.isFinite(game.hirePilgrimsPurchased) ? game.hirePilgrimsPurchased : 0;
-    const growth = Number.isFinite(game.hirePilgrimsCostGrowthRate) && game.hirePilgrimsCostGrowthRate > 1 ? game.hirePilgrimsCostGrowthRate : 1.2;
+    const growth = Number.isFinite(game.hirePilgrimsCostGrowthRate) && game.hirePilgrimsCostGrowthRate > 1 ? game.hirePilgrimsCostGrowthRate : 1.04;
     return Math.ceil(base * Math.pow(growth, purchased));
 }
 

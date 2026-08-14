@@ -1177,7 +1177,7 @@ export function loadGame() {
             }
             game.hirePilgrimsPurchased = Math.floor(game.hirePilgrimsPurchased);
             if (!Number.isFinite(game.hirePilgrimsCostGrowthRate) || game.hirePilgrimsCostGrowthRate <= 1) {
-                game.hirePilgrimsCostGrowthRate = 1.2;
+                game.hirePilgrimsCostGrowthRate = 1.04;
             }
             if (!Number.isFinite(game.hirePilgrimsFollowersPerPurchase) || game.hirePilgrimsFollowersPerPurchase < 0) {
                 game.hirePilgrimsFollowersPerPurchase = 10;

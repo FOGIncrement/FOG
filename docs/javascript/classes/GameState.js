@@ -270,7 +270,7 @@ export const game = {
     silkCapacityBonusPerUnit: 0.005,
     ironConquestRollBonusPerUnit: 0.5,
     hirePilgrimsPurchased: 0,
-    hirePilgrimsCostGrowthRate: 1.2,
+    hirePilgrimsCostGrowthRate: 1.04,
     hirePilgrimsFollowersPerPurchase: 10,
     ascension: {
         echoesOfDivinity: 0,
