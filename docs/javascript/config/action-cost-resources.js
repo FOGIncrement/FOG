@@ -25,14 +25,20 @@ export const ACTION_COST_RESOURCES = {
     buildRitualCircle: ['faithContainer'],
     buildShelter: ['woodContainer', 'stoneContainer'],
     buildAltar: ['woodContainer', 'stoneContainer', 'faithContainer'],
+    buildStorehouse: ['faithContainer'],
+    buildGranary: ['woodContainer', 'stoneContainer'],
+    buildScriptorium: ['faithContainer'],
 
     feedFollowers: ['foodContainer'],
+    holdFeast: ['foodContainer'],
 
     training: ['faithContainer'],
     unlockHuntersRole: ['faithContainer'],
     unlockRitualistsRole: ['faithContainer'],
     unlockGatherersRole: ['faithContainer'],
     unlockCooksRole: ['faithContainer'],
+    unlockFarmersRole: ['faithContainer'],
+    unlockScribesRole: ['faithContainer'],
     unlockProphetRole: ['faithContainer'],
     unlockExploration: ['faithContainer'],
     unlockShelterUpgrade: ['faithContainer'],
@@ -68,6 +74,8 @@ export const ACTION_COST_RESOURCES = {
     trainRitualists: ['faithContainer'],
     trainGatherers: ['faithContainer'],
     trainCooks: ['faithContainer'],
+    trainFarmers: ['faithContainer'],
+    trainScribes: ['faithContainer'],
     trainProphet: ['faithContainer']
 };
 

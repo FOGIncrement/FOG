@@ -5,23 +5,34 @@
 import { gameState } from './GameState.js';
 
 export class Resource {
-    constructor(name, amount, gatherCost, gatherAmount) {
+    constructor(name, amount, gatherCost, gatherAmount, cap = Infinity) {
         this.name = name;
         this.amount = amount;
         this.gatherCost = gatherCost;
         this.gatherAmount = gatherAmount;
+        this.cap = cap;
     }
 
     canGather() {
         return gameState.progression.faith >= this.gatherCost;
     }
 
+    // Adds up to `amount`, clamped to the storage cap. Returns how much was
+    // actually added (less than requested, or 0, if storage was near/at cap).
+    add(amount) {
+        if (!Number.isFinite(amount) || amount <= 0) return 0;
+        const room = Math.max(0, this.cap - this.amount);
+        const applied = Math.min(amount, room);
+        this.amount += applied;
+        return applied;
+    }
+
     gather() {
         if (!this.canGather()) return false;
         gameState.progression.faith -= this.gatherCost;
         const amountToAdd = typeof this.gatherAmount === 'function' ? this.gatherAmount() : this.gatherAmount;
-        this.amount += amountToAdd;
-        return amountToAdd;
+        const applied = this.add(amountToAdd);
+        return applied;
     }
 
     spend(amount) {

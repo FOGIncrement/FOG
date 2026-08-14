@@ -100,6 +100,14 @@
                 Cooks: <span id="cookValue">0</span>
                 <span id="cookBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
             </p>
+            <p id="farmerContainer" style="display: none;">
+                Farmers: <span id="farmerValue">0</span>
+                <span id="farmerBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
+            </p>
+            <p id="scribeContainer" style="display: none;">
+                Scribes: <span id="scribeValue">0</span>
+                <span id="scribeBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
+            </p>
             <p id="prophetContainer" class="prophet-line" style="display: none;">
                 Prophet: <span id="prophetValue">0</span>
             </p>
@@ -196,6 +204,9 @@
                             <button id="buildRitualCircleBtn" style="display: none;">Ritual Circle</button>
                             <button id="buildShelterBtn" style="display: none;">Build Shelter</button>
                             <button id="buildAltarBtn" style="display: none;">Build Altar</button>
+                            <button id="buildStorehouseBtn" style="display: none;">Build Storehouse</button>
+                            <button id="buildGranaryBtn" style="display: none;">Build Granary</button>
+                            <button id="buildScriptoriumBtn" style="display: none;">Build Scriptorium</button>
                         </div>
 
                         <div id="tab-explore" class="tab-content" style="display: none;">
@@ -267,6 +278,18 @@
                             <div class="unlock-item">
                                 <button id="unlockCooksBtn" data-tab="unlocks" style="display: none;">
                                     Unlock Cooks<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                            <div class="unlock-item">
+                                <button id="unlockFarmersBtn" data-tab="unlocks" style="display: none;">
+                                    Unlock Farmers<span class="btn-badge" style="display:none;"></span>
+                                </button>
+                                <p class="unlock-desc"></p>
+                            </div>
+                            <div class="unlock-item">
+                                <button id="unlockScribesBtn" data-tab="unlocks" style="display: none;">
+                                    Unlock Scribes<span class="btn-badge" style="display:none;"></span>
                                 </button>
                                 <p class="unlock-desc"></p>
                             </div>
@@ -463,6 +486,9 @@
                             <button id="feedFollowersBtn" data-tab="food" style="display: none;">
                                 Feed Followers<span class="btn-badge" style="display:none;"></span>
                             </button>
+                            <button id="holdFeastBtn" data-tab="food" style="display: none;">
+                                Hold a Feast<span class="btn-badge" style="display:none;"></span>
+                            </button>
                         </div>
 
                         <div id="tab-followerManager" class="tab-content" style="display: none;">
@@ -491,6 +517,18 @@
                             <div>
                                 <strong>Cooks:</strong> <span id="cooksRoleValue">0</span>
                                 <button id="trainCooksBtn" style="display: none;">Train Cooks</button>
+                            </div>
+
+                            <div>
+                                <strong>Farmers:</strong> <span id="farmersRoleValue">0</span>
+                                <span id="farmersRoleBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
+                                <button id="trainFarmersBtn" style="display: none;">Train Farmers</button>
+                            </div>
+
+                            <div>
+                                <strong>Scribes:</strong> <span id="scribesRoleValue">0</span>
+                                <span id="scribesRoleBonus" style="color: var(--ink-faint); margin-left: 1em;"></span>
+                                <button id="trainScribesBtn" style="display: none;">Train Scribes</button>
                             </div>
 
                             <div class="prophet-line">

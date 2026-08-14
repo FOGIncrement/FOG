@@ -3,7 +3,7 @@ import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
-import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier } from './utils/helpers.js';
+import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier, getWoodStoneCap, getFoodCap, getScribeFaithMultiplier, getFoodSpoilageRate, getGranaryPassiveFoodPerSecond } from './utils/helpers.js';
 
 const LIVE_TICK_CLAMP_SECONDS = 2;
 const CATCHUP_CHUNK_SECONDS = LIVE_TICK_CLAMP_SECONDS;
@@ -103,7 +103,12 @@ function defaultLiveEventHandler(eventType) {
 function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
     if (!Number.isFinite(dtSeconds) || dtSeconds <= 0) return;
 
-    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * getAscensionFaithMultiplier() * dtSeconds;
+    const woodStoneCap = getWoodStoneCap();
+    gameState.resources.wood.cap = woodStoneCap;
+    gameState.resources.stone.cap = woodStoneCap;
+    gameState.resources.food.cap = getFoodCap();
+
+    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * getAscensionFaithMultiplier() * getScribeFaithMultiplier() * dtSeconds;
 
     const outpostFaithPerSecond = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond)
         ? game.exploration.villageOutpostFaithPerSecond
@@ -126,6 +131,18 @@ function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
     }
 
     processRoleSimulation(dtSeconds);
+
+    if (game.hungerVisible) {
+        const granaryTrickle = getGranaryPassiveFoodPerSecond();
+        if (granaryTrickle > 0) {
+            gameState.resources.food.add(granaryTrickle * dtSeconds);
+        }
+
+        const spoilageRate = getFoodSpoilageRate();
+        if (spoilageRate > 0 && gameState.resources.food.amount > 0) {
+            gameState.resources.food.amount = Math.max(0, gameState.resources.food.amount * (1 - spoilageRate * dtSeconds));
+        }
+    }
 
     const cookCount = getRoleCount('cooks');
 

@@ -633,6 +633,10 @@ button:disabled.purchased {
     color: #d08a6a;
 }
 
+.resource-full {
+    color: #d0a05a;
+}
+
 #hungerValue.hunger-weak {
     color: #d0a05a;
 }

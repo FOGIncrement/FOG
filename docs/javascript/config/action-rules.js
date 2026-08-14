@@ -1,5 +1,5 @@
 import { setTooltipContent } from '../utils/tooltip.js';
-import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank } from '../utils/helpers.js';
+import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap } from '../utils/helpers.js';
 import { DOCTRINE_GROUP_BY_ID } from './doctrines.js';
 import { TEMPLE_OPTION_BY_GOD } from './temples.js';
 import { ASCENSION_UPGRADE_BY_ID } from './ascension.js';
@@ -405,6 +405,63 @@ export function getActionUiRules(context) {
             el.classList.toggle('purchased', !canAfford);
             applyTooltip(el, 'Build Altar\nConstruct a sacred altar to empower preaching.', `Cost: ${woodCost} wood, ${stoneCost} stone, ${faithCost} faith\nEffect: Preach rolls gain +1`);
         },
+        buildStorehouse(el) {
+            if (!ritualBuilt) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const level = Number.isFinite(game.storehouse) ? game.storehouse : 0;
+            const cost = getStorehouseCost();
+            const canAfford = gameState.progression.faith >= cost;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Build Storehouse (${level})`);
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Build Storehouse\nExpand wood and stone storage capacity.',
+                `Cost: ${cost} faith\nCurrent capacity: ${Math.floor(getWoodStoneCap())}\nNext level: +${Math.floor(game.storehouseCapPerLevel)} capacity`
+            );
+        },
+        buildGranary(el) {
+            if (!ritualBuilt) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const level = Number.isFinite(game.granary) ? game.granary : 0;
+            const cost = getGranaryCost();
+            const canAfford = gameState.resources.wood.amount >= cost.wood && gameState.resources.stone.amount >= cost.stone;
+            setAffordability(el, canAfford);
+            setButtonLabel(el, `Build Granary (${level})`);
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Build Granary\nExpand food storage capacity.',
+                `Cost: ${cost.wood} wood, ${cost.stone} stone\nCurrent capacity: ${Math.floor(getFoodCap())}\nNext level: +${Math.floor(game.granaryCapPerLevel)} capacity`
+            );
+        },
+        buildScriptorium(el) {
+            if (!ritualBuilt) {
+                setVisible(el, false);
+                return;
+            }
+            const rank = Number.isFinite(game.scriptorium) ? game.scriptorium : 0;
+            const maxRank = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+            const perRank = Number.isFinite(game.scriptoriumOutputPerRank) ? game.scriptoriumOutputPerRank : 0.08;
+            applyRepeatableUpgradeButton(el, {
+                purchases: rank,
+                maxPurchases: maxRank,
+                baseCost: gameState.costs.scriptoriumBaseCost,
+                label: 'Build Scriptorium',
+                summary: 'Ritualists copy scripture faster, boosting their faith output.',
+                effectLine: `Current Ritualist output bonus: +${Math.round(rank * perRank * 100)}%`,
+                gameState,
+                setVisible,
+                setAffordability,
+                setButtonLabel
+            });
+        },
         unlockShelterUpgrade(el) {
             if (!game.unlocksTabUnlocked) {
                 setVisible(el, false);
@@ -556,6 +613,23 @@ export function getActionUiRules(context) {
             } else {
                 setVisible(el, false);
             }
+        },
+        holdFeast(el) {
+            if (!game.hungerVisible) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const cost = Number.isFinite(game.feastFoodCost) ? game.feastFoodCost : 50;
+            const bonusRate = Number.isFinite(game.feastFaithBonusPerFood) ? game.feastFaithBonusPerFood : 0.5;
+            const canAfford = gameState.resources.food.amount >= cost;
+            setAffordability(el, canAfford);
+            el.classList.toggle('purchased', !canAfford);
+            applyTooltip(
+                el,
+                'Hold a Feast\nSpend a great deal of food to instantly restore hunger and lift spirits.',
+                `Cost: ${cost} food\nEffect: Hunger to 100%, +${Math.floor(cost * bonusRate)} faith`
+            );
         },
         shouldShowTabs(ritualButtonElement) {
             return Boolean(ritualButtonElement && (ritualButtonElement.dataset.unlocked === 'true' || ritualBuilt));

@@ -71,6 +71,14 @@ export function trainCooks() {
     trainRoleById('cooks');
 }
 
+export function trainFarmers() {
+    trainRoleById('farmers');
+}
+
+export function trainScribes() {
+    trainRoleById('scribes');
+}
+
 function unlockRole(roleKey, cost, label) {
     if (game.roleUnlocks[roleKey]) return;
     if (!game.trainingUnlocked) return;
@@ -103,6 +111,14 @@ export function unlockGatherersRole() {
 
 export function unlockCooksRole() {
     unlockRoleById('cooks');
+}
+
+export function unlockFarmersRole() {
+    unlockRoleById('farmers');
+}
+
+export function unlockScribesRole() {
+    unlockRoleById('scribes');
 }
 
 export function unlockProphetRole() {

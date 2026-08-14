@@ -22,10 +22,14 @@ export const ACTION_GROUPS = {
     build: [
         { id: 'buildRitualCircle', buttonId: 'buildRitualCircleBtn', handlerExport: 'buildRitualCircle', tab: 'build', category: 'building' },
         { id: 'buildShelter', buttonId: 'buildShelterBtn', handlerExport: 'buildShelter', tab: 'build', category: 'building' },
-        { id: 'buildAltar', buttonId: 'buildAltarBtn', handlerExport: 'buildAltar', tab: 'build', category: 'building' }
+        { id: 'buildAltar', buttonId: 'buildAltarBtn', handlerExport: 'buildAltar', tab: 'build', category: 'building' },
+        { id: 'buildStorehouse', buttonId: 'buildStorehouseBtn', handlerExport: 'buildStorehouse', tab: 'build', category: 'building' },
+        { id: 'buildGranary', buttonId: 'buildGranaryBtn', handlerExport: 'buildGranary', tab: 'build', category: 'building' },
+        { id: 'buildScriptorium', buttonId: 'buildScriptoriumBtn', handlerExport: 'buildScriptorium', tab: 'build', category: 'building' }
     ],
     food: [
-        { id: 'feedFollowers', buttonId: 'feedFollowersBtn', handlerExport: 'feedFollowers', tab: 'food', category: 'food' }
+        { id: 'feedFollowers', buttonId: 'feedFollowersBtn', handlerExport: 'feedFollowers', tab: 'food', category: 'food' },
+        { id: 'holdFeast', buttonId: 'holdFeastBtn', handlerExport: 'holdFeast', tab: 'food', category: 'food' }
     ],
     unlocks: [
         { id: 'training', buttonId: 'trainingTechBtn', handlerExport: 'training', tab: 'unlocks', category: 'progression' },
@@ -33,6 +37,8 @@ export const ACTION_GROUPS = {
         { id: 'unlockRitualistsRole', buttonId: 'unlockRitualistsBtn', handlerExport: 'unlockRitualistsRole', tab: 'unlocks', category: 'roles' },
         { id: 'unlockGatherersRole', buttonId: 'unlockGatherersBtn', handlerExport: 'unlockGatherersRole', tab: 'unlocks', category: 'roles' },
         { id: 'unlockCooksRole', buttonId: 'unlockCooksBtn', handlerExport: 'unlockCooksRole', tab: 'unlocks', category: 'roles' },
+        { id: 'unlockFarmersRole', buttonId: 'unlockFarmersBtn', handlerExport: 'unlockFarmersRole', tab: 'unlocks', category: 'roles' },
+        { id: 'unlockScribesRole', buttonId: 'unlockScribesBtn', handlerExport: 'unlockScribesRole', tab: 'unlocks', category: 'roles' },
         { id: 'unlockProphetRole', buttonId: 'unlockProphetBtn', handlerExport: 'unlockProphetRole', tab: 'unlocks', category: 'roles' },
         { id: 'unlockExploration', buttonId: 'unlockExplorationBtn', handlerExport: 'unlockExploration', tab: 'unlocks', category: 'progression' },
         { id: 'unlockShelterUpgrade', buttonId: 'unlockShelterUpgradeBtn', handlerExport: 'unlockShelterUpgrade', tab: 'unlocks', category: 'buildingUpgrade' },
@@ -72,6 +78,8 @@ export const ACTION_GROUPS = {
         { id: 'trainRitualists', buttonId: 'trainRitualistsBtn', handlerExport: 'trainRitualists', tab: 'followerManager', category: 'roles' },
         { id: 'trainGatherers', buttonId: 'trainGatherersBtn', handlerExport: 'trainGatherers', tab: 'followerManager', category: 'roles' },
         { id: 'trainCooks', buttonId: 'trainCooksBtn', handlerExport: 'trainCooks', tab: 'followerManager', category: 'roles' },
+        { id: 'trainFarmers', buttonId: 'trainFarmersBtn', handlerExport: 'trainFarmers', tab: 'followerManager', category: 'roles' },
+        { id: 'trainScribes', buttonId: 'trainScribesBtn', handlerExport: 'trainScribes', tab: 'followerManager', category: 'roles' },
         { id: 'trainProphet', buttonId: 'trainProphetBtn', handlerExport: 'trainProphet', tab: 'followerManager', category: 'roles' }
     ]
 };

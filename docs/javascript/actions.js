@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
@@ -496,14 +496,18 @@ function resolveExpeditionRoll(baseRoll) {
 }
 
 export function gatherWood() {
-    if (gameState.resources.wood.gather()) {
+    const gained = gameState.resources.wood.gather();
+    if (gained !== false) {
+        if (gained <= 0) addLog('Wood storage is full — nothing more can be gathered.');
         updateUI();
         saveGame();
     }
 }
 
 export function gatherStone() {
-    if (gameState.resources.stone.gather()) {
+    const gained = gameState.resources.stone.gather();
+    if (gained !== false) {
+        if (gained <= 0) addLog('Stone storage is full — nothing more can be gathered.');
         updateUI();
         saveGame();
     }
@@ -512,7 +516,11 @@ export function gatherStone() {
 export function gatherFood() {
     const gained = gameState.resources.food.gather();
     if (gained !== false) {
-        addLog(`A hunt yielded ${gained} food.`);
+        if (gained > 0) {
+            addLog(`A hunt yielded ${gained} food.`);
+        } else {
+            addLog('Food storage is full — nothing more can be gathered.');
+        }
         if (!game.hasGatheredFood && gameState.resources.food.amount > 0) {
             game.hasGatheredFood = true;
         }
@@ -779,6 +787,22 @@ export function feedFollowers() {
     saveGame();
 }
 
+export function holdFeast() {
+    if (!game.hungerVisible) return;
+    const cost = Number.isFinite(game.feastFoodCost) ? game.feastFoodCost : 50;
+    if (gameState.resources.food.amount < cost) return;
+
+    gameState.resources.food.spend(cost);
+    game.hungerPercent = 100;
+    const bonusRate = Number.isFinite(game.feastFaithBonusPerFood) ? game.feastFaithBonusPerFood : 0.5;
+    const faithBonus = Math.floor(cost * bonusRate);
+    gameState.progression.faith += faithBonus;
+
+    addLog(`A great feast is held! Hunger restored to 100%, and the faithful's spirits swell (+${faithBonus} faith).`);
+    updateUI();
+    saveGame();
+}
+
 export function buildRitualCircle() {
     const ritualDefinition = buildingRegistry.get('ritualCircle');
     if (!ritualDefinition) return;
@@ -817,6 +841,51 @@ export function buildAltar() {
     game.altarBuilt = true;
     game.diceBonuses.preach = Math.max(1, Number.isFinite(game.diceBonuses.preach) ? Math.trunc(game.diceBonuses.preach) : 0);
     addLog('Altar built. Preach rolls now gain +1 (1d4 + 1).');
+
+    updateUI();
+    saveGame();
+}
+
+export function buildStorehouse() {
+    if (game.ritualCircleBuilt < 1) return;
+    const cost = getStorehouseCost();
+    if (gameState.progression.faith < cost) return;
+
+    gameState.progression.faith -= cost;
+    game.storehouse = (Number.isFinite(game.storehouse) ? game.storehouse : 0) + 1;
+    addLog(`Storehouse expanded to level ${game.storehouse}. Wood/Stone capacity: ${Math.floor(getWoodStoneCap())}.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function buildGranary() {
+    if (game.ritualCircleBuilt < 1) return;
+    const cost = getGranaryCost();
+    if (gameState.resources.wood.amount < cost.wood || gameState.resources.stone.amount < cost.stone) return;
+
+    gameState.resources.wood.spend(cost.wood);
+    gameState.resources.stone.spend(cost.stone);
+    game.granary = (Number.isFinite(game.granary) ? game.granary : 0) + 1;
+    addLog(`Granary expanded to level ${game.granary}. Food capacity: ${Math.floor(getFoodCap())}.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function buildScriptorium() {
+    if (game.ritualCircleBuilt < 1) return;
+    const rank = Number.isFinite(game.scriptorium) ? game.scriptorium : 0;
+    const maxRank = Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10;
+    if (rank >= maxRank) return;
+
+    const cost = getUpgradeCost(gameState.costs.scriptoriumBaseCost, rank);
+    if (gameState.progression.faith < cost) return;
+
+    gameState.progression.faith -= cost;
+    game.scriptorium = rank + 1;
+    const perRank = Number.isFinite(game.scriptoriumOutputPerRank) ? game.scriptoriumOutputPerRank : 0.08;
+    addLog(`Scriptorium deepens to rank ${game.scriptorium}/${maxRank}. Ritualist output +${Math.round(game.scriptorium * perRank * 100)}%.`);
 
     updateUI();
     saveGame();
@@ -1163,8 +1232,8 @@ export function conquerVillage(villageId) {
 
     const woodLoot = Math.floor(randomIntInRange(exploration.conquerWoodLootMin, exploration.conquerWoodLootMax) * conquerScale * yieldMultiplier);
     const stoneLoot = Math.floor(randomIntInRange(exploration.conquerStoneLootMin, exploration.conquerStoneLootMax) * conquerScale * yieldMultiplier);
-    gameState.resources.wood.amount += woodLoot;
-    gameState.resources.stone.amount += stoneLoot;
+    gameState.resources.wood.add(woodLoot);
+    gameState.resources.stone.add(stoneLoot);
 
     village.resolutionType = 'conquered';
     village.convertedPercent = 0;
@@ -1193,11 +1262,11 @@ export function collectWildAreaResources(areaId) {
     const wood = Number.isFinite(cache.wood) ? Math.max(0, Math.floor(cache.wood)) : 0;
     const stone = Number.isFinite(cache.stone) ? Math.max(0, Math.floor(cache.stone)) : 0;
 
-    if (wood > 0) gameState.resources.wood.amount += wood;
-    if (stone > 0) gameState.resources.stone.amount += stone;
+    const woodGained = wood > 0 ? gameState.resources.wood.add(wood) : 0;
+    const stoneGained = stone > 0 ? gameState.resources.stone.add(stone) : 0;
 
     cache.collected = true;
-    addLog(`Recovered supplies from ${area.name}: +${wood} wood, +${stone} stone.`);
+    addLog(`Recovered supplies from ${area.name}: +${woodGained} wood, +${stoneGained} stone.`);
     updateUI();
     saveGame();
 }

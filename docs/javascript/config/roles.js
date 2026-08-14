@@ -1,21 +1,27 @@
+const ABUNDANCE_ROLE_IDS = ['hunters', 'gatherers', 'farmers'];
+
 export function getRoleOutputMultiplier(roleId, game) {
     let multiplier = 1;
-    if ((roleId === 'hunters' || roleId === 'gatherers') && game.danuBlessingUnlocked && Number.isFinite(game.danuBlessingMultiplier)) {
+    if (ABUNDANCE_ROLE_IDS.includes(roleId) && game.danuBlessingUnlocked && Number.isFinite(game.danuBlessingMultiplier)) {
         multiplier *= game.danuBlessingMultiplier;
     }
     if (
-        (roleId === 'hunters' || roleId === 'gatherers' || roleId === 'ritualists') &&
+        (ABUNDANCE_ROLE_IDS.includes(roleId) || roleId === 'ritualists') &&
         game.doctrineChoices?.hearth === 'homestead' &&
         Number.isFinite(game.homesteadOutputMultiplier)
     ) {
         multiplier *= game.homesteadOutputMultiplier;
     }
     if (
-        (roleId === 'hunters' || roleId === 'gatherers' || roleId === 'ritualists') &&
+        (ABUNDANCE_ROLE_IDS.includes(roleId) || roleId === 'ritualists') &&
         game.temple?.built && game.temple.godId === 'danu' &&
         Number.isFinite(game.templeDanuOutputMultiplier)
     ) {
         multiplier *= game.templeDanuOutputMultiplier;
+    }
+    if (roleId === 'ritualists' && Number.isFinite(game.scriptorium) && game.scriptorium > 0) {
+        const perRank = Number.isFinite(game.scriptoriumOutputPerRank) ? game.scriptoriumOutputPerRank : 0.08;
+        multiplier *= 1 + game.scriptorium * perRank;
     }
     return multiplier;
 }
@@ -94,6 +100,36 @@ export const ROLE_DEFINITIONS = [
         trainButtonId: 'trainCooksBtn',
         unlockButtonId: 'unlockCooksBtn',
         roleValueId: 'cooksRoleValue',
+        simulation: {
+            tickRate: 1,
+            scaling: (count) => count,
+            outputs: []
+        }
+    },
+    {
+        id: 'farmers',
+        label: 'Farmers',
+        trainCostKey: 'farmerBaseCost',
+        unlockCostKey: 'unlockFarmersFaithCost',
+        trainButtonId: 'trainFarmersBtn',
+        unlockButtonId: 'unlockFarmersBtn',
+        roleValueId: 'farmersRoleValue',
+        simulation: {
+            tickRate: 1,
+            scaling: (count, gameState, game) => count * getRoleOutputMultiplier('farmers', game),
+            outputs: [
+                { target: 'resource', key: 'food', rateKey: 'farmerFoodPerSecond' }
+            ]
+        }
+    },
+    {
+        id: 'scribes',
+        label: 'Scribes',
+        trainCostKey: 'scribeBaseCost',
+        unlockCostKey: 'unlockScribesFaithCost',
+        trainButtonId: 'trainScribesBtn',
+        unlockButtonId: 'unlockScribesBtn',
+        roleValueId: 'scribesRoleValue',
         simulation: {
             tickRate: 1,
             scaling: (count) => count,

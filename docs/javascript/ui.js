@@ -1,6 +1,6 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier } from './utils/helpers.js';
 import { ROLE_DEFINITIONS, getRoleOutputMultiplier } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
@@ -64,6 +64,12 @@ export function updateUI() {
     const cookContainer = document.getElementById('cookContainer');
     const cookValue = document.getElementById('cookValue');
     const cookBonus = document.getElementById('cookBonus');
+    const farmerContainer = document.getElementById('farmerContainer');
+    const farmerValue = document.getElementById('farmerValue');
+    const farmerBonus = document.getElementById('farmerBonus');
+    const scribeContainer = document.getElementById('scribeContainer');
+    const scribeValue = document.getElementById('scribeValue');
+    const scribeBonus = document.getElementById('scribeBonus');
     const prophetContainer = document.getElementById('prophetContainer');
     const prophetValue = document.getElementById('prophetValue');
 
@@ -78,8 +84,8 @@ export function updateUI() {
         );
     }
     if (faithEl) {
-        const followerFaithRate = gameState.progression.followers * gameState.progression.faithPerFollower;
-        const ritualistFaithRate = getRoleCount('ritualists') * gameState.rates.ritualistFaithPerSecond;
+        const followerFaithRate = gameState.progression.followers * gameState.progression.faithPerFollower * getAscensionFaithMultiplier() * getScribeFaithMultiplier();
+        const ritualistFaithRate = getRoleCount('ritualists') * gameState.rates.ritualistFaithPerSecond * getRoleOutputMultiplier('ritualists', game);
         const outpostFaithRate = getOutpostFaithRate();
         const totalFaithRate = followerFaithRate + ritualistFaithRate + outpostFaithRate;
         faithEl.innerText = `${gameState.progression.faith.toFixed(2)} (+${totalFaithRate.toFixed(3)}/s)`;
@@ -181,6 +187,36 @@ export function updateUI() {
             );
         }
     }
+    if (farmerContainer && farmerValue) {
+        const farmerCount = getRoleCount('farmers');
+        farmerValue.innerText = farmerCount;
+        farmerContainer.style.display = farmerCount > 0 ? 'block' : 'none';
+        if (farmerBonus) {
+            const perFarmer = gameState.rates.farmerFoodPerSecond;
+            const totalFoodRate = farmerCount * perFarmer * getRoleOutputMultiplier('farmers', game);
+            farmerBonus.innerText = `(+${totalFoodRate.toFixed(2)} food/s)`;
+            setTooltipContent(
+                farmerBonus,
+                'Farmer Output\nSteady food production, and reduces food spoilage.',
+                `Farmers: ${farmerCount}\nRate per farmer: ${perFarmer.toFixed(3)} food/s\nTotal: +${totalFoodRate.toFixed(3)} food/s\nSpoilage reduction: -${Math.min(90, farmerCount * (game.farmerSpoilageReductionPerFarmer || 0.05) * 100).toFixed(0)}%`
+            );
+        }
+    }
+    if (scribeContainer && scribeValue) {
+        const scribeCount = getRoleCount('scribes');
+        scribeValue.innerText = scribeCount;
+        scribeContainer.style.display = scribeCount > 0 ? 'block' : 'none';
+        if (scribeBonus) {
+            const multiplier = getScribeFaithMultiplier();
+            const bonusPercent = (multiplier - 1) * 100;
+            scribeBonus.innerText = `(+${bonusPercent.toFixed(0)}% faith)`;
+            setTooltipContent(
+                scribeBonus,
+                'Scribe Effect\nMultiplies passive faith income from all followers.',
+                `Scribes: ${scribeCount}\nBonus per scribe: +${((game.scribeFaithBonusPerScribe || 0.02) * 100).toFixed(0)}%\nTotal follower faith multiplier: x${multiplier.toFixed(2)}`
+            );
+        }
+    }
     if (prophetContainer && prophetValue) {
         const prophetCount = getRoleCount('prophet');
         prophetValue.innerText = prophetCount;
@@ -192,7 +228,12 @@ export function updateUI() {
         const value = document.getElementById(type + 'Value');
         if (!container || !value) return;
 
-        value.innerText = gameState.resources[type].amount.toFixed(2);
+        const resource = gameState.resources[type];
+        const cap = Number.isFinite(resource.cap) && resource.cap !== Infinity ? resource.cap : null;
+        value.innerText = cap != null
+            ? `${Math.floor(resource.amount)} / ${Math.floor(cap)}`
+            : resource.amount.toFixed(2);
+        value.classList.toggle('resource-full', cap != null && resource.amount >= cap);
         if (type === 'food') {
             const rateEl = document.getElementById('foodRate');
             if (rateEl) {

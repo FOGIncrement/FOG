@@ -181,6 +181,57 @@ export function getRoleTrainingCost(baseCost, currentlyOwned) {
     return getRoleBulkCost(baseCost, currentlyOwned, toTrain);
 }
 
+export function getWoodStoneCap() {
+    const base = Number.isFinite(game.woodStoneCapBase) ? game.woodStoneCapBase : 2000;
+    const perLevel = Number.isFinite(game.storehouseCapPerLevel) ? game.storehouseCapPerLevel : 1000;
+    const level = Number.isFinite(game.storehouse) ? game.storehouse : 0;
+    return base + level * perLevel;
+}
+
+export function getFoodCap() {
+    const base = Number.isFinite(game.foodCapBase) ? game.foodCapBase : 1000;
+    const perLevel = Number.isFinite(game.granaryCapPerLevel) ? game.granaryCapPerLevel : 500;
+    const level = Number.isFinite(game.granary) ? game.granary : 0;
+    return base + level * perLevel;
+}
+
+export function getStorehouseCost() {
+    const base = Number.isFinite(gameState.costs.storehouseFaithCost) ? gameState.costs.storehouseFaithCost : 120;
+    const level = Number.isFinite(game.storehouse) ? game.storehouse : 0;
+    const scale = Number.isFinite(game.storehouseCostScalePerBuilt) ? game.storehouseCostScalePerBuilt : 0.15;
+    return Math.ceil(base * (1 + scale * level));
+}
+
+export function getGranaryCost() {
+    const woodBase = Number.isFinite(gameState.costs.granaryWoodCost) ? gameState.costs.granaryWoodCost : 60;
+    const stoneBase = Number.isFinite(gameState.costs.granaryStoneCost) ? gameState.costs.granaryStoneCost : 60;
+    const level = Number.isFinite(game.granary) ? game.granary : 0;
+    const scale = Number.isFinite(game.granaryCostScalePerBuilt) ? game.granaryCostScalePerBuilt : 0.15;
+    const multiplier = 1 + scale * level;
+    return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
+}
+
+export function getScribeFaithMultiplier() {
+    const count = getRoleCount('scribes');
+    if (count <= 0) return 1;
+    const perScribe = Number.isFinite(game.scribeFaithBonusPerScribe) ? game.scribeFaithBonusPerScribe : 0.02;
+    return 1 + count * perScribe;
+}
+
+export function getFoodSpoilageRate() {
+    const base = Number.isFinite(game.foodSpoilagePerSecondBase) ? game.foodSpoilagePerSecondBase : 0.002;
+    const farmerCount = getRoleCount('farmers');
+    const reductionPerFarmer = Number.isFinite(game.farmerSpoilageReductionPerFarmer) ? game.farmerSpoilageReductionPerFarmer : 0.05;
+    const reduction = Math.min(0.9, farmerCount * reductionPerFarmer);
+    return base * (1 - reduction);
+}
+
+export function getGranaryPassiveFoodPerSecond() {
+    const level = Number.isFinite(game.granary) ? game.granary : 0;
+    const perLevel = Number.isFinite(game.granaryPassiveFoodPerSecondPerLevel) ? game.granaryPassiveFoodPerSecondPerLevel : 0.3;
+    return level * perLevel;
+}
+
 export function getShelterBuildCosts() {
     const sheltersBuilt = Number.isFinite(game.shelter) ? Math.max(0, game.shelter) : 0;
     const scalePerBuilt = Number.isFinite(game.shelterCostScalePerBuilt)

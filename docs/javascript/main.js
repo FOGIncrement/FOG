@@ -220,6 +220,38 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Starlit Memory Base Cost', target: gameState.costs, key: 'starlitMemoryBaseEchoesCost', step: 1, min: 0 },
             { label: 'Undying Flock Base Cost', target: gameState.costs, key: 'undyingFlockBaseEchoesCost', step: 1, min: 0 }
         ]
+    },
+    {
+        title: 'Storage & Scriptorium',
+        entries: [
+            { label: 'Storehouse Faith Cost', target: gameState.costs, key: 'storehouseFaithCost', step: 10, min: 0 },
+            { label: 'Wood/Stone Cap Base', target: game, key: 'woodStoneCapBase', step: 100, min: 0 },
+            { label: 'Storehouse Cap Per Level', target: game, key: 'storehouseCapPerLevel', step: 100, min: 0 },
+            { label: 'Storehouse Cost Scale', target: game, key: 'storehouseCostScalePerBuilt', step: 0.05, min: 0 },
+            { label: 'Granary Wood Cost', target: gameState.costs, key: 'granaryWoodCost', step: 10, min: 0 },
+            { label: 'Granary Stone Cost', target: gameState.costs, key: 'granaryStoneCost', step: 10, min: 0 },
+            { label: 'Food Cap Base', target: game, key: 'foodCapBase', step: 50, min: 0 },
+            { label: 'Granary Cap Per Level', target: game, key: 'granaryCapPerLevel', step: 50, min: 0 },
+            { label: 'Granary Cost Scale', target: game, key: 'granaryCostScalePerBuilt', step: 0.05, min: 0 },
+            { label: 'Scriptorium Base Cost', target: gameState.costs, key: 'scriptoriumBaseCost', step: 10, min: 0 },
+            { label: 'Scriptorium Output Per Rank', target: game, key: 'scriptoriumOutputPerRank', step: 0.01, min: 0 }
+        ]
+    },
+    {
+        title: 'Food System',
+        entries: [
+            { label: 'Farmer Food Per Second', target: gameState.rates, key: 'farmerFoodPerSecond', step: 0.1, min: 0 },
+            { label: 'Unlock Farmers Faith Cost', target: gameState.costs, key: 'unlockFarmersFaithCost', step: 5, min: 0 },
+            { label: 'Farmer Base Train Cost', target: gameState.costs, key: 'farmerBaseCost', step: 1, min: 0 },
+            { label: 'Unlock Scribes Faith Cost', target: gameState.costs, key: 'unlockScribesFaithCost', step: 10, min: 0 },
+            { label: 'Scribe Base Train Cost', target: gameState.costs, key: 'scribeBaseCost', step: 1, min: 0 },
+            { label: 'Scribe Faith Bonus Per Scribe', target: game, key: 'scribeFaithBonusPerScribe', step: 0.01, min: 0 },
+            { label: 'Food Spoilage Per Second (base)', target: game, key: 'foodSpoilagePerSecondBase', step: 0.001, min: 0 },
+            { label: 'Farmer Spoilage Reduction', target: game, key: 'farmerSpoilageReductionPerFarmer', step: 0.01, min: 0 },
+            { label: 'Granary Passive Food Per Level', target: game, key: 'granaryPassiveFoodPerSecondPerLevel', step: 0.1, min: 0 },
+            { label: 'Feast Food Cost', target: game, key: 'feastFoodCost', step: 5, min: 0 },
+            { label: 'Feast Faith Bonus Per Food', target: game, key: 'feastFaithBonusPerFood', step: 0.1, min: 0 }
+        ]
     }
 ];
 

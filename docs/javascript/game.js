@@ -11,6 +11,7 @@ export {
     feedFollowers,
     buildRitualCircle,
     buildAltar,
+    holdFeast,
     unlockShelterUpgrade,
     unlockExploration,
     unlockAltar,
@@ -37,7 +38,10 @@ export {
     buildTempleHelios,
     buildTempleSekhmet,
     buildTempleDanu,
-    buildTempleHel
+    buildTempleHel,
+    buildStorehouse,
+    buildGranary,
+    buildScriptorium
 } from './actions.js';
 
 export {
@@ -65,11 +69,15 @@ export {
     trainRitualists,
     trainGatherers,
     trainCooks,
+    trainFarmers,
+    trainScribes,
     trainProphet,
     unlockHuntersRole,
     unlockRitualistsRole,
     unlockGatherersRole,
     unlockCooksRole,
+    unlockFarmersRole,
+    unlockScribesRole,
     unlockProphetRole
 } from './roles.js';
 

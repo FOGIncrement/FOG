@@ -22,15 +22,15 @@ export const gameState = {
     resources: {
         wood: new Resource('wood', 0, 8, 5,() => {
             return gameState.gathering.manualGatherBaseAmount + (game.shelter * gameState.gathering.manualGatherShelterBonus);
-        }),
+        }, 2000),
         stone: new Resource('stone', 0, 8, 5,() => {
             return gameState.gathering.manualGatherBaseAmount + (game.shelter * gameState.gathering.manualGatherShelterBonus);
-        }),
+        }, 2000),
         food: new Resource('food', 0, 5, 5,() => {
             const min = gameState.gathering.gatherFoodMinMultiplier;
             const max = gameState.gathering.gatherFoodMaxMultiplier;
             return Math.max(1, Math.floor(Math.random() * (max - min) + min));
-        })
+        }, 1000)
     },
     gathering: {
         manualGatherBaseAmount: 5,
@@ -56,6 +56,8 @@ export const gameState = {
         unlockRitualistsFaithCost: 75,
         unlockGatherersFaithCost: 60,
         unlockCooksFaithCost: 85,
+        unlockFarmersFaithCost: 95,
+        unlockScribesFaithCost: 350,
         unlockProphetFaithCost: 500,
         unlockExplorationFaithCost: 650,
         unlockShelterUpgradeFaithCost: 180,
@@ -83,7 +85,13 @@ export const gameState = {
         echoingFaithBaseEchoesCost: 10,
         swiftFoundationsBaseEchoesCost: 15,
         starlitMemoryBaseEchoesCost: 25,
-        undyingFlockBaseEchoesCost: 20
+        undyingFlockBaseEchoesCost: 20,
+        storehouseFaithCost: 120,
+        granaryWoodCost: 60,
+        granaryStoneCost: 60,
+        scriptoriumBaseCost: 100,
+        farmerBaseCost: 26,
+        scribeBaseCost: 45
     },
     rates: {
         hunterFoodPerSecond: 2.0,
@@ -92,7 +100,8 @@ export const gameState = {
         gathererStonePerSecond: 0.20,
         cookFlatHungerGainPerSecond: 0.2,
         cookHungerDrainReductionPerCook: 0.0,
-        cookHungerGainBonusPerCook: 5
+        cookHungerGainBonusPerCook: 5,
+        farmerFoodPerSecond: 1.2
     },
     runtime: {
         roleAccumulators: createRoleAccumulatorMap(0),
@@ -178,6 +187,22 @@ export const game = {
     worldsUnlockMetersExploredRequirement: 3000,
     worldVillagesResolvedToChartBase: 1,
     worldTierCostMultiplierStep: 0.25,
+    storehouse: 0,
+    woodStoneCapBase: 2000,
+    storehouseCapPerLevel: 1000,
+    storehouseCostScalePerBuilt: 0.15,
+    granary: 0,
+    foodCapBase: 1000,
+    granaryCapPerLevel: 500,
+    granaryCostScalePerBuilt: 0.15,
+    scriptorium: 0,
+    scriptoriumOutputPerRank: 0.08,
+    scribeFaithBonusPerScribe: 0.02,
+    foodSpoilagePerSecondBase: 0.002,
+    farmerSpoilageReductionPerFarmer: 0.05,
+    granaryPassiveFoodPerSecondPerLevel: 0.3,
+    feastFoodCost: 50,
+    feastFaithBonusPerFood: 0.5,
     ascension: {
         echoesOfDivinity: 0,
         upgradeRanks: createAscensionUpgradeRankMap(0),

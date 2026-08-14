@@ -562,6 +562,88 @@ export function loadGame() {
                 gameState.costs.undyingFlockBaseEchoesCost = 20;
             }
 
+            // --- Storage buildings ---
+            if (!Number.isFinite(game.storehouse) || game.storehouse < 0) {
+                game.storehouse = 0;
+            }
+            if (!Number.isFinite(game.woodStoneCapBase) || game.woodStoneCapBase < 0) {
+                game.woodStoneCapBase = 2000;
+            }
+            if (!Number.isFinite(game.storehouseCapPerLevel) || game.storehouseCapPerLevel < 0) {
+                game.storehouseCapPerLevel = 1000;
+            }
+            if (!Number.isFinite(game.storehouseCostScalePerBuilt) || game.storehouseCostScalePerBuilt < 0) {
+                game.storehouseCostScalePerBuilt = 0.15;
+            }
+            if (!Number.isFinite(gameState.costs.storehouseFaithCost) || gameState.costs.storehouseFaithCost < 0) {
+                gameState.costs.storehouseFaithCost = 120;
+            }
+            if (!Number.isFinite(game.granary) || game.granary < 0) {
+                game.granary = 0;
+            }
+            if (!Number.isFinite(game.foodCapBase) || game.foodCapBase < 0) {
+                game.foodCapBase = 1000;
+            }
+            if (!Number.isFinite(game.granaryCapPerLevel) || game.granaryCapPerLevel < 0) {
+                game.granaryCapPerLevel = 500;
+            }
+            if (!Number.isFinite(game.granaryCostScalePerBuilt) || game.granaryCostScalePerBuilt < 0) {
+                game.granaryCostScalePerBuilt = 0.15;
+            }
+            if (!Number.isFinite(gameState.costs.granaryWoodCost) || gameState.costs.granaryWoodCost < 0) {
+                gameState.costs.granaryWoodCost = 60;
+            }
+            if (!Number.isFinite(gameState.costs.granaryStoneCost) || gameState.costs.granaryStoneCost < 0) {
+                gameState.costs.granaryStoneCost = 60;
+            }
+            if (!Number.isFinite(game.scriptorium) || game.scriptorium < 0) {
+                game.scriptorium = 0;
+            }
+            if (!Number.isFinite(game.scriptoriumOutputPerRank) || game.scriptoriumOutputPerRank < 0) {
+                game.scriptoriumOutputPerRank = 0.08;
+            }
+            if (!Number.isFinite(gameState.costs.scriptoriumBaseCost) || gameState.costs.scriptoriumBaseCost < 0) {
+                gameState.costs.scriptoriumBaseCost = 100;
+            }
+            game.storehouse = Math.floor(game.storehouse);
+            game.granary = Math.floor(game.granary);
+            game.scriptorium = Math.min(Number.isFinite(game.upgradeMaxPurchases) ? game.upgradeMaxPurchases : 10, Math.floor(game.scriptorium));
+
+            // --- New roles / food depth ---
+            if (!Number.isFinite(gameState.costs.unlockFarmersFaithCost) || gameState.costs.unlockFarmersFaithCost < 0) {
+                gameState.costs.unlockFarmersFaithCost = 95;
+            }
+            if (!Number.isFinite(gameState.costs.unlockScribesFaithCost) || gameState.costs.unlockScribesFaithCost < 0) {
+                gameState.costs.unlockScribesFaithCost = 350;
+            }
+            if (!Number.isFinite(gameState.costs.farmerBaseCost) || gameState.costs.farmerBaseCost < 0) {
+                gameState.costs.farmerBaseCost = 26;
+            }
+            if (!Number.isFinite(gameState.costs.scribeBaseCost) || gameState.costs.scribeBaseCost < 0) {
+                gameState.costs.scribeBaseCost = 45;
+            }
+            if (!Number.isFinite(gameState.rates.farmerFoodPerSecond) || gameState.rates.farmerFoodPerSecond < 0) {
+                gameState.rates.farmerFoodPerSecond = 1.2;
+            }
+            if (!Number.isFinite(game.scribeFaithBonusPerScribe) || game.scribeFaithBonusPerScribe < 0) {
+                game.scribeFaithBonusPerScribe = 0.02;
+            }
+            if (!Number.isFinite(game.foodSpoilagePerSecondBase) || game.foodSpoilagePerSecondBase < 0) {
+                game.foodSpoilagePerSecondBase = 0.002;
+            }
+            if (!Number.isFinite(game.farmerSpoilageReductionPerFarmer) || game.farmerSpoilageReductionPerFarmer < 0) {
+                game.farmerSpoilageReductionPerFarmer = 0.05;
+            }
+            if (!Number.isFinite(game.granaryPassiveFoodPerSecondPerLevel) || game.granaryPassiveFoodPerSecondPerLevel < 0) {
+                game.granaryPassiveFoodPerSecondPerLevel = 0.3;
+            }
+            if (!Number.isFinite(game.feastFoodCost) || game.feastFoodCost < 0) {
+                game.feastFoodCost = 50;
+            }
+            if (!Number.isFinite(game.feastFaithBonusPerFood) || game.feastFaithBonusPerFood < 0) {
+                game.feastFaithBonusPerFood = 0.5;
+            }
+
             if (!Number.isFinite(gameState.costs.unlockAltarFaithCost) || gameState.costs.unlockAltarFaithCost < 0) {
                 gameState.costs.unlockAltarFaithCost = 0;
             }
