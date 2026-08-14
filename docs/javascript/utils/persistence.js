@@ -651,7 +651,6 @@ export function loadGame() {
             game.exploration.hazardAmbushMaxLossPercent = Number.isFinite(game.exploration.hazardAmbushMaxLossPercent)
                 ? Math.max(game.exploration.hazardAmbushMinLossPercent, Math.floor(game.exploration.hazardAmbushMaxLossPercent))
                 : 60;
-            game.exploration.prophetHeavyLossDeathChance = clampProbability(game.exploration.prophetHeavyLossDeathChance, 0.5);
 
             game.exploration.wildAreaSeedCount = Number.isFinite(game.exploration.wildAreaSeedCount)
                 ? Math.max(1, Math.floor(game.exploration.wildAreaSeedCount))

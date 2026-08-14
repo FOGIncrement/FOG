@@ -209,7 +209,6 @@ export const game = {
         hazardHeavyLossFraction: 0.5,
         hazardAmbushMinLossPercent: 20,
         hazardAmbushMaxLossPercent: 60,
-        prophetHeavyLossDeathChance: 0.5,
         sermonSwayDivisor: 8,
         conquerForceDivisor: 10,
         villageOutpostFaithPerSecond: 0.05,

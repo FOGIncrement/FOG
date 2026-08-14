@@ -130,7 +130,9 @@ function processWorldHazard(world, expedition) {
     if (roll < heavyLossThreshold) {
         const casualties = Math.max(1, Math.floor(alive * 0.5));
         expedition.followersAlive = Math.max(0, alive - casualties);
-        const prophetDied = Boolean(expedition.includesProphet && Math.random() < 0.5);
+        // The Prophet always dies last: only a total wipeout (the branch above)
+        // can claim them. A partial loss, however severe, never touches them.
+        const prophetDied = false;
         addLog(`A cosmic horror struck the expedition on ${world.name} (-${casualties}).`);
         return { casualties, ended: expedition.followersAlive <= 0, prophetDied };
     }
@@ -139,7 +141,7 @@ function processWorldHazard(world, expedition) {
         const lossPercent = randomIntInRange(20, 60);
         const casualties = Math.max(1, Math.floor(alive * (lossPercent / 100)));
         expedition.followersAlive = Math.max(0, alive - casualties);
-        const prophetDied = Boolean(expedition.includesProphet && Math.random() < (lossPercent / 100));
+        const prophetDied = false;
         addLog(`The expedition on ${world.name} was ambushed, losing ${lossPercent}% of its party (-${casualties}).`);
         return { casualties, ended: expedition.followersAlive <= 0, prophetDied };
     }

@@ -435,6 +435,16 @@ function renderExplorationPanel(hasExplorationAccess) {
     }
 }
 
+let lastDiscoveredAreasSignature = null;
+
+function getVillageSignature(village) {
+    return `${village.id}:${village.discovered ? 1 : 0}:${Math.floor(village.convertedPercent)}:${village.resolutionType || ''}:${village.sermonsHeld}:${village.prophetPresent ? 1 : 0}`;
+}
+
+function getWildAreaSignature(area) {
+    return `${area.id}:${area.discovered ? 1 : 0}:${area.resourceCache ? (area.resourceCache.collected ? 1 : 0) : 'n'}:${area.passiveEffect?.applied ? 1 : 0}`;
+}
+
 function renderDiscoveredAreas(hasExplorationAccess) {
     const container = document.getElementById('discoveredAreasList');
     if (!container) return;
@@ -449,6 +459,15 @@ function renderDiscoveredAreas(hasExplorationAccess) {
         ? exploration.discoveredAreas.filter((area) => area.discovered)
         : [];
     const hasDiscoveries = villages.length > 0 || wildAreas.length > 0;
+
+    // Rebuilding innerHTML every tick (10x/sec) destroys and recreates every
+    // card's DOM nodes even when nothing changed, which breaks :hover state
+    // and can eat clicks on buttons mid-interaction. Only re-render when the
+    // data that actually affects the markup has changed since last render.
+    const costContext = `${game.doctrineChoices?.flock || ''}:${game.temple?.built ? game.temple.godId : ''}`;
+    const signature = `${costContext}##${villages.map(getVillageSignature).join('|')}##${wildAreas.map(getWildAreaSignature).join('|')}`;
+    if (signature === lastDiscoveredAreasSignature) return;
+    lastDiscoveredAreasSignature = signature;
 
     if (!hasDiscoveries) {
         container.innerHTML = '<p class="area-empty">No discovered areas yet.</p>';
@@ -594,12 +613,22 @@ function renderWorldsPanel() {
     renderWorldDiscoveredAreas(activeWorld);
 }
 
+let lastWorldDiscoveredAreasSignature = null;
+
 function renderWorldDiscoveredAreas(world) {
     const container = document.getElementById('worldDiscoveredAreasList');
     if (!container) return;
 
     const villages = world.villages.filter((village) => village.discovered);
     const wildAreas = world.wildAreas.filter((area) => area.discovered);
+
+    // See renderDiscoveredAreas() for why this diff-guard exists: without it,
+    // the 10x/sec tick loop tears down and rebuilds every card (and its
+    // buttons) every frame, which breaks hover state and eats clicks.
+    const costContext = `${game.doctrineChoices?.flock || ''}:${game.temple?.built ? game.temple.godId : ''}`;
+    const signature = `${world.id}:${costContext}##${villages.map(getVillageSignature).join('|')}##${wildAreas.map(getWildAreaSignature).join('|')}`;
+    if (signature === lastWorldDiscoveredAreasSignature) return;
+    lastWorldDiscoveredAreasSignature = signature;
 
     if (villages.length === 0 && wildAreas.length === 0) {
         container.innerHTML = '<p class="area-empty">No discoveries yet.</p>';

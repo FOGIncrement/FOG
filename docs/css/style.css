@@ -1,5 +1,5 @@
 /* =====================================================================
-   F.O.G. — Faith of Glory
+   F.O.G. — Faith Or Glory
    Theme: candlelit sanctum meeting the cold dark between the stars.
    ===================================================================== */
 
@@ -59,6 +59,7 @@ body {
     font-size: 14px;
     line-height: 1.45;
     padding: 20px;
+    padding-bottom: 30vh;
     min-height: 100vh;
 }
 
@@ -422,6 +423,18 @@ button:disabled.purchased {
     padding: 2px 0;
 }
 
+#stats > p.cost-highlight {
+    background: rgba(212, 175, 55, 0.14);
+    box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.4), 0 0 14px rgba(212, 175, 55, 0.25);
+    border-radius: 4px;
+    animation: costHighlightPulse 900ms ease-in-out infinite;
+}
+
+@keyframes costHighlightPulse {
+    0%, 100% { background: rgba(212, 175, 55, 0.10); }
+    50% { background: rgba(212, 175, 55, 0.22); }
+}
+
 #stats > p:not(#nextGoalHint)::before {
     content: '◆';
     color: var(--gold-dim);
@@ -486,12 +499,23 @@ button:disabled.purchased {
 }
 
 #bottomLog {
-    margin-top: 22px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+    max-height: 26vh;
+    overflow-y: auto;
+    margin: 0;
+    padding: 8px 20px;
+    background: var(--panel-raised);
+    border-top: 1px solid var(--border-strong);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+}
+
+#log {
     max-width: 1400px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 10px 4px 0;
-    border-top: 1px solid var(--border);
+    margin: 0 auto;
 }
 
 /* Log message fade */

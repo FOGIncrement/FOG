@@ -112,7 +112,6 @@ function normalizeExplorationTuning(exploration) {
     exploration.hazardHeavyLossFraction = clampProbability(exploration.hazardHeavyLossFraction, 0.5);
     exploration.hazardAmbushMinLossPercent = clampMinimum(exploration.hazardAmbushMinLossPercent, 20, 1);
     exploration.hazardAmbushMaxLossPercent = clampMinimum(exploration.hazardAmbushMaxLossPercent, 60, exploration.hazardAmbushMinLossPercent);
-    exploration.prophetHeavyLossDeathChance = clampProbability(exploration.prophetHeavyLossDeathChance, 0.5);
 
     exploration.wildAreaSeedCount = Math.max(1, Math.floor(clampMinimum(exploration.wildAreaSeedCount, 8, 1)));
     exploration.wildAreaDistanceMinStep = Math.max(1, Math.floor(clampMinimum(exploration.wildAreaDistanceMinStep, 30, 1)));
@@ -402,7 +401,9 @@ function processExpeditionHazard(expedition) {
     if (hazardRoll < heavyLossThreshold) {
         const casualties = Math.max(1, Math.floor(alive * exploration.hazardHeavyLossFraction));
         expedition.followersAlive = Math.max(0, alive - casualties);
-        const prophetDied = Boolean(expedition.includesProphet && Math.random() < exploration.prophetHeavyLossDeathChance);
+        // The Prophet always dies last: only a total wipeout (the branch above)
+        // can claim them. A partial loss, however severe, never touches them.
+        const prophetDied = false;
         addLog(`Followers encountered a bear and half were slaughtered (-${casualties}).`);
         return { casualties, ended: expedition.followersAlive <= 0, prophetDied };
     }
@@ -411,7 +412,7 @@ function processExpeditionHazard(expedition) {
         const lossPercent = randomIntInRange(exploration.hazardAmbushMinLossPercent, exploration.hazardAmbushMaxLossPercent);
         const casualties = Math.max(1, Math.floor(alive * (lossPercent / 100)));
         expedition.followersAlive = Math.max(0, alive - casualties);
-        const prophetDied = Boolean(expedition.includesProphet && Math.random() < (lossPercent / 100));
+        const prophetDied = false;
         addLog(`Followers were ambushed and lost ${lossPercent}% of their party (-${casualties}).`);
         return { casualties, ended: expedition.followersAlive <= 0, prophetDied };
     }

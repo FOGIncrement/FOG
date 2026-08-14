@@ -7,6 +7,7 @@ import * as gameApi from './game.js';
 import { actionRegistry } from './registries/index.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
+import { ACTION_COST_RESOURCES, CARD_ACTION_COST_RESOURCES } from './config/action-cost-resources.js';
 
 const CHEAT_BALANCE_FIELD_SECTIONS = [
     {
@@ -110,7 +111,6 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Heavy Loss Fraction', target: game.exploration, key: 'hazardHeavyLossFraction', step: 0.01, min: 0 },
             { label: 'Ambush Loss Min Percent', target: game.exploration, key: 'hazardAmbushMinLossPercent', step: 1, min: 1 },
             { label: 'Ambush Loss Max Percent', target: game.exploration, key: 'hazardAmbushMaxLossPercent', step: 1, min: 1 },
-            { label: 'Prophet Heavy Loss Death Chance', target: game.exploration, key: 'prophetHeavyLossDeathChance', step: 0.01, min: 0 },
             { label: 'Wild Area Seed Count', target: game.exploration, key: 'wildAreaSeedCount', step: 1, min: 1 },
             { label: 'Wild Area Distance Min Step', target: game.exploration, key: 'wildAreaDistanceMinStep', step: 1, min: 1 },
             { label: 'Wild Area Distance Max Step', target: game.exploration, key: 'wildAreaDistanceMaxStep', step: 1, min: 1 },
@@ -223,6 +223,18 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
     }
 ];
 
+// ===== COST HIGHLIGHT =====
+function highlightCostResources(containerIds) {
+    containerIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('cost-highlight');
+    });
+}
+
+function clearCostHighlights() {
+    document.querySelectorAll('.cost-highlight').forEach((el) => el.classList.remove('cost-highlight'));
+}
+
 // ===== DOM LOADED =====
 document.addEventListener("DOMContentLoaded", () => {
     // Try to load saved game first
@@ -267,7 +279,36 @@ document.addEventListener("DOMContentLoaded", () => {
                         saveGame();
                     }
                 });
+
+                const costResourceIds = ACTION_COST_RESOURCES[actionDefinition.id];
+                if (Array.isArray(costResourceIds) && costResourceIds.length > 0) {
+                    el.addEventListener('mouseenter', () => highlightCostResources(costResourceIds));
+                    el.addEventListener('mouseleave', clearCostHighlights);
+                }
             }
+        });
+    });
+
+    [
+        document.getElementById('discoveredAreasList'),
+        document.getElementById('worldDiscoveredAreasList')
+    ].forEach((container) => {
+        if (!container) return;
+        container.addEventListener('mouseover', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const btn = target.closest('button[class]');
+            if (!btn) return;
+            const matchedClass = Object.keys(CARD_ACTION_COST_RESOURCES).find((cls) => btn.classList.contains(cls));
+            if (!matchedClass) return;
+            highlightCostResources(CARD_ACTION_COST_RESOURCES[matchedClass]);
+        });
+        container.addEventListener('mouseout', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const btn = target.closest('button[class]');
+            if (!btn) return;
+            clearCostHighlights();
         });
     });
 
@@ -776,7 +817,6 @@ function normalizeBalanceSettings() {
         'hazardHeavyLossChance',
         'hazardAmbushChance',
         'hazardHeavyLossFraction',
-        'prophetHeavyLossDeathChance',
         'wildAreaResourceCacheChance',
         'wildAreaFaithPerFollowerBonusChance',
         'wildAreaHungerDrainPenaltyChance'
