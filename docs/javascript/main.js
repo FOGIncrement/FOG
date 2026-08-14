@@ -178,7 +178,12 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Wanderlust Cost Multiplier', target: game, key: 'wanderlustCostMultiplier', step: 0.05, min: 0 },
             { label: 'Abundant Table Consumption Multiplier', target: game, key: 'abundantTableConsumptionMultiplier', step: 0.05, min: 0 },
             { label: 'Lean Years Consumption Multiplier', target: game, key: 'leanYearsConsumptionMultiplier', step: 0.05, min: 0 },
-            { label: 'Lean Years Starvation Multiplier', target: game, key: 'leanYearsStarvationMultiplier', step: 0.1, min: 1 }
+            { label: 'Lean Years Starvation Multiplier', target: game, key: 'leanYearsStarvationMultiplier', step: 0.1, min: 1 },
+            { label: 'Stonemasons Cost Multiplier', target: game, key: 'stonemasonsCostMultiplier', step: 0.05, min: 0 },
+            { label: 'Quarry Rush Output Multiplier', target: game, key: 'quarryRushOutputMultiplier', step: 0.05, min: 1 },
+            { label: 'Zealous Hands Yield Multiplier', target: game, key: 'zealousHandsYieldMultiplier', step: 0.05, min: 1 },
+            { label: 'Quiet Faith Follower Multiplier', target: game, key: 'quietFaithFollowerMultiplier', step: 0.05, min: 1 },
+            { label: 'Quiet Faith Ritualist Multiplier', target: game, key: 'quietFaithRitualistMultiplier', step: 0.05, min: 1 }
         ]
     },
     {

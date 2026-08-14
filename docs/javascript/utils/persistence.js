@@ -382,6 +382,21 @@ export function loadGame() {
             if (!Number.isFinite(game.leanYearsStarvationMultiplier) || game.leanYearsStarvationMultiplier < 1) {
                 game.leanYearsStarvationMultiplier = 2.5;
             }
+            if (!Number.isFinite(game.stonemasonsCostMultiplier) || game.stonemasonsCostMultiplier <= 0 || game.stonemasonsCostMultiplier > 1) {
+                game.stonemasonsCostMultiplier = 0.85;
+            }
+            if (!Number.isFinite(game.quarryRushOutputMultiplier) || game.quarryRushOutputMultiplier < 1) {
+                game.quarryRushOutputMultiplier = 1.3;
+            }
+            if (!Number.isFinite(game.zealousHandsYieldMultiplier) || game.zealousHandsYieldMultiplier < 1) {
+                game.zealousHandsYieldMultiplier = 1.5;
+            }
+            if (!Number.isFinite(game.quietFaithFollowerMultiplier) || game.quietFaithFollowerMultiplier < 1) {
+                game.quietFaithFollowerMultiplier = 1.25;
+            }
+            if (!Number.isFinite(game.quietFaithRitualistMultiplier) || game.quietFaithRitualistMultiplier < 1) {
+                game.quietFaithRitualistMultiplier = 1.25;
+            }
 
             // Exhaustive doctrineChoices validation: rebuild from scratch so a corrupted save
             // can never claim an invalid/foreign option was chosen for a group.

@@ -2,7 +2,7 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument, getManualActionYieldMultiplier } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
@@ -568,7 +568,7 @@ function resolveExpeditionRoll(baseRoll) {
 }
 
 export function gatherWood() {
-    const gained = gameState.resources.wood.gather();
+    const gained = gameState.resources.wood.gather(getManualActionYieldMultiplier());
     if (gained !== false) {
         if (gained <= 0) addLog('Wood storage is full — nothing more can be gathered.');
         updateUI();
@@ -577,7 +577,7 @@ export function gatherWood() {
 }
 
 export function gatherStone() {
-    const gained = gameState.resources.stone.gather();
+    const gained = gameState.resources.stone.gather(getManualActionYieldMultiplier());
     if (gained !== false) {
         if (gained <= 0) addLog('Stone storage is full — nothing more can be gathered.');
         updateUI();
@@ -586,7 +586,7 @@ export function gatherStone() {
 }
 
 export function gatherFood() {
-    const gained = gameState.resources.food.gather();
+    const gained = gameState.resources.food.gather(getManualActionYieldMultiplier());
     if (gained !== false) {
         if (gained > 0) {
             addLog(`A hunt yielded ${gained} food.`);
@@ -602,7 +602,7 @@ export function gatherFood() {
 }
 
 export function pray() {
-    gameState.progression.faith += game.prayAmt;
+    gameState.progression.faith += game.prayAmt * getManualActionYieldMultiplier();
     updateUI();
     saveGame();
 }
@@ -1531,6 +1531,10 @@ export function chooseHomestead() { chooseDoctrine('hearth', 'homestead'); }
 export function chooseWanderlust() { chooseDoctrine('hearth', 'wanderlust'); }
 export function chooseAbundantTable() { chooseDoctrine('sacrifice', 'abundantTable'); }
 export function chooseLeanYears() { chooseDoctrine('sacrifice', 'leanYears'); }
+export function chooseStonemasons() { chooseDoctrine('forge', 'stonemasons'); }
+export function chooseQuarryRush() { chooseDoctrine('forge', 'quarryRush'); }
+export function chooseZealousHands() { chooseDoctrine('pilgrimage', 'zealousHands'); }
+export function chooseQuietFaith() { chooseDoctrine('pilgrimage', 'quietFaith'); }
 
 function buildTemple(godId) {
     if (!game.doctrinesUnlocked) return;

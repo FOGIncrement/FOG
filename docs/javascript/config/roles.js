@@ -32,6 +32,12 @@ export function getRoleOutputMultiplier(roleId, game) {
         const perRank = Number.isFinite(game.scriptoriumOutputPerRank) ? game.scriptoriumOutputPerRank : 0.08;
         multiplier *= 1 + game.scriptorium * perRank;
     }
+    if (roleId === 'gatherers' && game.doctrineChoices?.forge === 'quarryRush' && Number.isFinite(game.quarryRushOutputMultiplier)) {
+        multiplier *= game.quarryRushOutputMultiplier;
+    }
+    if (roleId === 'ritualists' && game.doctrineChoices?.pilgrimage === 'quietFaith' && Number.isFinite(game.quietFaithRitualistMultiplier)) {
+        multiplier *= game.quietFaithRitualistMultiplier;
+    }
     return multiplier;
 }
 

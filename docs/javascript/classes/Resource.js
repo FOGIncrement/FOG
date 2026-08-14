@@ -27,11 +27,12 @@ export class Resource {
         return applied;
     }
 
-    gather() {
+    gather(yieldMultiplier = 1) {
         if (!this.canGather()) return false;
         gameState.progression.faith -= this.gatherCost;
-        const amountToAdd = typeof this.gatherAmount === 'function' ? this.gatherAmount() : this.gatherAmount;
-        const applied = this.add(amountToAdd);
+        const baseAmount = typeof this.gatherAmount === 'function' ? this.gatherAmount() : this.gatherAmount;
+        const multiplier = Number.isFinite(yieldMultiplier) && yieldMultiplier > 0 ? yieldMultiplier : 1;
+        const applied = this.add(baseAmount * multiplier);
         return applied;
     }
 

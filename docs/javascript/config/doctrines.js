@@ -67,6 +67,52 @@ export const DOCTRINE_GROUPS = [
                 favorAmount: 10
             }
         ]
+    },
+    {
+        id: 'forge',
+        label: 'Doctrine of the Forge',
+        framing: 'Do your artisans build to last, or does your quarry work double-time?',
+        options: [
+            {
+                id: 'stonemasons',
+                label: 'Stonemasons',
+                summary: 'Watchtower, Barracks, Well, Marketplace, and Monument cost less wood and stone to build.',
+                alignmentDelta: 0,
+                favorFaction: null,
+                favorAmount: 0
+            },
+            {
+                id: 'quarryRush',
+                label: 'Quarry Rush',
+                summary: 'Gatherers produce significantly more wood and stone.',
+                alignmentDelta: 0,
+                favorFaction: null,
+                favorAmount: 0
+            }
+        ]
+    },
+    {
+        id: 'pilgrimage',
+        label: 'Doctrine of the Pilgrimage',
+        framing: 'Is your faith proven by tireless devotion, or by patient trust in providence?',
+        options: [
+            {
+                id: 'zealousHands',
+                label: 'Zealous Hands',
+                summary: 'Manual Pray and Gather actions yield significantly more.',
+                alignmentDelta: 0,
+                favorFaction: null,
+                favorAmount: 0
+            },
+            {
+                id: 'quietFaith',
+                label: 'Quiet Faith',
+                summary: 'Followers and Ritualists generate faith passively at a higher rate.',
+                alignmentDelta: 0,
+                favorFaction: null,
+                favorAmount: 0
+            }
+        ]
     }
 ];
 

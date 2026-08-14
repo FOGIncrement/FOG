@@ -1,5 +1,5 @@
 import { setTooltipContent } from '../utils/tooltip.js';
-import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getNextSettlementTier, canAffordSettlementTier, getFavorTierCount, getNextFavorTierThreshold, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getWellConsumptionMultiplier, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, getMonumentFaithPerFollowerMultiplier, canUnlockMonument } from '../utils/helpers.js';
+import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getNextSettlementTier, canAffordSettlementTier, getFavorTierCount, getNextFavorTierThreshold, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getWellConsumptionMultiplier, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, getMonumentFaithPerFollowerMultiplier, canUnlockMonument, getManualActionYieldMultiplier } from '../utils/helpers.js';
 import { DOCTRINE_GROUP_BY_ID } from './doctrines.js';
 import { TEMPLE_OPTION_BY_GOD } from './temples.js';
 import { ASCENSION_UPGRADE_BY_ID } from './ascension.js';
@@ -165,7 +165,8 @@ export function getActionUiRules(context) {
 
     return {
         pray(el) {
-            applyTooltip(el, 'Pray\nOffer devotion for divine favor.', `Gain ${game.prayAmt} faith per click`);
+            const prayGain = (Number.isFinite(game.prayAmt) ? game.prayAmt : 1) * getManualActionYieldMultiplier();
+            applyTooltip(el, 'Pray\nOffer devotion for divine favor.', `Gain ${prayGain} faith per click`);
         },
         convertFollower(el) {
             const cost = getConvertFollowerCost();
@@ -306,9 +307,10 @@ export function getActionUiRules(context) {
             applyTooltip(el, 'Ritual Circle\nExpand your settlement with core infrastructure.', `Cost: ${gameState.costs[ritualCostKey]} faith\nProgress: ${ritualLevel}/${ritualDefinition.maxLevel}`);
         },
         gatherWood(el) {
-            const woodGain = typeof gameState.resources.wood.gatherAmount === 'function'
+            const baseWoodGain = typeof gameState.resources.wood.gatherAmount === 'function'
                 ? gameState.resources.wood.gatherAmount()
                 : gameState.resources.wood.gatherAmount;
+            const woodGain = Math.floor(baseWoodGain * getManualActionYieldMultiplier());
             if (ritualBuilt) {
                 setVisible(el, true);
                 const canAfford = gameState.progression.faith >= gameState.resources.wood.gatherCost;
@@ -323,9 +325,10 @@ export function getActionUiRules(context) {
             applyTooltip(el, 'Gather Wood\nSend followers to collect wood manually.', `Cost: ${gameState.resources.wood.gatherCost} faith\nOutput: +${woodGain} wood`);
         },
         gatherStone(el) {
-            const stoneGain = typeof gameState.resources.stone.gatherAmount === 'function'
+            const baseStoneGain = typeof gameState.resources.stone.gatherAmount === 'function'
                 ? gameState.resources.stone.gatherAmount()
                 : gameState.resources.stone.gatherAmount;
+            const stoneGain = Math.floor(baseStoneGain * getManualActionYieldMultiplier());
             if (ritualBuilt) {
                 setVisible(el, true);
                 const canAfford = gameState.progression.faith >= gameState.resources.stone.gatherCost;
@@ -345,7 +348,8 @@ export function getActionUiRules(context) {
                 setVisible(el, true);
                 const canAfford = gameState.progression.faith >= gameState.resources.food.gatherCost;
                 setAffordability(el, canAfford);
-                applyTooltip(el, 'Gather Food\nOrganize a hunt to bring back food.', `Cost: ${gameState.resources.food.gatherCost} faith\nOutput: random food gain`);
+                const zealousNote = getManualActionYieldMultiplier() > 1 ? ' (Zealous Hands bonus applied)' : '';
+                applyTooltip(el, 'Gather Food\nOrganize a hunt to bring back food.', `Cost: ${gameState.resources.food.gatherCost} faith\nOutput: random food gain${zealousNote}`);
                 el.dataset.unlocked = 'true';
             } else {
                 setVisible(el, false);
@@ -1085,6 +1089,43 @@ export function getActionUiRules(context) {
             applyDoctrineOptionButton(el, {
                 groupId: 'sacrifice', optionId: 'leanYears', label: option.label, summary: option.summary,
                 effectLine: `Food consumption: -${reductionPercent}%, but starvation drain: ${game.leanYearsStarvationMultiplier}x worse\nAlignment ${option.alignmentDelta} Evil, Hel favor +${option.favorAmount}`,
+                game, setVisible, setButtonLabel
+            });
+        },
+        chooseStonemasons(el) {
+            const option = DOCTRINE_GROUP_BY_ID.forge.options.find((o) => o.id === 'stonemasons');
+            const discountPercent = Math.round((1 - game.stonemasonsCostMultiplier) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'forge', optionId: 'stonemasons', label: option.label, summary: option.summary,
+                effectLine: `New building costs (Watchtower/Barracks/Well/Marketplace/Monument): -${discountPercent}%\nNo alignment or favor effect`,
+                game, setVisible, setButtonLabel
+            });
+        },
+        chooseQuarryRush(el) {
+            const option = DOCTRINE_GROUP_BY_ID.forge.options.find((o) => o.id === 'quarryRush');
+            const outputPercent = Math.round((game.quarryRushOutputMultiplier - 1) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'forge', optionId: 'quarryRush', label: option.label, summary: option.summary,
+                effectLine: `Gatherer wood/stone output: +${outputPercent}%\nNo alignment or favor effect`,
+                game, setVisible, setButtonLabel
+            });
+        },
+        chooseZealousHands(el) {
+            const option = DOCTRINE_GROUP_BY_ID.pilgrimage.options.find((o) => o.id === 'zealousHands');
+            const yieldPercent = Math.round((game.zealousHandsYieldMultiplier - 1) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'pilgrimage', optionId: 'zealousHands', label: option.label, summary: option.summary,
+                effectLine: `Pray/Gather Wood/Gather Stone/Gather Food yield: +${yieldPercent}%\nNo alignment or favor effect`,
+                game, setVisible, setButtonLabel
+            });
+        },
+        chooseQuietFaith(el) {
+            const option = DOCTRINE_GROUP_BY_ID.pilgrimage.options.find((o) => o.id === 'quietFaith');
+            const followerPercent = Math.round((game.quietFaithFollowerMultiplier - 1) * 100);
+            const ritualistPercent = Math.round((game.quietFaithRitualistMultiplier - 1) * 100);
+            applyDoctrineOptionButton(el, {
+                groupId: 'pilgrimage', optionId: 'quietFaith', label: option.label, summary: option.summary,
+                effectLine: `Follower faith income: +${followerPercent}%, Ritualist faith income: +${ritualistPercent}%\nNo alignment or favor effect`,
                 game, setVisible, setButtonLabel
             });
         },

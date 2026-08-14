@@ -451,7 +451,7 @@ export function getWatchtowerCost() {
     const stoneBase = Number.isFinite(gameState.costs.watchtowerStoneCost) ? gameState.costs.watchtowerStoneCost : 150;
     const level = Number.isFinite(game.watchtower) ? game.watchtower : 0;
     const scale = Number.isFinite(game.watchtowerCostScalePerBuilt) ? game.watchtowerCostScalePerBuilt : 0.18;
-    const multiplier = 1 + scale * level;
+    const multiplier = (1 + scale * level) * getDoctrineBuildingCostMultiplier();
     return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
 }
 
@@ -467,7 +467,7 @@ export function getBarracksCost() {
     const stoneBase = Number.isFinite(gameState.costs.barracksStoneCost) ? gameState.costs.barracksStoneCost : 150;
     const level = Number.isFinite(game.barracks) ? game.barracks : 0;
     const scale = Number.isFinite(game.barracksCostScalePerBuilt) ? game.barracksCostScalePerBuilt : 0.18;
-    const multiplier = 1 + scale * level;
+    const multiplier = (1 + scale * level) * getDoctrineBuildingCostMultiplier();
     return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
 }
 
@@ -482,7 +482,7 @@ export function getWellCost() {
     const stoneBase = Number.isFinite(gameState.costs.wellStoneCost) ? gameState.costs.wellStoneCost : 40;
     const level = Number.isFinite(game.well) ? game.well : 0;
     const scale = Number.isFinite(game.wellCostScalePerBuilt) ? game.wellCostScalePerBuilt : 0.15;
-    const multiplier = 1 + scale * level;
+    const multiplier = (1 + scale * level) * getDoctrineBuildingCostMultiplier();
     return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
 }
 
@@ -499,7 +499,7 @@ export function getMarketplaceCost() {
     const stoneBase = Number.isFinite(gameState.costs.marketplaceStoneCost) ? gameState.costs.marketplaceStoneCost : 250;
     const level = Number.isFinite(game.marketplace) ? game.marketplace : 0;
     const scale = Number.isFinite(game.marketplaceCostScalePerBuilt) ? game.marketplaceCostScalePerBuilt : 0.2;
-    const multiplier = 1 + scale * level;
+    const multiplier = (1 + scale * level) * getDoctrineBuildingCostMultiplier();
     return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
 }
 
@@ -523,7 +523,8 @@ export function getMonumentCost() {
     const stoneBase = Number.isFinite(gameState.costs.monumentStoneCost) ? gameState.costs.monumentStoneCost : 1500;
     const level = Number.isFinite(game.monument) ? game.monument : 0;
     const scale = Number.isFinite(game.monumentCostScalePerBuilt) ? game.monumentCostScalePerBuilt : 0.25;
-    const multiplier = 1 + scale * level;
+    const doctrineMultiplier = getDoctrineBuildingCostMultiplier();
+    const multiplier = (1 + scale * level) * doctrineMultiplier;
     return {
         faith: Math.ceil(faithBase * multiplier),
         wood: Math.ceil(woodBase * multiplier),
@@ -546,6 +547,27 @@ export function canUnlockMonument() {
 export function getHungerStarvationDrainMultiplier() {
     if (game.doctrineChoices?.sacrifice === 'leanYears' && Number.isFinite(game.leanYearsStarvationMultiplier)) {
         return game.leanYearsStarvationMultiplier;
+    }
+    return 1;
+}
+
+export function getDoctrineBuildingCostMultiplier() {
+    if (isDoctrineChosen('forge', 'stonemasons') && Number.isFinite(game.stonemasonsCostMultiplier)) {
+        return game.stonemasonsCostMultiplier;
+    }
+    return 1;
+}
+
+export function getManualActionYieldMultiplier() {
+    if (isDoctrineChosen('pilgrimage', 'zealousHands') && Number.isFinite(game.zealousHandsYieldMultiplier)) {
+        return game.zealousHandsYieldMultiplier;
+    }
+    return 1;
+}
+
+export function getQuietFaithFollowerMultiplier() {
+    if (isDoctrineChosen('pilgrimage', 'quietFaith') && Number.isFinite(game.quietFaithFollowerMultiplier)) {
+        return game.quietFaithFollowerMultiplier;
     }
     return 1;
 }
