@@ -1,6 +1,7 @@
 import { gameState, game } from './classes/GameState.js';
 import { setVisible, setAffordability, setButtonLabel, showTabs, hideTabs } from './utils/ui-helpers.js';
-import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus, getFavorTierCount, getNextFavorTierThreshold, getNextSettlementTier, getSettlementTierCapacityMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier } from './utils/helpers.js';
+import { getMaxFollowers, getAssignedFollowers, getUnassignedFollowers, getRoleTrainingCost, getRoleCount, getShelterBuildCosts, getNextGoal, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getConquerVillageFaithCost, getExpeditionRollFaithCost, getActiveWorld, getWorldDominationScore, getDomainsClaimed, getUniverseConquestTier, getWorldExpeditionRollFaithCost, getWorldSermonFaithCost, getWorldConquerFaithCost, getChartNewWorldCost, getWorldChartRequirement, getAscensionFaithMultiplier, getScribeFaithMultiplier, getCultStatus, getFavorTierCount, getNextFavorTierThreshold, getNextSettlementTier, getSettlementTierCapacityMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost } from './utils/helpers.js';
+import { getSettlementReputationTier, SETTLEMENT_SPECIALTY_BY_ID, TRADE_GOODS, SETTLEMENT_REPUTATION_TIER_THRESHOLDS } from './config/trade-settlements.js';
 import { ROLE_DEFINITIONS, getRoleOutputMultiplier } from './config/roles.js';
 import { FACTION_DEFINITIONS } from './config/factions.js';
 import { ACTION_TAB_ORDER } from './config/action-definitions.js';
@@ -114,15 +115,16 @@ export function updateUI() {
         );
     }
     if (faithEl) {
-        const followerFaithRate = gameState.progression.followers * gameState.progression.faithPerFollower * getAscensionFaithMultiplier() * getScribeFaithMultiplier() * getMonumentFaithPerFollowerMultiplier() * getQuietFaithFollowerMultiplier();
+        const ambientFaithRate = Number.isFinite(game.ambientFaithPerSecond) ? game.ambientFaithPerSecond : 0.05;
+        const followerFaithRate = gameState.progression.followers * gameState.progression.faithPerFollower * getAscensionFaithMultiplier() * getScribeFaithMultiplier() * getMonumentFaithPerFollowerMultiplier() * getQuietFaithFollowerMultiplier() * getIncenseFaithMultiplier();
         const ritualistFaithRate = getRoleCount('ritualists') * gameState.rates.ritualistFaithPerSecond * getRoleOutputMultiplier('ritualists', game);
         const outpostFaithRate = getOutpostFaithRate();
-        const totalFaithRate = followerFaithRate + ritualistFaithRate + outpostFaithRate;
+        const totalFaithRate = ambientFaithRate + followerFaithRate + ritualistFaithRate + outpostFaithRate;
         faithEl.innerText = `${formatBigNumber(gameState.progression.faith)} (+${formatBigNumber(totalFaithRate)}/s)`;
         setTooltipContent(
             faithEl,
             'Faith\nSpent on nearly everything.',
-            `Followers: +${followerFaithRate.toFixed(3)}/s\nRitualists: +${ritualistFaithRate.toFixed(3)}/s\nOutposts: +${outpostFaithRate.toFixed(3)}/s\nTotal: +${totalFaithRate.toFixed(3)}/s`
+            `Ambient: +${ambientFaithRate.toFixed(3)}/s\nFollowers: +${followerFaithRate.toFixed(3)}/s\nRitualists: +${ritualistFaithRate.toFixed(3)}/s\nOutposts: +${outpostFaithRate.toFixed(3)}/s\nTotal: +${totalFaithRate.toFixed(3)}/s`
         );
     }
 
@@ -532,6 +534,10 @@ function getWildAreaSignature(area) {
     return `${area.id}:${area.discovered ? 1 : 0}:${area.resourceCache ? (area.resourceCache.collected ? 1 : 0) : 'n'}:${area.passiveEffect?.applied ? 1 : 0}:${area.landmarkResolved ? 1 : 0}`;
 }
 
+function getSettlementSignature(settlement) {
+    return `${settlement.id}:${settlement.discovered ? 1 : 0}:${settlement.reputation}:${settlement.tradesCompleted}`;
+}
+
 function renderDiscoveredAreas(hasExplorationAccess) {
     const container = document.getElementById('discoveredAreasList');
     if (!container) return;
@@ -545,14 +551,17 @@ function renderDiscoveredAreas(hasExplorationAccess) {
     const wildAreas = Array.isArray(exploration.discoveredAreas)
         ? exploration.discoveredAreas.filter((area) => area.discovered)
         : [];
-    const hasDiscoveries = villages.length > 0 || wildAreas.length > 0;
+    const settlements = Array.isArray(exploration.settlements)
+        ? exploration.settlements.filter((settlement) => settlement.discovered)
+        : [];
+    const hasDiscoveries = villages.length > 0 || wildAreas.length > 0 || settlements.length > 0;
 
     // Rebuilding innerHTML every tick (10x/sec) destroys and recreates every
     // card's DOM nodes even when nothing changed, which breaks :hover state
     // and can eat clicks on buttons mid-interaction. Only re-render when the
     // data that actually affects the markup has changed since last render.
-    const costContext = `${game.doctrineChoices?.flock || ''}:${game.temple?.built ? game.temple.godId : ''}`;
-    const signature = `${costContext}##${villages.map(getVillageSignature).join('|')}##${wildAreas.map(getWildAreaSignature).join('|')}`;
+    const costContext = `${game.doctrineChoices?.flock || ''}:${game.temple?.built ? game.temple.godId : ''}:${game.marketplace || 0}`;
+    const signature = `${costContext}##${villages.map(getVillageSignature).join('|')}##${wildAreas.map(getWildAreaSignature).join('|')}##${settlements.map(getSettlementSignature).join('|')}`;
     if (signature === lastDiscoveredAreasSignature) return;
     lastDiscoveredAreasSignature = signature;
 
@@ -640,7 +649,38 @@ function renderDiscoveredAreas(hasExplorationAccess) {
         })
         .join('');
 
-    container.innerHTML = `${villageCards}${areaCards}`;
+    const settlementCards = settlements
+        .map((settlement) => {
+            const specialty = SETTLEMENT_SPECIALTY_BY_ID[settlement.specialtyId];
+            if (!specialty) return '';
+            const good = TRADE_GOODS[specialty.goodId];
+            const reputation = Math.floor(settlement.reputation || 0);
+            const tier = getSettlementReputationTier(reputation);
+            const nextThreshold = SETTLEMENT_REPUTATION_TIER_THRESHOLDS[tier] ?? null;
+            const repLine = nextThreshold
+                ? `Reputation: ${reputation} (tier ${tier}/${SETTLEMENT_REPUTATION_TIER_THRESHOLDS.length}, next at ${nextThreshold})`
+                : `Reputation: ${reputation} (tier ${tier}/${SETTLEMENT_REPUTATION_TIER_THRESHOLDS.length}, max)`;
+            const buyCost = getSettlementBuyResourceCost(settlement);
+            const sellYield = getSettlementSellResourceYield(settlement);
+            const goodCost = getSettlementBuyGoodCost(settlement);
+            const goodsOwned = Number.isFinite(gameState.progression.goods?.[good.id]) ? gameState.progression.goods[good.id] : 0;
+            const batchSize = Number.isFinite(game.settlementResourceBatchSize) ? game.settlementResourceBatchSize : 200;
+
+            return `
+                <div class="area-card settlement-card">
+                    <h4>${settlement.name}</h4>
+                    <p>Distance: ${Math.floor(settlement.distanceFromCamp)}m</p>
+                    <p>${repLine}</p>
+                    <p>Deals in ${specialty.resourceLabel} — supplies ${good.name} (owned: ${goodsOwned})</p>
+                    <button class="settlement-buy-resource-btn" data-settlement-id="${settlement.id}">Buy ${batchSize} ${specialty.resourceLabel} (${buyCost} faith)</button>
+                    <button class="settlement-sell-resource-btn" data-settlement-id="${settlement.id}">Sell ${batchSize} ${specialty.resourceLabel} (+${sellYield} faith)</button>
+                    <button class="settlement-buy-good-btn" data-settlement-id="${settlement.id}">Buy ${good.name} (${goodCost} faith)</button>
+                </div>
+            `;
+        })
+        .join('');
+
+    container.innerHTML = `${villageCards}${areaCards}${settlementCards}`;
 }
 
 function renderWorldsPanel() {

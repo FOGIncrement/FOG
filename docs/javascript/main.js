@@ -14,6 +14,7 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
         title: 'Core Game',
         entries: [
             { label: 'Pray Faith Per Click', target: game, key: 'prayAmt', step: 0.1, min: 0 },
+            { label: 'Ambient Faith Per Second (idle)', target: game, key: 'ambientFaithPerSecond', step: 0.01, min: 0 },
             { label: 'Convert Follower Cost', target: game, key: 'convertCost', step: 1, min: 0 },
             { label: 'Manual Feed Hunger Gain', target: game, key: 'feedAmount', step: 0.5, min: 0 },
             { label: 'Follower Food Consumption/s', target: game, key: 'followerFoodConsumptionPerSecond', step: 0.01, min: 0 },
@@ -113,6 +114,9 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Ambush Loss Max Percent', target: game.exploration, key: 'hazardAmbushMaxLossPercent', step: 1, min: 1 },
             { label: 'Wild Area Seed Count', target: game.exploration, key: 'wildAreaSeedCount', step: 1, min: 1 },
             { label: 'Wild Area Min Buffer (frontier)', target: game.exploration, key: 'wildAreaMinBuffer', step: 1, min: 1 },
+            { label: 'Settlement Min Buffer (frontier)', target: game.exploration, key: 'settlementMinBuffer', step: 1, min: 1 },
+            { label: 'Settlement Distance Min Step', target: game.exploration, key: 'settlementDistanceMinStep', step: 50, min: 1 },
+            { label: 'Settlement Distance Max Step', target: game.exploration, key: 'settlementDistanceMaxStep', step: 50, min: 1 },
             { label: 'Wild Area Distance Min Step', target: game.exploration, key: 'wildAreaDistanceMinStep', step: 1, min: 1 },
             { label: 'Wild Area Distance Max Step', target: game.exploration, key: 'wildAreaDistanceMaxStep', step: 1, min: 1 },
             { label: 'Wild Area Resource Cache Chance', target: game.exploration, key: 'wildAreaResourceCacheChance', step: 0.01, min: 0 },
@@ -274,6 +278,25 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Monument Cost Scale', target: game, key: 'monumentCostScalePerBuilt', step: 0.05, min: 0 },
             { label: 'Monument Faith/Follower Bonus / Level', target: game, key: 'monumentFaithPerFollowerBonusPerLevel', step: 0.01, min: 0 },
             { label: 'Monument Unlock Settlement Tier', target: game, key: 'monumentUnlockSettlementTier', step: 1, min: 0 }
+        ]
+    },
+    {
+        title: 'Trade Economy',
+        entries: [
+            { label: 'Settlement Buy Resource Base Cost', target: gameState.costs, key: 'settlementBuyResourceFaithCost', step: 5, min: 0 },
+            { label: 'Settlement Sell Resource Base Yield', target: gameState.costs, key: 'settlementSellResourceFaithYield', step: 5, min: 0 },
+            { label: 'Settlement Buy Good Base Cost', target: gameState.costs, key: 'settlementBuyGoodFaithCost', step: 10, min: 0 },
+            { label: 'Settlement Resource Batch Size', target: game, key: 'settlementResourceBatchSize', step: 10, min: 1 },
+            { label: 'Settlement Trade Cost Growth Rate', target: game, key: 'settlementTradeCostGrowthRate', step: 0.01, min: 1 },
+            { label: 'Settlement Reputation Gain / Trade', target: game, key: 'settlementReputationGainPerTrade', step: 1, min: 0 },
+            { label: 'Settlement Reputation Discount / Tier', target: game, key: 'settlementReputationDiscountPerTier', step: 0.01, min: 0 },
+            { label: 'Marketplace Caravan Efficiency / Level', target: game, key: 'marketplaceCaravanEfficiencyPerLevel', step: 0.001, min: 0 },
+            { label: 'Incense Faith Bonus / Unit', target: game, key: 'incenseFaithBonusPerUnit', step: 0.001, min: 0 },
+            { label: 'Silk Capacity Bonus / Unit', target: game, key: 'silkCapacityBonusPerUnit', step: 0.001, min: 0 },
+            { label: 'Iron Conquest Roll Bonus / Unit', target: game, key: 'ironConquestRollBonusPerUnit', step: 0.1, min: 0 },
+            { label: 'Hire Pilgrims Base Faith Cost', target: gameState.costs, key: 'hirePilgrimsBaseFaithCost', step: 50, min: 0 },
+            { label: 'Hire Pilgrims Cost Growth Rate', target: game, key: 'hirePilgrimsCostGrowthRate', step: 0.05, min: 1 },
+            { label: 'Hire Pilgrims Followers / Purchase', target: game, key: 'hirePilgrimsFollowersPerPurchase', step: 1, min: 0 }
         ]
     },
     {
@@ -440,11 +463,39 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const conquerBtn = target.closest('.village-conquer-btn');
-            if (!conquerBtn) return;
-            const villageId = conquerBtn.dataset.villageId;
-            if (!villageId) return;
-            if (typeof gameApi.conquerVillage === 'function') {
-                gameApi.conquerVillage(villageId);
+            if (conquerBtn) {
+                const villageId = conquerBtn.dataset.villageId;
+                if (villageId && typeof gameApi.conquerVillage === 'function') {
+                    gameApi.conquerVillage(villageId);
+                }
+                return;
+            }
+
+            const buySettlementResourceBtn = target.closest('.settlement-buy-resource-btn');
+            if (buySettlementResourceBtn) {
+                const settlementId = buySettlementResourceBtn.dataset.settlementId;
+                if (settlementId && typeof gameApi.buyFromSettlement === 'function') {
+                    gameApi.buyFromSettlement(settlementId);
+                }
+                return;
+            }
+
+            const sellSettlementResourceBtn = target.closest('.settlement-sell-resource-btn');
+            if (sellSettlementResourceBtn) {
+                const settlementId = sellSettlementResourceBtn.dataset.settlementId;
+                if (settlementId && typeof gameApi.sellToSettlement === 'function') {
+                    gameApi.sellToSettlement(settlementId);
+                }
+                return;
+            }
+
+            const buySettlementGoodBtn = target.closest('.settlement-buy-good-btn');
+            if (buySettlementGoodBtn) {
+                const settlementId = buySettlementGoodBtn.dataset.settlementId;
+                if (settlementId && typeof gameApi.buySettlementGood === 'function') {
+                    gameApi.buySettlementGood(settlementId);
+                }
+                return;
             }
         });
     }
@@ -917,6 +968,16 @@ function normalizeBalanceSettings() {
     }
     if (!Number.isFinite(game.exploration.wildAreaDistanceMaxStep) || game.exploration.wildAreaDistanceMaxStep < game.exploration.wildAreaDistanceMinStep) {
         game.exploration.wildAreaDistanceMaxStep = game.exploration.wildAreaDistanceMinStep;
+    }
+    if (!Number.isFinite(game.exploration.settlementMinBuffer) || game.exploration.settlementMinBuffer < 1) {
+        game.exploration.settlementMinBuffer = 2;
+    }
+    game.exploration.settlementMinBuffer = Math.max(1, Math.floor(game.exploration.settlementMinBuffer));
+    if (!Number.isFinite(game.exploration.settlementDistanceMinStep) || game.exploration.settlementDistanceMinStep < 1) {
+        game.exploration.settlementDistanceMinStep = 700;
+    }
+    if (!Number.isFinite(game.exploration.settlementDistanceMaxStep) || game.exploration.settlementDistanceMaxStep < game.exploration.settlementDistanceMinStep) {
+        game.exploration.settlementDistanceMaxStep = game.exploration.settlementDistanceMinStep;
     }
     [
         'villageSpawnChance',

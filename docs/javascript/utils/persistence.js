@@ -11,6 +11,7 @@ import { DOCTRINE_GROUPS, createDoctrineChoiceMap } from '../config/doctrines.js
 import { ASCENSION_UPGRADES, createAscensionUpgradeRankMap } from '../config/ascension.js';
 import { createFavorTierClaimedMap } from '../config/favor-tiers.js';
 import { SETTLEMENT_TIERS } from '../config/settlement-tiers.js';
+import { SETTLEMENT_SPECIALTIES, createGoodsCountMap } from '../config/trade-settlements.js';
 
 let resetInProgress = false;
 
@@ -1107,6 +1108,93 @@ export function loadGame() {
             if (!Number.isFinite(game.exploration.nextAreaIndex) || game.exploration.nextAreaIndex < 1) {
                 game.exploration.nextAreaIndex = 1;
             }
+
+            // --- Foreign Settlement trade economy ---
+            const validSpecialtyIds = SETTLEMENT_SPECIALTIES.map((specialty) => specialty.id);
+            if (!Array.isArray(game.exploration.settlements)) {
+                game.exploration.settlements = [];
+            }
+            game.exploration.settlements = game.exploration.settlements.map((settlement, index) => ({
+                id: settlement?.id || `settlement-${index + 1}`,
+                name: settlement?.name || `Settlement ${index + 1}`,
+                specialtyId: validSpecialtyIds.includes(settlement?.specialtyId) ? settlement.specialtyId : validSpecialtyIds[0],
+                distanceFromCamp: Number.isFinite(settlement?.distanceFromCamp) ? Math.floor(settlement.distanceFromCamp) : 700,
+                discovered: Boolean(settlement?.discovered),
+                discoveredAtMeters: Number.isFinite(settlement?.discoveredAtMeters) ? Math.max(0, Math.floor(settlement.discoveredAtMeters)) : null,
+                reputation: Number.isFinite(settlement?.reputation) ? Math.max(0, settlement.reputation) : 0,
+                tradesCompleted: Number.isFinite(settlement?.tradesCompleted) ? Math.max(0, Math.floor(settlement.tradesCompleted)) : 0
+            }));
+            if (!Number.isFinite(game.exploration.nextSettlementIndex) || game.exploration.nextSettlementIndex < 1) {
+                game.exploration.nextSettlementIndex = game.exploration.settlements.length + 1;
+            }
+            if (!Number.isFinite(game.exploration.settlementMinBuffer) || game.exploration.settlementMinBuffer < 1) {
+                game.exploration.settlementMinBuffer = 2;
+            }
+            if (!Number.isFinite(game.exploration.settlementDistanceMinStep) || game.exploration.settlementDistanceMinStep < 1) {
+                game.exploration.settlementDistanceMinStep = 700;
+            }
+            if (!Number.isFinite(game.exploration.settlementDistanceMaxStep) || game.exploration.settlementDistanceMaxStep < game.exploration.settlementDistanceMinStep) {
+                game.exploration.settlementDistanceMaxStep = game.exploration.settlementDistanceMinStep + 900;
+            }
+
+            if (!gameState.progression.goods || typeof gameState.progression.goods !== 'object') {
+                gameState.progression.goods = createGoodsCountMap(0);
+            } else {
+                const mergedGoods = createGoodsCountMap(0);
+                Object.keys(mergedGoods).forEach((goodId) => {
+                    const value = gameState.progression.goods[goodId];
+                    mergedGoods[goodId] = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+                });
+                gameState.progression.goods = mergedGoods;
+            }
+
+            if (!Number.isFinite(game.settlementResourceBatchSize) || game.settlementResourceBatchSize < 1) {
+                game.settlementResourceBatchSize = 200;
+            }
+            if (!Number.isFinite(game.settlementTradeCostGrowthRate) || game.settlementTradeCostGrowthRate <= 1) {
+                game.settlementTradeCostGrowthRate = 1.12;
+            }
+            if (!Number.isFinite(game.settlementReputationGainPerTrade) || game.settlementReputationGainPerTrade < 0) {
+                game.settlementReputationGainPerTrade = 1;
+            }
+            if (!Number.isFinite(game.settlementReputationDiscountPerTier) || game.settlementReputationDiscountPerTier < 0) {
+                game.settlementReputationDiscountPerTier = 0.06;
+            }
+            if (!Number.isFinite(game.marketplaceCaravanEfficiencyPerLevel) || game.marketplaceCaravanEfficiencyPerLevel < 0) {
+                game.marketplaceCaravanEfficiencyPerLevel = 0.004;
+            }
+            if (!Number.isFinite(game.incenseFaithBonusPerUnit) || game.incenseFaithBonusPerUnit < 0) {
+                game.incenseFaithBonusPerUnit = 0.01;
+            }
+            if (!Number.isFinite(game.silkCapacityBonusPerUnit) || game.silkCapacityBonusPerUnit < 0) {
+                game.silkCapacityBonusPerUnit = 0.005;
+            }
+            if (!Number.isFinite(game.ironConquestRollBonusPerUnit) || game.ironConquestRollBonusPerUnit < 0) {
+                game.ironConquestRollBonusPerUnit = 0.5;
+            }
+            if (!Number.isFinite(game.hirePilgrimsPurchased) || game.hirePilgrimsPurchased < 0) {
+                game.hirePilgrimsPurchased = 0;
+            }
+            game.hirePilgrimsPurchased = Math.floor(game.hirePilgrimsPurchased);
+            if (!Number.isFinite(game.hirePilgrimsCostGrowthRate) || game.hirePilgrimsCostGrowthRate <= 1) {
+                game.hirePilgrimsCostGrowthRate = 1.2;
+            }
+            if (!Number.isFinite(game.hirePilgrimsFollowersPerPurchase) || game.hirePilgrimsFollowersPerPurchase < 0) {
+                game.hirePilgrimsFollowersPerPurchase = 10;
+            }
+            if (!Number.isFinite(gameState.costs.settlementBuyResourceFaithCost) || gameState.costs.settlementBuyResourceFaithCost < 0) {
+                gameState.costs.settlementBuyResourceFaithCost = 30;
+            }
+            if (!Number.isFinite(gameState.costs.settlementSellResourceFaithYield) || gameState.costs.settlementSellResourceFaithYield < 0) {
+                gameState.costs.settlementSellResourceFaithYield = 25;
+            }
+            if (!Number.isFinite(gameState.costs.settlementBuyGoodFaithCost) || gameState.costs.settlementBuyGoodFaithCost < 0) {
+                gameState.costs.settlementBuyGoodFaithCost = 250;
+            }
+            if (!Number.isFinite(gameState.costs.hirePilgrimsBaseFaithCost) || gameState.costs.hirePilgrimsBaseFaithCost < 0) {
+                gameState.costs.hirePilgrimsBaseFaithCost = 500;
+            }
+
             if (!game.exploration.villageDistanceRange || typeof game.exploration.villageDistanceRange !== 'object') {
                 game.exploration.villageDistanceRange = {};
             }

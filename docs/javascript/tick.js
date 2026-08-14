@@ -3,7 +3,7 @@ import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
 import { ROLE_DEFINITIONS } from './config/roles.js';
-import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier, getWoodStoneCap, getFoodCap, getScribeFaithMultiplier, getFoodSpoilageRate, getGranaryPassiveFoodPerSecond, getHelFavorStarlightMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, checkFavorTierUnlocks } from './utils/helpers.js';
+import { getRoleCount, getFollowerFoodConsumptionMultiplier, getHungerStarvationDrainMultiplier, getAscensionFaithMultiplier, getWoodStoneCap, getFoodCap, getScribeFaithMultiplier, getFoodSpoilageRate, getGranaryPassiveFoodPerSecond, getHelFavorStarlightMultiplier, getMonumentFaithPerFollowerMultiplier, getQuietFaithFollowerMultiplier, getIncenseFaithMultiplier, checkFavorTierUnlocks } from './utils/helpers.js';
 
 const LIVE_TICK_CLAMP_SECONDS = 2;
 const CATCHUP_CHUNK_SECONDS = LIVE_TICK_CLAMP_SECONDS;
@@ -116,7 +116,9 @@ function simulateStep(dtSeconds, onEvent = defaultLiveEventHandler) {
 
     checkFavorTierUnlocks().forEach((event) => onEvent('favor-tier', event));
 
-    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * getAscensionFaithMultiplier() * getScribeFaithMultiplier() * getMonumentFaithPerFollowerMultiplier() * getQuietFaithFollowerMultiplier() * dtSeconds;
+    const ambientFaithPerSecond = Number.isFinite(game.ambientFaithPerSecond) ? game.ambientFaithPerSecond : 0.05;
+    gameState.progression.faith += ambientFaithPerSecond * dtSeconds;
+    gameState.progression.faith += gameState.progression.followers * gameState.progression.faithPerFollower * getAscensionFaithMultiplier() * getScribeFaithMultiplier() * getMonumentFaithPerFollowerMultiplier() * getQuietFaithFollowerMultiplier() * getIncenseFaithMultiplier() * dtSeconds;
 
     const outpostFaithPerSecond = Number.isFinite(game.exploration?.villageOutpostFaithPerSecond)
         ? game.exploration.villageOutpostFaithPerSecond

@@ -1,5 +1,5 @@
 import { setTooltipContent } from '../utils/tooltip.js';
-import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getNextSettlementTier, canAffordSettlementTier, getFavorTierCount, getNextFavorTierThreshold, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getWellConsumptionMultiplier, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, getMonumentFaithPerFollowerMultiplier, canUnlockMonument, getManualActionYieldMultiplier } from '../utils/helpers.js';
+import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus, getTrainingUnlockFaithCost, getActiveWorld, canUnlockWorlds, getWorldExpeditionRollFaithCost, getWorldChartRequirement, getChartNewWorldCost, canAscendNow, getEchoesOfDivinityPreview, getUniverseConquestTier, getDomainsClaimed, getAscensionUpgradeRank, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getNextSettlementTier, canAffordSettlementTier, getFavorTierCount, getNextFavorTierThreshold, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getWellConsumptionMultiplier, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, getMonumentFaithPerFollowerMultiplier, canUnlockMonument, getManualActionYieldMultiplier, getHirePilgrimsCost } from '../utils/helpers.js';
 import { DOCTRINE_GROUP_BY_ID } from './doctrines.js';
 import { TEMPLE_OPTION_BY_GOD } from './temples.js';
 import { ASCENSION_UPGRADE_BY_ID } from './ascension.js';
@@ -589,6 +589,23 @@ export function getActionUiRules(context) {
                 el,
                 'Trade at Marketplace\nSell surplus wood and stone for faith.',
                 `Cost: ${tradeCost.wood} wood, ${tradeCost.stone} stone (rises with each trade)\nYield: ${getMarketplaceTradeFaithYield()} faith\nTrades completed: ${tradesCompleted}`
+            );
+        },
+        hirePilgrims(el) {
+            if (game.marketplace < 1) {
+                setVisible(el, false);
+                return;
+            }
+            setVisible(el, true);
+            const cost = getHirePilgrimsCost();
+            const canAfford = gameState.progression.faith >= cost && gameState.progression.followers < getMaxFollowers();
+            setAffordability(el, canAfford);
+            const perPurchase = Number.isFinite(game.hirePilgrimsFollowersPerPurchase) ? game.hirePilgrimsFollowersPerPurchase : 10;
+            const purchased = Number.isFinite(game.hirePilgrimsPurchased) ? game.hirePilgrimsPurchased : 0;
+            applyTooltip(
+                el,
+                'Hire Pilgrims\nBulk-convert surplus faith directly into followers, no dice roll required.',
+                `Cost: ${cost} faith\nYield: +${perPurchase} followers\nHired so far: ${purchased} (cost rises each time)`
             );
         },
         buildMonument(el) {

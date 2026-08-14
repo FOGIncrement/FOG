@@ -34,6 +34,7 @@ export const ACTION_COST_RESOURCES = {
     buildWell: ['woodContainer', 'stoneContainer'],
     buildMarketplace: ['woodContainer', 'stoneContainer'],
     tradeAtMarketplace: ['woodContainer', 'stoneContainer'],
+    hirePilgrims: ['faithContainer'],
     buildMonument: ['faithContainer', 'woodContainer', 'stoneContainer'],
 
     feedFollowers: ['foodContainer'],
@@ -97,5 +98,8 @@ export const CARD_ACTION_COST_RESOURCES = {
     'village-conquer-btn': ['faithContainer'],
     'wild-area-collect-btn': [],
     'shrine-pray-btn': [],
-    'ruins-search-btn': ['followersContainer']
+    'ruins-search-btn': ['followersContainer'],
+    'settlement-buy-resource-btn': ['faithContainer'],
+    'settlement-sell-resource-btn': ['woodContainer', 'stoneContainer', 'foodContainer'],
+    'settlement-buy-good-btn': ['faithContainer']
 };

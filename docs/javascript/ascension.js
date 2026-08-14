@@ -7,6 +7,7 @@ import { ASCENSION_UPGRADE_BY_ID } from './config/ascension.js';
 import { createRoleCountMap, createRoleUnlockMap, createRoleAccumulatorMap } from './config/roles.js';
 import { createFactionFavorMap } from './config/factions.js';
 import { createFavorTierClaimedMap } from './config/favor-tiers.js';
+import { createGoodsCountMap } from './config/trade-settlements.js';
 
 function buyAscensionUpgrade(upgradeId) {
     const upgrade = ASCENSION_UPGRADE_BY_ID[upgradeId];
@@ -123,7 +124,15 @@ function performAscensionReset(echoesGained) {
             resolutionType: null
         }];
         game.exploration.nextVillageIndex = 2;
+        game.exploration.settlements = [];
+        game.exploration.nextSettlementIndex = 1;
     }
+
+    // Foreign Settlements, reputation, and traded Goods are this incarnation's
+    // relationships and stockpile - they reset with everything else. Marketplace
+    // itself already reset to 0 above, closing the loop back to level 0 caravans.
+    gameState.progression.goods = createGoodsCountMap(0);
+    game.hirePilgrimsPurchased = 0;
 
     game.worldsUnlocked = false;
     game.activeWorldId = null;

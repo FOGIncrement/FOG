@@ -54,7 +54,11 @@ export {
     buildWell,
     buildMarketplace,
     tradeAtMarketplace,
-    buildMonument
+    buildMonument,
+    buyFromSettlement,
+    sellToSettlement,
+    buySettlementGood,
+    hirePilgrims
 } from './actions.js';
 
 export {

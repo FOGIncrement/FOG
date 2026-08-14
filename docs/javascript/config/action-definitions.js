@@ -32,6 +32,7 @@ export const ACTION_GROUPS = {
         { id: 'buildWell', buttonId: 'buildWellBtn', handlerExport: 'buildWell', tab: 'build', category: 'building' },
         { id: 'buildMarketplace', buttonId: 'buildMarketplaceBtn', handlerExport: 'buildMarketplace', tab: 'build', category: 'building' },
         { id: 'tradeAtMarketplace', buttonId: 'tradeAtMarketplaceBtn', handlerExport: 'tradeAtMarketplace', tab: 'build', category: 'building' },
+        { id: 'hirePilgrims', buttonId: 'hirePilgrimsBtn', handlerExport: 'hirePilgrims', tab: 'build', category: 'building' },
         { id: 'buildMonument', buttonId: 'buildMonumentBtn', handlerExport: 'buildMonument', tab: 'build', category: 'building' }
     ],
     food: [

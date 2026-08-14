@@ -3,6 +3,7 @@ import { ROLE_DEFINITIONS } from '../config/roles.js';
 import { resolveUniverseConquestTier } from '../config/universe-conquest.js';
 import { getFavorTierCount, getNextFavorTierThreshold } from '../config/favor-tiers.js';
 import { SETTLEMENT_TIERS } from '../config/settlement-tiers.js';
+import { getSettlementReputationTier } from '../config/trade-settlements.js';
 
 function normalizeRoleCount(value) {
     if (!Number.isFinite(value) || value < 0) return 0;
@@ -165,7 +166,8 @@ export function getMaxFollowers() {
     return base
         * getTempleCapacityMultiplier()
         * getSettlementTierCapacityMultiplier()
-        * getHeliosFavorCapacityMultiplier();
+        * getHeliosFavorCapacityMultiplier()
+        * getSilkCapacityMultiplier();
 }
 
 export function getAssignedFollowers() {
@@ -341,7 +343,10 @@ export function getStorehouseCost() {
     const base = Number.isFinite(gameState.costs.storehouseFaithCost) ? gameState.costs.storehouseFaithCost : 120;
     const level = Number.isFinite(game.storehouse) ? game.storehouse : 0;
     const scale = Number.isFinite(game.storehouseCostScalePerBuilt) ? game.storehouseCostScalePerBuilt : 0.15;
-    return Math.ceil(base * (1 + scale * level));
+    // Compounding, not linear - an uncapped repeatable with a flat per-level
+    // add eventually becomes the only thing left to spend faith on forever
+    // (confirmed via playthrough simulation: 357 purchases by hour 30).
+    return Math.ceil(base * Math.pow(1 + scale, level));
 }
 
 export function getGranaryCost() {
@@ -349,7 +354,7 @@ export function getGranaryCost() {
     const stoneBase = Number.isFinite(gameState.costs.granaryStoneCost) ? gameState.costs.granaryStoneCost : 60;
     const level = Number.isFinite(game.granary) ? game.granary : 0;
     const scale = Number.isFinite(game.granaryCostScalePerBuilt) ? game.granaryCostScalePerBuilt : 0.15;
-    const multiplier = 1 + scale * level;
+    const multiplier = Math.pow(1 + scale, level);
     return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
 }
 
@@ -451,7 +456,7 @@ export function getWatchtowerCost() {
     const stoneBase = Number.isFinite(gameState.costs.watchtowerStoneCost) ? gameState.costs.watchtowerStoneCost : 150;
     const level = Number.isFinite(game.watchtower) ? game.watchtower : 0;
     const scale = Number.isFinite(game.watchtowerCostScalePerBuilt) ? game.watchtowerCostScalePerBuilt : 0.18;
-    const multiplier = (1 + scale * level) * getDoctrineBuildingCostMultiplier();
+    const multiplier = Math.pow(1 + scale, level) * getDoctrineBuildingCostMultiplier();
     return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
 }
 
@@ -467,7 +472,7 @@ export function getBarracksCost() {
     const stoneBase = Number.isFinite(gameState.costs.barracksStoneCost) ? gameState.costs.barracksStoneCost : 150;
     const level = Number.isFinite(game.barracks) ? game.barracks : 0;
     const scale = Number.isFinite(game.barracksCostScalePerBuilt) ? game.barracksCostScalePerBuilt : 0.18;
-    const multiplier = (1 + scale * level) * getDoctrineBuildingCostMultiplier();
+    const multiplier = Math.pow(1 + scale, level) * getDoctrineBuildingCostMultiplier();
     return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
 }
 
@@ -482,7 +487,7 @@ export function getWellCost() {
     const stoneBase = Number.isFinite(gameState.costs.wellStoneCost) ? gameState.costs.wellStoneCost : 40;
     const level = Number.isFinite(game.well) ? game.well : 0;
     const scale = Number.isFinite(game.wellCostScalePerBuilt) ? game.wellCostScalePerBuilt : 0.15;
-    const multiplier = (1 + scale * level) * getDoctrineBuildingCostMultiplier();
+    const multiplier = Math.pow(1 + scale, level) * getDoctrineBuildingCostMultiplier();
     return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
 }
 
@@ -499,7 +504,7 @@ export function getMarketplaceCost() {
     const stoneBase = Number.isFinite(gameState.costs.marketplaceStoneCost) ? gameState.costs.marketplaceStoneCost : 250;
     const level = Number.isFinite(game.marketplace) ? game.marketplace : 0;
     const scale = Number.isFinite(game.marketplaceCostScalePerBuilt) ? game.marketplaceCostScalePerBuilt : 0.2;
-    const multiplier = (1 + scale * level) * getDoctrineBuildingCostMultiplier();
+    const multiplier = Math.pow(1 + scale, level) * getDoctrineBuildingCostMultiplier();
     return { wood: Math.ceil(woodBase * multiplier), stone: Math.ceil(stoneBase * multiplier) };
 }
 
@@ -528,7 +533,7 @@ export function getMonumentCost() {
     const level = Number.isFinite(game.monument) ? game.monument : 0;
     const scale = Number.isFinite(game.monumentCostScalePerBuilt) ? game.monumentCostScalePerBuilt : 0.25;
     const doctrineMultiplier = getDoctrineBuildingCostMultiplier();
-    const multiplier = (1 + scale * level) * doctrineMultiplier;
+    const multiplier = Math.pow(1 + scale, level) * doctrineMultiplier;
     return {
         faith: Math.ceil(faithBase * multiplier),
         wood: Math.ceil(woodBase * multiplier),
@@ -546,6 +551,75 @@ export function canUnlockMonument() {
     const requirement = Number.isFinite(game.monumentUnlockSettlementTier) ? game.monumentUnlockSettlementTier : 3;
     const tier = Number.isFinite(game.settlementTier) ? game.settlementTier : 0;
     return tier >= requirement;
+}
+
+// --- Foreign Settlement trade economy ---
+
+export function getSettlementTradeCostMultiplier(settlement) {
+    const trades = Number.isFinite(settlement?.tradesCompleted) ? settlement.tradesCompleted : 0;
+    const baseGrowth = Number.isFinite(game.settlementTradeCostGrowthRate) ? game.settlementTradeCostGrowthRate - 1 : 0.12;
+    const marketplaceLevel = Number.isFinite(game.marketplace) ? game.marketplace : 0;
+    const efficiencyPerLevel = Number.isFinite(game.marketplaceCaravanEfficiencyPerLevel) ? game.marketplaceCaravanEfficiencyPerLevel : 0.004;
+    // Marketplace levels make your caravans more efficient, flattening how
+    // quickly repeated trades with the same settlement grow expensive.
+    const effectiveGrowth = Math.max(0.01, baseGrowth - marketplaceLevel * efficiencyPerLevel);
+    return Math.pow(1 + effectiveGrowth, trades);
+}
+
+export function getSettlementReputationDiscount(settlement) {
+    const tier = getSettlementReputationTier(settlement?.reputation);
+    const perTier = Number.isFinite(game.settlementReputationDiscountPerTier) ? game.settlementReputationDiscountPerTier : 0.06;
+    return Math.max(0.4, 1 - tier * perTier);
+}
+
+export function getSettlementReputationBonus(settlement) {
+    const tier = getSettlementReputationTier(settlement?.reputation);
+    const perTier = Number.isFinite(game.settlementReputationDiscountPerTier) ? game.settlementReputationDiscountPerTier : 0.06;
+    return 1 + tier * perTier;
+}
+
+export function getSettlementBuyResourceCost(settlement) {
+    const base = Number.isFinite(gameState.costs.settlementBuyResourceFaithCost) ? gameState.costs.settlementBuyResourceFaithCost : 30;
+    return Math.ceil(base * getSettlementTradeCostMultiplier(settlement) * getSettlementReputationDiscount(settlement));
+}
+
+export function getSettlementSellResourceYield(settlement) {
+    const base = Number.isFinite(gameState.costs.settlementSellResourceFaithYield) ? gameState.costs.settlementSellResourceFaithYield : 25;
+    return Math.max(1, Math.floor(base * getSettlementReputationBonus(settlement) / getSettlementTradeCostMultiplier(settlement)));
+}
+
+export function getSettlementBuyGoodCost(settlement) {
+    const base = Number.isFinite(gameState.costs.settlementBuyGoodFaithCost) ? gameState.costs.settlementBuyGoodFaithCost : 250;
+    return Math.ceil(base * getSettlementTradeCostMultiplier(settlement) * getSettlementReputationDiscount(settlement));
+}
+
+export function getIncenseFaithMultiplier() {
+    const count = Number.isFinite(gameState.progression.goods?.incense) ? gameState.progression.goods.incense : 0;
+    const perUnit = Number.isFinite(game.incenseFaithBonusPerUnit) ? game.incenseFaithBonusPerUnit : 0.01;
+    return 1 + count * perUnit;
+}
+
+export function getSilkCapacityMultiplier() {
+    const count = Number.isFinite(gameState.progression.goods?.silk) ? gameState.progression.goods.silk : 0;
+    const perUnit = Number.isFinite(game.silkCapacityBonusPerUnit) ? game.silkCapacityBonusPerUnit : 0.005;
+    return 1 + count * perUnit;
+}
+
+export function getIronConquestRollBonus() {
+    const count = Number.isFinite(gameState.progression.goods?.iron) ? gameState.progression.goods.iron : 0;
+    const perUnit = Number.isFinite(game.ironConquestRollBonusPerUnit) ? game.ironConquestRollBonusPerUnit : 0.5;
+    return count * perUnit;
+}
+
+export function getConquestRollBonus() {
+    return getBarracksConquerRollBonus() + getIronConquestRollBonus();
+}
+
+export function getHirePilgrimsCost() {
+    const base = Number.isFinite(gameState.costs.hirePilgrimsBaseFaithCost) ? gameState.costs.hirePilgrimsBaseFaithCost : 500;
+    const purchased = Number.isFinite(game.hirePilgrimsPurchased) ? game.hirePilgrimsPurchased : 0;
+    const growth = Number.isFinite(game.hirePilgrimsCostGrowthRate) && game.hirePilgrimsCostGrowthRate > 1 ? game.hirePilgrimsCostGrowthRate : 1.2;
+    return Math.ceil(base * Math.pow(growth, purchased));
 }
 
 export function getHungerStarvationDrainMultiplier() {

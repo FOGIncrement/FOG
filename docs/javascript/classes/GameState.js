@@ -4,6 +4,7 @@ import { createFactionFavorMap } from '../config/factions.js';
 import { createDoctrineChoiceMap } from '../config/doctrines.js';
 import { createAscensionUpgradeRankMap } from '../config/ascension.js';
 import { createFavorTierClaimedMap } from '../config/favor-tiers.js';
+import { createGoodsCountMap } from '../config/trade-settlements.js';
 
 // ===== GAME STATE =====
 export const gameState = {
@@ -18,7 +19,8 @@ export const gameState = {
         faithPerFollower: 0.02,
         prophet: 0,
         prophetSway: 12,
-        starlight: 0
+        starlight: 0,
+        goods: createGoodsCountMap(0)
     },
     resources: {
         wood: new Resource('wood', 0, 8, 5,() => {
@@ -105,7 +107,11 @@ export const gameState = {
         marketplaceTradeStoneCost: 150,
         monumentFaithCost: 4000,
         monumentWoodCost: 1500,
-        monumentStoneCost: 1500
+        monumentStoneCost: 1500,
+        settlementBuyResourceFaithCost: 30,
+        settlementSellResourceFaithYield: 25,
+        settlementBuyGoodFaithCost: 250,
+        hirePilgrimsBaseFaithCost: 500
     },
     rates: {
         hunterFoodPerSecond: 2.0,
@@ -126,6 +132,7 @@ export const gameState = {
 
 export const game = {
     prayAmt: 1,
+    ambientFaithPerSecond: 0.05,
     convertCost: 10,
     ritualCircleBuilt: 0,
     shelter: 0,
@@ -254,6 +261,17 @@ export const game = {
     monumentCostScalePerBuilt: 0.25,
     monumentFaithPerFollowerBonusPerLevel: 0.05,
     monumentUnlockSettlementTier: 3,
+    settlementResourceBatchSize: 200,
+    settlementTradeCostGrowthRate: 1.12,
+    settlementReputationGainPerTrade: 1,
+    settlementReputationDiscountPerTier: 0.06,
+    marketplaceCaravanEfficiencyPerLevel: 0.004,
+    incenseFaithBonusPerUnit: 0.01,
+    silkCapacityBonusPerUnit: 0.005,
+    ironConquestRollBonusPerUnit: 0.5,
+    hirePilgrimsPurchased: 0,
+    hirePilgrimsCostGrowthRate: 1.2,
+    hirePilgrimsFollowersPerPurchase: 10,
     ascension: {
         echoesOfDivinity: 0,
         upgradeRanks: createAscensionUpgradeRankMap(0),
@@ -313,6 +331,11 @@ export const game = {
         shrineFaithMin: 40,
         shrineFaithMax: 120,
         ruinsGoodOutcomeChance: 0.65,
+        settlements: [],
+        nextSettlementIndex: 1,
+        settlementMinBuffer: 2,
+        settlementDistanceMinStep: 700,
+        settlementDistanceMaxStep: 1600,
         discoveredAreas: (() => {
             const areas = [];
             let distance = 0;

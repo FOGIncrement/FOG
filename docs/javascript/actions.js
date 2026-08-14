@@ -2,11 +2,12 @@ import { gameState, game } from './classes/GameState.js';
 import { addLog } from './utils/logging.js';
 import { saveGame } from './utils/persistence.js';
 import { updateUI } from './ui.js';
-import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument, getManualActionYieldMultiplier } from './utils/helpers.js';
+import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, getRoleCount, getShelterBuildCosts, getUnassignedFollowers, getUpgradeCost, hasProphetAssigned, setRoleCount, getPreachFaithCost, getConvertFollowerCost, getConquerVillageFaithCost, getConquerYieldMultiplier, getExpeditionRollFaithCost, getExpeditionRollBonus, getAscensionHazardMultiplier, getStorehouseCost, getGranaryCost, getWoodStoneCap, getFoodCap, getSekhmetFavorHazardMultiplier, getNextSettlementTier, canAffordSettlementTier, getWatchtowerCost, getWatchtowerHazardAvoidChance, getBarracksCost, getBarracksConquerRollBonus, getWellCost, getMarketplaceCost, getMarketplaceTradeCost, getMarketplaceTradeFaithYield, getMonumentCost, canUnlockMonument, getManualActionYieldMultiplier, getConquestRollBonus, getSettlementBuyResourceCost, getSettlementSellResourceYield, getSettlementBuyGoodCost, getHirePilgrimsCost } from './utils/helpers.js';
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
 import { TEMPLE_OPTION_BY_GOD } from './config/temples.js';
+import { SETTLEMENT_SPECIALTIES, SETTLEMENT_SPECIALTY_BY_ID, TRADE_GOODS, getSettlementReputationTier } from './config/trade-settlements.js';
 
 let preachRollReady = false;
 let preachRollInProgress = false;
@@ -70,11 +71,19 @@ function getExplorationState() {
     if (!Number.isFinite(game.exploration.nextAreaIndex) || game.exploration.nextAreaIndex < 1) {
         game.exploration.nextAreaIndex = 1;
     }
+    if (!Array.isArray(game.exploration.settlements)) {
+        game.exploration.settlements = [];
+    }
+    if (!Number.isFinite(game.exploration.nextSettlementIndex) || game.exploration.nextSettlementIndex < 1) {
+        game.exploration.nextSettlementIndex = 1;
+    }
 
     ensureWildAreaSeeds(game.exploration);
     extendWildAreaFrontier(game.exploration);
     ensureUpcomingVillage(game.exploration);
+    extendSettlementFrontier(game.exploration);
     syncDiscoveredAreasByDistance(game.exploration, { logDiscoveries: false });
+    syncSettlementsByDistance(game.exploration, { logDiscoveries: false });
 
     return game.exploration;
 }
@@ -316,6 +325,65 @@ function extendWildAreaFrontier(exploration) {
     }
 }
 
+function createSettlement(index, distanceFromCamp) {
+    const specialty = SETTLEMENT_SPECIALTIES[Math.floor(Math.random() * SETTLEMENT_SPECIALTIES.length)];
+    return {
+        id: `settlement-${index}`,
+        name: `${specialty.name} ${index}`,
+        specialtyId: specialty.id,
+        distanceFromCamp,
+        discovered: false,
+        discoveredAtMeters: null,
+        reputation: 0,
+        tradesCompleted: 0
+    };
+}
+
+// Foreign Settlements are rarer than wild areas (bigger distance steps, a
+// smaller undiscovered buffer) but generate forever via the same rolling-
+// frontier mechanism, so trade partners keep appearing as you push outward.
+function extendSettlementFrontier(exploration) {
+    const minBuffer = Number.isFinite(exploration.settlementMinBuffer) ? exploration.settlementMinBuffer : 2;
+    const undiscoveredCount = exploration.settlements.filter((settlement) => !settlement.discovered).length;
+    if (undiscoveredCount >= minBuffer) return;
+
+    const furthest = exploration.settlements.reduce(
+        (max, settlement) => Math.max(max, Number.isFinite(settlement.distanceFromCamp) ? settlement.distanceFromCamp : 0),
+        Number.isFinite(exploration.totalMetersExplored) ? exploration.totalMetersExplored : 0
+    );
+
+    const minStep = Number.isFinite(exploration.settlementDistanceMinStep) ? exploration.settlementDistanceMinStep : 700;
+    const maxStep = Number.isFinite(exploration.settlementDistanceMaxStep) ? exploration.settlementDistanceMaxStep : 1600;
+    let distance = furthest;
+    const toGenerate = (minBuffer - undiscoveredCount) + 1;
+    for (let i = 0; i < toGenerate; i += 1) {
+        const step = randomIntInRange(minStep, maxStep);
+        distance += Math.max(1, step);
+        const index = exploration.nextSettlementIndex;
+        exploration.settlements.push(createSettlement(index, distance));
+        exploration.nextSettlementIndex += 1;
+    }
+}
+
+function syncSettlementsByDistance(exploration, { logDiscoveries = false } = {}) {
+    const meters = Number.isFinite(exploration?.totalMetersExplored)
+        ? Math.floor(exploration.totalMetersExplored)
+        : 0;
+
+    const settlements = Array.isArray(exploration?.settlements) ? exploration.settlements : [];
+
+    settlements
+        .filter((settlement) => !settlement.discovered && Number.isFinite(settlement.distanceFromCamp) && settlement.distanceFromCamp > 0 && settlement.distanceFromCamp <= meters)
+        .sort((left, right) => left.distanceFromCamp - right.distanceFromCamp)
+        .forEach((settlement) => {
+            settlement.discovered = true;
+            settlement.discoveredAtMeters = Math.floor(settlement.distanceFromCamp);
+            if (logDiscoveries) {
+                addLog(`The expedition made contact with ${settlement.name} at ${Math.floor(settlement.distanceFromCamp)}m from camp.`);
+            }
+        });
+}
+
 function applyWildAreaPassiveEffect(area) {
     const effect = area?.passiveEffect;
     if (!effect || effect.applied) return;
@@ -548,6 +616,7 @@ function resolveExpeditionRoll(baseRoll) {
         Math.floor((Number.isFinite(exploration.totalMetersExplored) ? exploration.totalMetersExplored : 0) + moved)
     );
     syncDiscoveredAreasByDistance(exploration, { logDiscoveries: true });
+    syncSettlementsByDistance(exploration, { logDiscoveries: true });
 
     const wanderlustLogNote = wanderlustBonus > 0 ? ` + ${wanderlustBonus} (Wanderlust)` : '';
     addLog(`Expedition roll 1d6 + followers: ${baseRoll} + ${bonusFollowers}${wanderlustLogNote} = ${totalRoll}. Progress: +${moved}m.`);
@@ -1071,6 +1140,106 @@ export function buildMonument() {
     saveGame();
 }
 
+function findSettlement(settlementId) {
+    const exploration = getExplorationState();
+    return exploration.settlements.find((settlement) => settlement.id === settlementId && settlement.discovered) || null;
+}
+
+function recordSettlementTrade(settlement) {
+    settlement.tradesCompleted = (Number.isFinite(settlement.tradesCompleted) ? settlement.tradesCompleted : 0) + 1;
+    const gain = Number.isFinite(game.settlementReputationGainPerTrade) ? game.settlementReputationGainPerTrade : 1;
+    settlement.reputation = (Number.isFinite(settlement.reputation) ? settlement.reputation : 0) + gain;
+}
+
+export function buyFromSettlement(settlementId) {
+    const settlement = findSettlement(settlementId);
+    if (!settlement) return;
+
+    const cost = getSettlementBuyResourceCost(settlement);
+    if (gameState.progression.faith < cost) return;
+
+    const specialty = SETTLEMENT_SPECIALTY_BY_ID[settlement.specialtyId];
+    if (!specialty) return;
+    const resource = gameState.resources[specialty.resource];
+    if (!resource) return;
+
+    gameState.progression.faith -= cost;
+    const batchSize = Number.isFinite(game.settlementResourceBatchSize) ? game.settlementResourceBatchSize : 200;
+    const gained = resource.add(batchSize);
+    recordSettlementTrade(settlement);
+    addLog(`Bought ${Math.floor(gained)} ${specialty.resourceLabel.toLowerCase()} from ${settlement.name} for ${cost} faith.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function sellToSettlement(settlementId) {
+    const settlement = findSettlement(settlementId);
+    if (!settlement) return;
+
+    const specialty = SETTLEMENT_SPECIALTY_BY_ID[settlement.specialtyId];
+    if (!specialty) return;
+    const resource = gameState.resources[specialty.resource];
+    if (!resource) return;
+
+    const batchSize = Number.isFinite(game.settlementResourceBatchSize) ? game.settlementResourceBatchSize : 200;
+    if (resource.amount < batchSize) return;
+
+    const faithGained = getSettlementSellResourceYield(settlement);
+    resource.spend(batchSize);
+    gameState.progression.faith += faithGained;
+    recordSettlementTrade(settlement);
+    addLog(`Sold ${batchSize} ${specialty.resourceLabel.toLowerCase()} to ${settlement.name} for ${faithGained} faith.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function buySettlementGood(settlementId) {
+    const settlement = findSettlement(settlementId);
+    if (!settlement) return;
+
+    const cost = getSettlementBuyGoodCost(settlement);
+    if (gameState.progression.faith < cost) return;
+
+    const specialty = SETTLEMENT_SPECIALTY_BY_ID[settlement.specialtyId];
+    const good = specialty ? TRADE_GOODS[specialty.goodId] : null;
+    if (!specialty || !good) return;
+
+    if (!gameState.progression.goods || typeof gameState.progression.goods !== 'object') {
+        gameState.progression.goods = {};
+    }
+    gameState.progression.faith -= cost;
+    gameState.progression.goods[good.id] = (Number.isFinite(gameState.progression.goods[good.id]) ? gameState.progression.goods[good.id] : 0) + 1;
+    recordSettlementTrade(settlement);
+    addLog(`Bought ${good.name} from ${settlement.name} for ${cost} faith.`);
+
+    updateUI();
+    saveGame();
+}
+
+export function hirePilgrims() {
+    if (game.marketplace < 1) return;
+
+    const cost = getHirePilgrimsCost();
+    if (gameState.progression.faith < cost) return;
+
+    const max = getMaxFollowers();
+    const capacity = Math.max(0, max - gameState.progression.followers);
+    if (capacity <= 0) return;
+
+    const perPurchase = Number.isFinite(game.hirePilgrimsFollowersPerPurchase) ? game.hirePilgrimsFollowersPerPurchase : 10;
+    const granted = Math.min(perPurchase, capacity);
+
+    gameState.progression.faith -= cost;
+    gameState.progression.followers += granted;
+    game.hirePilgrimsPurchased = (Number.isFinite(game.hirePilgrimsPurchased) ? game.hirePilgrimsPurchased : 0) + 1;
+    addLog(`Hired ${granted} pilgrims for ${cost} faith. They join your ranks as followers.`);
+
+    updateUI();
+    saveGame();
+}
+
 export function unlockAltar() {
     if (game.altarUnlocked) return;
     if (gameState.progression.followers < game.shelterUpgradeFollowerRequirement) return;
@@ -1396,7 +1565,7 @@ export function conquerVillage(villageId) {
     const hunterForce = getRoleCount('hunters');
     const resistance = Number.isFinite(village.resistance) ? village.resistance : 50;
     const forceDivisor = Number.isFinite(exploration.conquerForceDivisor) ? exploration.conquerForceDivisor : 10;
-    const forceBonus = Math.max(0, Math.floor((hunterForce - resistance) / forceDivisor)) + getBarracksConquerRollBonus();
+    const forceBonus = Math.max(0, Math.floor((hunterForce - resistance) / forceDivisor)) + getConquestRollBonus();
     const roll = rollDice('1d20', { bonus: forceBonus });
     const conquerScale = Math.max(0.05, Math.min(1, roll.total / 20));
 
