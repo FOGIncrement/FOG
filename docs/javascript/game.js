@@ -33,7 +33,11 @@ export {
     chooseHomestead,
     chooseWanderlust,
     chooseAbundantTable,
-    chooseLeanYears
+    chooseLeanYears,
+    buildTempleHelios,
+    buildTempleSekhmet,
+    buildTempleDanu,
+    buildTempleHel
 } from './actions.js';
 
 export {

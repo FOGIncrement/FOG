@@ -31,9 +31,30 @@ export function setRoleCount(roleId, count) {
     gameState.progression[roleId] = normalized;
 }
 
+export function getTempleCapacityMultiplier() {
+    if (game.temple?.built && game.temple.godId === 'helios' && Number.isFinite(game.templeHeliosCapacityMultiplier)) {
+        return game.templeHeliosCapacityMultiplier;
+    }
+    return 1;
+}
+
+export function getTempleConquerYieldMultiplier() {
+    if (game.temple?.built && game.temple.godId === 'sekhmet' && Number.isFinite(game.templeSekhmetConquerYieldMultiplier)) {
+        return game.templeSekhmetConquerYieldMultiplier;
+    }
+    return 1;
+}
+
+export function getTempleConsumptionMultiplier() {
+    if (game.temple?.built && game.temple.godId === 'hel' && Number.isFinite(game.templeHelConsumptionMultiplier)) {
+        return game.templeHelConsumptionMultiplier;
+    }
+    return 1;
+}
+
 export function getMaxFollowers() {
     const perShelter = (game.shelterCapacityPerShelter || 3) * (game.shelterCapacityMultiplier || 1);
-    return 1 + game.shelter * perShelter;
+    return (1 + game.shelter * perShelter) * getTempleCapacityMultiplier();
 }
 
 export function getAssignedFollowers() {
@@ -200,8 +221,10 @@ export function getConquerVillageFaithCost() {
 }
 
 export function getConquerYieldMultiplier() {
-    if (!isDoctrineChosen('flock', 'ironFist')) return 1;
-    return Number.isFinite(game.ironFistYieldMultiplier) ? game.ironFistYieldMultiplier : 1;
+    const doctrineMultiplier = isDoctrineChosen('flock', 'ironFist') && Number.isFinite(game.ironFistYieldMultiplier)
+        ? game.ironFistYieldMultiplier
+        : 1;
+    return doctrineMultiplier * getTempleConquerYieldMultiplier();
 }
 
 export function getExpeditionRollFaithCost() {
@@ -220,9 +243,10 @@ export function getExpeditionRollBonus() {
 
 export function getFollowerFoodConsumptionMultiplier() {
     const choice = game.doctrineChoices?.sacrifice;
-    if (choice === 'abundantTable' && Number.isFinite(game.abundantTableConsumptionMultiplier)) return game.abundantTableConsumptionMultiplier;
-    if (choice === 'leanYears' && Number.isFinite(game.leanYearsConsumptionMultiplier)) return game.leanYearsConsumptionMultiplier;
-    return 1;
+    let multiplier = 1;
+    if (choice === 'abundantTable' && Number.isFinite(game.abundantTableConsumptionMultiplier)) multiplier = game.abundantTableConsumptionMultiplier;
+    else if (choice === 'leanYears' && Number.isFinite(game.leanYearsConsumptionMultiplier)) multiplier = game.leanYearsConsumptionMultiplier;
+    return multiplier * getTempleConsumptionMultiplier();
 }
 
 export function getHungerStarvationDrainMultiplier() {

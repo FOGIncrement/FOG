@@ -392,6 +392,50 @@ export function loadGame() {
             }
             game.doctrineChoices = validatedDoctrineChoices;
 
+            const validTempleGodIds = ['helios', 'sekhmet', 'danu', 'hel'];
+            if (!game.temple || typeof game.temple !== 'object') {
+                game.temple = { built: false, godId: null };
+            } else {
+                game.temple = {
+                    built: Boolean(game.temple.built),
+                    godId: validTempleGodIds.includes(game.temple.godId) ? game.temple.godId : null
+                };
+                if (!game.temple.godId) game.temple.built = false;
+            }
+            if (!Number.isFinite(gameState.costs.templeFaithCost) || gameState.costs.templeFaithCost < 0) {
+                gameState.costs.templeFaithCost = 2000;
+            }
+            if (!Number.isFinite(gameState.costs.templeWoodCost) || gameState.costs.templeWoodCost < 0) {
+                gameState.costs.templeWoodCost = 800;
+            }
+            if (!Number.isFinite(gameState.costs.templeStoneCost) || gameState.costs.templeStoneCost < 0) {
+                gameState.costs.templeStoneCost = 800;
+            }
+            if (!Number.isFinite(game.templeFollowerRequirement) || game.templeFollowerRequirement < 1) {
+                game.templeFollowerRequirement = 100;
+            }
+            if (!Number.isFinite(game.templeFavorRequirement) || game.templeFavorRequirement < 0) {
+                game.templeFavorRequirement = 200;
+            }
+            if (!Number.isFinite(game.templeAlignmentShift) || game.templeAlignmentShift < 0) {
+                game.templeAlignmentShift = 15;
+            }
+            if (!Number.isFinite(game.templeFavorGain) || game.templeFavorGain < 0) {
+                game.templeFavorGain = 50;
+            }
+            if (!Number.isFinite(game.templeHeliosCapacityMultiplier) || game.templeHeliosCapacityMultiplier < 1) {
+                game.templeHeliosCapacityMultiplier = 1.5;
+            }
+            if (!Number.isFinite(game.templeSekhmetConquerYieldMultiplier) || game.templeSekhmetConquerYieldMultiplier < 1) {
+                game.templeSekhmetConquerYieldMultiplier = 1.75;
+            }
+            if (!Number.isFinite(game.templeDanuOutputMultiplier) || game.templeDanuOutputMultiplier < 1) {
+                game.templeDanuOutputMultiplier = 1.5;
+            }
+            if (!Number.isFinite(game.templeHelConsumptionMultiplier) || game.templeHelConsumptionMultiplier <= 0 || game.templeHelConsumptionMultiplier > 1) {
+                game.templeHelConsumptionMultiplier = 0.1;
+            }
+
             if (!Number.isFinite(gameState.costs.unlockAltarFaithCost) || gameState.costs.unlockAltarFaithCost < 0) {
                 gameState.costs.unlockAltarFaithCost = 0;
             }

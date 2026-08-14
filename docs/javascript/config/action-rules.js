@@ -1,6 +1,7 @@
 import { setTooltipContent } from '../utils/tooltip.js';
 import { getUpgradeCost, getPreachFaithCost, getConvertFollowerCost, getExpeditionRollFaithCost, getExpeditionRollBonus } from '../utils/helpers.js';
 import { DOCTRINE_GROUP_BY_ID } from './doctrines.js';
+import { TEMPLE_OPTION_BY_GOD } from './temples.js';
 
 function applyTooltip(el, summary, stats = '') {
     setTooltipContent(el, summary, stats);
@@ -65,6 +66,69 @@ function applyDoctrineOptionButton(el, { groupId, optionId, label, summary, effe
     setButtonLabel(el, label);
     applyTooltip(el, `${label}\n${summary}`, `${effectLine}\nPermanent — forecloses the other option in this group.`);
     applyUnlockExtras(el, { isPurchased: false, description: `${summary} Permanent — the other option in this group will be foreclosed forever.` });
+}
+
+function applyTempleButton(el, { godId, label, summary, effectLine, game, gameState, setVisible, setButtonLabel, setAffordability }) {
+    if (!game.doctrinesUnlocked) {
+        setVisible(el, false);
+        return;
+    }
+
+    const followerReq = Number.isFinite(game.templeFollowerRequirement) ? game.templeFollowerRequirement : 100;
+    const alreadyBuilt = Boolean(game.temple?.built);
+    if (!alreadyBuilt && gameState.progression.followers < followerReq) {
+        setVisible(el, false);
+        return;
+    }
+
+    setVisible(el, true);
+    el.classList.remove('doctrine-selected', 'doctrine-foreclosed');
+
+    if (alreadyBuilt && game.temple.godId === godId) {
+        el.disabled = true;
+        setButtonLabel(el, `${label} (Sealed)`);
+        el.classList.add('doctrine-selected');
+        applyTooltip(el, `${label}\n${summary}`, `Status: sealed, permanent.\n${effectLine}`);
+        applyUnlockExtras(el, { isPurchased: true, description: `${summary} Your covenant is sealed.` });
+        return;
+    }
+
+    if (alreadyBuilt) {
+        el.disabled = true;
+        setButtonLabel(el, `${label} (Foreclosed)`);
+        el.classList.add('doctrine-foreclosed');
+        applyTooltip(el, `${label}\n${summary}`, 'Status: foreclosed. Your covenant lies elsewhere.');
+        applyUnlockExtras(el, { isPurchased: true, description: 'Foreclosed — a different Temple was built.' });
+        return;
+    }
+
+    const favorReq = Number.isFinite(game.templeFavorRequirement) ? game.templeFavorRequirement : 200;
+    const currentFavor = Number.isFinite(game.factionFavor?.[godId]) ? game.factionFavor[godId] : 0;
+    const faithCost = Number.isFinite(gameState.costs.templeFaithCost) ? gameState.costs.templeFaithCost : 2000;
+    const woodCost = Number.isFinite(gameState.costs.templeWoodCost) ? gameState.costs.templeWoodCost : 800;
+    const stoneCost = Number.isFinite(gameState.costs.templeStoneCost) ? gameState.costs.templeStoneCost : 800;
+    const hasFavor = currentFavor >= favorReq;
+    const canAfford =
+        hasFavor &&
+        gameState.progression.faith >= faithCost &&
+        gameState.resources.wood.amount >= woodCost &&
+        gameState.resources.stone.amount >= stoneCost;
+
+    setAffordability(el, canAfford);
+    setButtonLabel(el, label);
+    el.classList.toggle('purchased', !canAfford);
+    const favorLine = hasFavor
+        ? `Favor: ${Math.floor(currentFavor)}/${favorReq} (met)`
+        : `Favor: ${Math.floor(currentFavor)}/${favorReq} (need more)`;
+    applyTooltip(
+        el,
+        `${label}\n${summary}`,
+        `${favorLine}\nCost: ${faithCost} faith, ${woodCost} wood, ${stoneCost} stone\n${effectLine}\nPermanent — only one Temple can ever be built.`
+    );
+    applyUnlockExtras(el, {
+        isPurchased: false,
+        description: `Requires ${favorReq} Favor with this god (have ${Math.floor(currentFavor)}) and ${followerReq} followers. Costs ${faithCost} faith, ${woodCost} wood, ${stoneCost} stone. ${effectLine}. Permanent — only one Temple can ever be built.`
+    });
 }
 
 export function getActionUiRules(context) {
@@ -765,6 +829,22 @@ export function getActionUiRules(context) {
                 effectLine: `Food consumption: -${reductionPercent}%, but starvation drain: ${game.leanYearsStarvationMultiplier}x worse\nAlignment ${option.alignmentDelta} Evil, Hel favor +${option.favorAmount}`,
                 game, setVisible, setButtonLabel
             });
+        },
+        buildTempleHelios(el) {
+            const option = TEMPLE_OPTION_BY_GOD.helios;
+            applyTempleButton(el, { godId: 'helios', label: option.label, summary: option.summary, effectLine: option.effectLabel, game, gameState, setVisible, setButtonLabel, setAffordability });
+        },
+        buildTempleSekhmet(el) {
+            const option = TEMPLE_OPTION_BY_GOD.sekhmet;
+            applyTempleButton(el, { godId: 'sekhmet', label: option.label, summary: option.summary, effectLine: option.effectLabel, game, gameState, setVisible, setButtonLabel, setAffordability });
+        },
+        buildTempleDanu(el) {
+            const option = TEMPLE_OPTION_BY_GOD.danu;
+            applyTempleButton(el, { godId: 'danu', label: option.label, summary: option.summary, effectLine: option.effectLabel, game, gameState, setVisible, setButtonLabel, setAffordability });
+        },
+        buildTempleHel(el) {
+            const option = TEMPLE_OPTION_BY_GOD.hel;
+            applyTempleButton(el, { godId: 'hel', label: option.label, summary: option.summary, effectLine: option.effectLabel, game, gameState, setVisible, setButtonLabel, setAffordability });
         }
     };
 }

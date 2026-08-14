@@ -10,6 +10,13 @@ export function getRoleOutputMultiplier(roleId, game) {
     ) {
         multiplier *= game.homesteadOutputMultiplier;
     }
+    if (
+        (roleId === 'hunters' || roleId === 'gatherers' || roleId === 'ritualists') &&
+        game.temple?.built && game.temple.godId === 'danu' &&
+        Number.isFinite(game.templeDanuOutputMultiplier)
+    ) {
+        multiplier *= game.templeDanuOutputMultiplier;
+    }
     return multiplier;
 }
 

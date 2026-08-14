@@ -179,6 +179,22 @@ const CHEAT_BALANCE_FIELD_SECTIONS = [
             { label: 'Lean Years Consumption Multiplier', target: game, key: 'leanYearsConsumptionMultiplier', step: 0.05, min: 0 },
             { label: 'Lean Years Starvation Multiplier', target: game, key: 'leanYearsStarvationMultiplier', step: 0.1, min: 1 }
         ]
+    },
+    {
+        title: 'Temple',
+        entries: [
+            { label: 'Temple Faith Cost', target: gameState.costs, key: 'templeFaithCost', step: 100, min: 0 },
+            { label: 'Temple Wood Cost', target: gameState.costs, key: 'templeWoodCost', step: 50, min: 0 },
+            { label: 'Temple Stone Cost', target: gameState.costs, key: 'templeStoneCost', step: 50, min: 0 },
+            { label: 'Temple Follower Requirement', target: game, key: 'templeFollowerRequirement', step: 5, min: 1 },
+            { label: 'Temple Favor Requirement', target: game, key: 'templeFavorRequirement', step: 10, min: 0 },
+            { label: 'Temple Alignment Shift', target: game, key: 'templeAlignmentShift', step: 1, min: 0 },
+            { label: 'Temple Favor Gain', target: game, key: 'templeFavorGain', step: 5, min: 0 },
+            { label: 'Temple Helios Capacity Multiplier', target: game, key: 'templeHeliosCapacityMultiplier', step: 0.05, min: 1 },
+            { label: 'Temple Sekhmet Conquer Yield Multiplier', target: game, key: 'templeSekhmetConquerYieldMultiplier', step: 0.05, min: 1 },
+            { label: 'Temple Danu Output Multiplier', target: game, key: 'templeDanuOutputMultiplier', step: 0.05, min: 1 },
+            { label: 'Temple Hel Consumption Multiplier', target: game, key: 'templeHelConsumptionMultiplier', step: 0.05, min: 0 }
+        ]
     }
 ];
 

@@ -68,7 +68,10 @@ export const gameState = {
         blessHarvestWoodCost: 100,
         blessHarvestStoneCost: 100,
         helOfferingFaithCost: 20,
-        councilFaithCost: 100
+        councilFaithCost: 100,
+        templeFaithCost: 2000,
+        templeWoodCost: 800,
+        templeStoneCost: 800
     },
     rates: {
         hunterFoodPerSecond: 2.0,
@@ -145,6 +148,15 @@ export const game = {
     abundantTableConsumptionMultiplier: 0.75,
     leanYearsConsumptionMultiplier: 0.5,
     leanYearsStarvationMultiplier: 2.5,
+    temple: { built: false, godId: null },
+    templeFollowerRequirement: 100,
+    templeFavorRequirement: 200,
+    templeAlignmentShift: 15,
+    templeFavorGain: 50,
+    templeHeliosCapacityMultiplier: 1.5,
+    templeSekhmetConquerYieldMultiplier: 1.75,
+    templeDanuOutputMultiplier: 1.5,
+    templeHelConsumptionMultiplier: 0.1,
     trainingUnlocked: false,
     roleUnlocks: createRoleUnlockMap(false),
     roleBulkAssignAmount: 1,

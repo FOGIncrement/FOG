@@ -47,7 +47,11 @@ export const ACTION_GROUPS = {
         { id: 'chooseHomestead', buttonId: 'chooseHomesteadBtn', handlerExport: 'chooseHomestead', tab: 'doctrines', category: 'hearth' },
         { id: 'chooseWanderlust', buttonId: 'chooseWanderlustBtn', handlerExport: 'chooseWanderlust', tab: 'doctrines', category: 'hearth' },
         { id: 'chooseAbundantTable', buttonId: 'chooseAbundantTableBtn', handlerExport: 'chooseAbundantTable', tab: 'doctrines', category: 'sacrifice' },
-        { id: 'chooseLeanYears', buttonId: 'chooseLeanYearsBtn', handlerExport: 'chooseLeanYears', tab: 'doctrines', category: 'sacrifice' }
+        { id: 'chooseLeanYears', buttonId: 'chooseLeanYearsBtn', handlerExport: 'chooseLeanYears', tab: 'doctrines', category: 'sacrifice' },
+        { id: 'buildTempleHelios', buttonId: 'buildTempleHeliosBtn', handlerExport: 'buildTempleHelios', tab: 'doctrines', category: 'temple' },
+        { id: 'buildTempleSekhmet', buttonId: 'buildTempleSekhmetBtn', handlerExport: 'buildTempleSekhmet', tab: 'doctrines', category: 'temple' },
+        { id: 'buildTempleDanu', buttonId: 'buildTempleDanuBtn', handlerExport: 'buildTempleDanu', tab: 'doctrines', category: 'temple' },
+        { id: 'buildTempleHel', buttonId: 'buildTempleHelBtn', handlerExport: 'buildTempleHel', tab: 'doctrines', category: 'temple' }
     ],
     followerManager: [
         { id: 'trainHunters', buttonId: 'trainHuntersBtn', handlerExport: 'trainHunters', tab: 'followerManager', category: 'roles' },

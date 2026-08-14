@@ -6,6 +6,7 @@ import { getExpeditionFollowerLimit, getMaxFollowers, getNextVillageDistance, ge
 import { rollDice } from './utils/dice.js';
 import { buildingRegistry } from './registries/index.js';
 import { DOCTRINE_GROUP_BY_ID } from './config/doctrines.js';
+import { TEMPLE_OPTION_BY_GOD } from './config/temples.js';
 
 let preachRollReady = false;
 let preachRollInProgress = false;
@@ -1228,3 +1229,50 @@ export function chooseHomestead() { chooseDoctrine('hearth', 'homestead'); }
 export function chooseWanderlust() { chooseDoctrine('hearth', 'wanderlust'); }
 export function chooseAbundantTable() { chooseDoctrine('sacrifice', 'abundantTable'); }
 export function chooseLeanYears() { chooseDoctrine('sacrifice', 'leanYears'); }
+
+function buildTemple(godId) {
+    if (!game.doctrinesUnlocked) return;
+    if (!game.temple || typeof game.temple !== 'object') return;
+    if (game.temple.built) return;
+
+    const option = TEMPLE_OPTION_BY_GOD[godId];
+    if (!option) return;
+
+    const followerReq = Number.isFinite(game.templeFollowerRequirement) ? game.templeFollowerRequirement : 100;
+    if (gameState.progression.followers < followerReq) return;
+
+    const favorReq = Number.isFinite(game.templeFavorRequirement) ? game.templeFavorRequirement : 200;
+    const currentFavor = Number.isFinite(game.factionFavor?.[godId]) ? game.factionFavor[godId] : 0;
+    if (currentFavor < favorReq) return;
+
+    const faithCost = Number.isFinite(gameState.costs.templeFaithCost) ? gameState.costs.templeFaithCost : 2000;
+    const woodCost = Number.isFinite(gameState.costs.templeWoodCost) ? gameState.costs.templeWoodCost : 800;
+    const stoneCost = Number.isFinite(gameState.costs.templeStoneCost) ? gameState.costs.templeStoneCost : 800;
+    const canAfford =
+        gameState.progression.faith >= faithCost &&
+        gameState.resources.wood.amount >= woodCost &&
+        gameState.resources.stone.amount >= stoneCost;
+    if (!canAfford) return;
+
+    gameState.progression.faith -= faithCost;
+    gameState.resources.wood.spend(woodCost);
+    gameState.resources.stone.spend(stoneCost);
+
+    game.temple.built = true;
+    game.temple.godId = godId;
+
+    const alignmentShift = Number.isFinite(game.templeAlignmentShift) ? game.templeAlignmentShift : 15;
+    game.alignment = Math.max(-100, Math.min(100, game.alignment + (alignmentShift * option.alignmentDirection)));
+    const favorGain = Number.isFinite(game.templeFavorGain) ? game.templeFavorGain : 50;
+    game.factionFavor[godId] += favorGain;
+    if (!game.alignmentVisible) game.alignmentVisible = true;
+
+    addLog(`${option.label} rises over your settlement. Your covenant is sealed — this cannot be undone.`);
+    updateUI();
+    saveGame();
+}
+
+export function buildTempleHelios() { buildTemple('helios'); }
+export function buildTempleSekhmet() { buildTemple('sekhmet'); }
+export function buildTempleDanu() { buildTemple('danu'); }
+export function buildTempleHel() { buildTemple('hel'); }
